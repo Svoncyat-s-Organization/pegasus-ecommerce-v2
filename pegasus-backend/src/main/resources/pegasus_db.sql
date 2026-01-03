@@ -239,10 +239,7 @@ CREATE TABLE public.ubigeos (
 	district_name varchar(50) NOT NULL,
 	department_id varchar(2) GENERATED ALWAYS AS (SUBSTRING(id,1,2)) STORED,
 	province_id varchar(4) GENERATED ALWAYS AS (SUBSTRING(id,1,4)) STORED,
-	CONSTRAINT ubigeos_pk PRIMARY KEY (id),
-	CONSTRAINT ubigeos_department_uq UNIQUE (department_name),
-	CONSTRAINT ubigeos_province_uq UNIQUE (province_name),
-	CONSTRAINT ubigeos_district_uq UNIQUE (district_name)
+	CONSTRAINT ubigeos_pk PRIMARY KEY (id)
 );
 -- ddl-end --
 ALTER TABLE public.ubigeos OWNER TO postgres;
@@ -465,7 +462,7 @@ CREATE TABLE public.orders (
 	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
 	order_number varchar(50) NOT NULL,
 	customer_id bigint NOT NULL,
-	status public.order_status_enum NOT NULL DEFAULT PENDING,
+	status public.order_status_enum NOT NULL DEFAULT 'PENDING',
 	total numeric(12,2) NOT NULL,
 	shipping_address jsonb NOT NULL,
 	billing_address jsonb,

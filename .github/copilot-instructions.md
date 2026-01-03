@@ -33,3 +33,8 @@ Pegasus is a monolithic e-commerce backend built with Spring Boot and PostgreSQL
 - **Services:** Business logic lives here. Controllers should be thin.
 - **Repositories:** Use `JpaRepository`.
 - **Exceptions:** Throw custom exceptions from `exception/` package; do not return generic `ResponseEntity` errors manually.
+
+### 5. Tone & Output Format
+- **Professional & Technical:** Maintain a strict, professional tone.
+- **No Emojis:** Do NOT use emojis in any part of the response, comments, or commit messages. The output must be clean text and code only.
+- **Concise:** Avoid conversational filler. Go straight to the solution.
