@@ -1,4 +1,4 @@
-# 🦄 Project Context: Pegasus E-commerce (MVP)
+# Project Context: Pegasus E-commerce (Backend)
 
 **Description:**
 Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and **PostgreSQL**, designed for an academic MVP. The system serves two distinct user types: **Backoffice Staff** (Admins/Workers) and **Storefront Customers**.
@@ -43,7 +43,7 @@ Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and 
     * `entity/`
     * `dto/`
     * `mapper/` (For MapStruct interfaces)
-* **`/shared`**: Common utilities (e.g., `locations/`, `utils/`, `enums/`). This is the only place for enums.
+* **`/shared`**: Common utilities (e.g., `locations/`, `utils/`, `enums/`). This is the only place for enums like `DocumentType`, `OperationType`, `OrderStatus`, etc.
 * **`/security`**: Authentication infrastructure (`auth/`, `jwt/`).
 * **`/config`**: Global configurations.
 * **`/exception`**: Global exception handling.
@@ -68,17 +68,18 @@ Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and 
 
 ---
 
-## 6. Coding Standards
-* **DTOs:** Mandatory. Never expose Entities in Controllers. Use Java `record` for DTOs if possible, or Lombok-annotated classes.
+## 6. Coding Standards & Principles
+* **SOLID Principles (Applied):**
+    * **SRP (Single Responsibility):** Controllers MUST be thin (routing only). All business logic MUST live in Services. Entities MUST only represent DB state.
+    * **DIP (Dependency Inversion):** Always use Constructor Injection (`@RequiredArgsConstructor`). Do not use `@Autowired` on fields.
+    * **OCP (Open/Closed):** Use Strategy Pattern or Polymorphism for complex conditional logic (e.g., Payment Methods), instead of massive `if/else` blocks.
+* **DRY (Don't Repeat Yourself):**
+    * Extract common logic (e.g., date formatting, price calculation) to `shared/utils`.
+    * Use `@MappedSuperclass` for common entity fields like `created_at`, `updated_at`, `is_active` (e.g., create a `BaseEntity`).
+* **DTOs:** Mandatory. Never expose Entities in Controllers. Use Java `record` for DTOs if possible.
 * **Validation:** Use `jakarta.validation` (`@NotNull`, `@Email`) in DTOs.
 * **Repository:** Use `JpaRepository`.
-* **MapStruct:** Example:
-    ```java
-    @Mapper(componentModel = "spring")
-    public interface ProductMapper {
-        ProductResponse toResponse(Product product);
-    }
-    ```
+* **MapStruct:** Use interfaces with `@Mapper(componentModel = "spring")`.
 
 ---
 

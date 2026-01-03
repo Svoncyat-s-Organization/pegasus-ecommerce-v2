@@ -11,12 +11,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 /**
- * Proveedor JWT - Genera y valida tokens
+ * Utilidad JWT - Genera y valida tokens
  * Con claim custom: userType (ADMIN o CUSTOMER)
  */
 @Component
 @Slf4j
-public class JwtProvider {
+public class JwtUtils {
 
     @Value("${jwt.secret}")
     private String jwtSecret;

@@ -2,10 +2,11 @@ package com.pegasus.backend.security.auth.service;
 
 import com.pegasus.backend.features.crm.entity.Customer;
 import com.pegasus.backend.features.crm.repository.CustomerRepository;
+import com.pegasus.backend.shared.enums.DocumentType;
 import com.pegasus.backend.security.auth.dto.AuthResponse;
 import com.pegasus.backend.security.auth.dto.LoginRequest;
 import com.pegasus.backend.security.auth.dto.RegisterCustomerRequest;
-import com.pegasus.backend.security.jwt.JwtProvider;
+import com.pegasus.backend.security.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -23,7 +24,7 @@ public class CustomerAuthService {
 
     private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtProvider jwtProvider;
+    private final JwtUtils jwtUtils;
 
     @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
@@ -43,7 +44,7 @@ public class CustomerAuthService {
             throw new BadCredentialsException("Credenciales inválidas");
         }
 
-        String token = jwtProvider.generateToken(customer.getId(), "CUSTOMER");
+        String token = jwtUtils.generateToken(customer.getId(), "CUSTOMER");
 
         return AuthResponse.builder()
                 .token(token)
@@ -71,17 +72,18 @@ public class CustomerAuthService {
                 .username(request.username())
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .docType(Customer.DocumentType.valueOf(request.docType()))
+                .docType(DocumentType.valueOf(request.docType()))
                 .docNumber(request.docNumber())
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .phone(request.phone())
-                .isActive(true)
                 .build();
+        
+        customer.setIsActive(true);
 
         customer = customerRepository.save(customer);
 
-        String token = jwtProvider.generateToken(customer.getId(), "CUSTOMER");
+        String token = jwtUtils.generateToken(customer.getId(), "CUSTOMER");
 
         return AuthResponse.builder()
                 .token(token)

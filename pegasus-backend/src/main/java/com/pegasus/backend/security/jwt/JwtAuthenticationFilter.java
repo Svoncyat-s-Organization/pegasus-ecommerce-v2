@@ -26,7 +26,7 @@ import java.util.List;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtProvider jwtProvider;
+    private final JwtUtils jwtUtils;
 
     @Override
     protected void doFilterInternal(
@@ -38,9 +38,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = extractJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
-                Long userId = jwtProvider.getUserIdFromToken(jwt);
-                String userType = jwtProvider.getUserTypeFromToken(jwt);
+            if (StringUtils.hasText(jwt) && jwtUtils.validateToken(jwt)) {
+                Long userId = jwtUtils.getUserIdFromToken(jwt);
+                String userType = jwtUtils.getUserTypeFromToken(jwt);
 
                 // Creamos un rol dinámico basado en userType
                 String role = "ROLE_" + userType; // ROLE_ADMIN o ROLE_CUSTOMER

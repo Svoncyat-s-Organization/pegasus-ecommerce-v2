@@ -1,14 +1,13 @@
 package com.pegasus.backend.features.user.entity;
 
+import com.pegasus.backend.shared.entity.BaseEntity;
+import com.pegasus.backend.shared.enums.DocumentType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.OffsetDateTime;
 
 /**
  * Entidad User - Usuarios del backoffice (Admin, Workers)
@@ -17,10 +16,11 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(name = "users")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,19 +50,4 @@ public class User {
 
     @Column(length = 20)
     private String phone;
-
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
-
-    public enum DocumentType {
-        DNI, CE
-    }
 }
