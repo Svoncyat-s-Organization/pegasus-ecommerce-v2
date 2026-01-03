@@ -31,23 +31,29 @@ Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and 
 
 ---
 
-## 3. Architectural Style: Package-by-Feature
+## 3. Architectural Style & Directory Structure
 **STRICT RULE:** Do NOT organize code by technical layers. Organize by **Feature Modules**.
 
 **Directory Structure:**
 * **Root:** `com.pegasus.backend` (ArtifactId: backend)
-* **`/features`**: Business modules. Each folder (e.g., `/features/catalog`, `/features/order`) MUST contain:
-    * `controller/`
-    * `service/`
-    * `repository/`
-    * `entity/`
-    * `dto/`
-    * `mapper/` (For MapStruct interfaces)
-* **`/shared`**: Common utilities (e.g., `locations/`, `utils/`, `enums/`). This is the only place for enums like `DocumentType`, `OperationType`, `OrderStatus`, etc.
-* **`/security`**: Authentication infrastructure (`auth/`, `jwt/`).
-* **`/config`**: Global configurations.
-* **`/exception`**: Global exception handling.
 
+* **`/features`**: Core business modules (Domain Driven).
+    * Each folder (e.g., `/features/catalog`, `/features/order`, `/features/crm`, `/features/user`) MUST contain its own technical sub-packages: `controller`, `service`, `repository`, `entity`, `dto`, `mapper`.
+    * **Note:** Entities `User` (Staff) live in `features/user`, and `Customer` (Storefront) live in `features/crm`.
+
+* **`/shared`**: Cross-cutting concerns and shared resources.
+    * **`/shared/locations`**: Handles the **Ubigeo** logic based on the single `ubigeos` table.
+        * It acts like a "Read-Only Feature" (Service/Repository/Entity) used by `crm` (addresses) and `inventory` (warehouses) to validate location IDs.
+    * **`/shared/enums`**: The **ONLY** place for global enums (e.g., `DocumentType`, `OrderStatus`, `PaymentMethod`). This prevents circular dependencies between features.
+    * **`/shared/utils`**: Stateless helper classes (e.g., `DateUtils`, `PasswordUtils`, `StringHelper`). No business logic here.
+    * **`/shared/dto`**: Global DTOs (e.g., `PageResponse<T>`, `ErrorResponse`).
+
+* **`/security`**: Centralized Authentication Infrastructure.
+    * **`/security/jwt`**: The "Key Maker". Contains `JwtUtils` to generate/validate tokens. Agnostic of user type.
+    * **`/security/auth`**: The "Orchestrator". Contains `AuthController`. It receives login requests and routes them to the correct feature service (`UserAuthService` or `CustomerAuthService`).
+
+* **`/config`**: Global configurations (Security, Cors, OpenAPI/Swagger, Jackson).
+* **`/exception`**: Global exception handling (`GlobalExceptionHandler`).
 ---
 
 ## 4. Database & JPA Conventions
