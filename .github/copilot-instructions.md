@@ -1,40 +1,88 @@
-## 🦄 Project Context: Pegasus E-commerce (MVP)
+# 🦄 Project Context: Pegasus E-commerce (MVP)
 
 **Description:**
-Pegasus is a monolithic e-commerce backend built with Spring Boot and PostgreSQL, designed for an academic MVP. The system serves two distinct user types: **Backoffice Staff** (Admins/Workers) and **Storefront Customers**.
+Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and **PostgreSQL**, designed for an academic MVP. The system serves two distinct user types: **Backoffice Staff** (Admins/Workers) and **Storefront Customers**.
 
-### 1. Architectural Style: Package-by-Feature
-**Strict Rule:** Do not organize code by layers (e.g., do not create `com.pegasus.controllers`). Organize by **Feature Modules**.
-- **Root:** `com.pegasus.ecommerce`
-- **Feature Modules:** Located in `/features`. Each folder (e.g., `/features/catalog`, `/features/order`) must contain its own `controller`, `service`, `repository`, `entity`, and `dto` sub-packages.
-- **Shared:** Common utilities and cross-cutting concerns (like `locations/Ubigeo`) go in `/shared`.
+---
 
-### 2. Security & Authentication Strategy
-**Dual-Authentication Model:**
-- We do **NOT** mix Admins and Customers in a single table.
-- **Backoffice Users:** Entity `User` in `features/user`. Managed by `UserAuthService`.
-- **Storefront Customers:** Entity `Customer` in `features/crm`. Managed by `CustomerAuthService`.
-- **Orchestration:** The `security/auth` package acts as the traffic controller. It receives login requests and delegates to the correct service.
-- **JWT:** Centralized in `security/jwt/JwtUtils`. It signs tokens with a custom claim `userType` ("ADMIN" or "CUSTOMER") to identify the token owner in subsequent requests.
+## 1. Database & Migrations (CRITICAL)
+* **Schema Reference:** The full database design script is located at: `src/main/resources/db/pegasus_v2_db.sql`. Use this file to understand the table relationships, constraints, and data types.
+* **Migrations:** We use **Flyway** for database version control.
+    * All migration scripts must be placed in: `src/main/resources/db/migration/`.
+    * Naming convention: `V1__init_schema.sql`, `V2__add_users.sql`, etc. Repeatable migrations are used for seed: `R__01_seed_users`, `R__02_seed_customers`, etc.
+    * Do NOT modify the database schema through JPA/Hibernate (`ddl-auto` is disabled). Always create a Flyway migration script.
 
-### 3. Database & JPA Conventions (PostgreSQL)
-- **Language:** All tables and columns must be named in **snake_case** in **English**.
-- **IDs:** Use `BIGINT GENERATED ALWAYS AS IDENTITY`.
-- **Money:** Always use `NUMERIC(12, 2)` (mapped to `BigDecimal` in Java). Never use `Float` or `Double`.
-- **JSONB:** Heavily used for snapshots and flexible data.
-  - `orders.shipping_address` (Snapshot of the address at purchase time).
-  - `products.specs` and `variants.attributes`.
-  - Mapped to `Map<String, Object>` or `JsonNode` in Java.
-- **Locations (Ubigeo):** Use the `shared/locations` module. It maps to a **single flat table** `ubigeos` (id, department, province, district), NOT three separate tables.
-- **Logic:** No database triggers/functions for business logic. All calculations (totals, tax) happen in the Java `Service` layer.
+---
 
-### 4. Coding Standards
-- **DTOs:** Never expose Entities in Controllers. Use Records (Java 17+) or Classes for DTOs (Request/Response).
-- **Services:** Business logic lives here. Controllers should be thin.
-- **Repositories:** Use `JpaRepository`.
-- **Exceptions:** Throw custom exceptions from `exception/` package; do not return generic `ResponseEntity` errors manually.
+## 2. Tech Stack & Dependencies
+* **Framework:** Spring Boot 4.0.1 (Jakarta EE environment).
+    * Use `jakarta.*` imports (e.g., `jakarta.persistence.*`, `jakarta.validation.*`), NOT `javax.*`.
+* **Language:** Java 17.
+* **Mapping:** **MapStruct 1.6.3**.
+    * Always use MapStruct interfaces for DTO-Entity conversion.
+    * Use `@Mapper(componentModel = "spring")`.
+* **Boilerplate:** **Lombok**.
+    * Use `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`.
+    * Use `@RequiredArgsConstructor` for Constructor Injection.
+* **Documentation:** **SpringDoc OpenAPI (Swagger)**.
+    * Document Controllers with `@Operation`, `@ApiResponse`, and `@Tag`.
+* **Security:** Spring Security + **JJWT (0.13.0)**.
+* **Database:** PostgreSQL.
 
-### 5. Tone & Output Format
-- **Professional & Technical:** Maintain a strict, professional tone.
-- **No Emojis:** Do NOT use emojis in any part of the response, comments, or commit messages. The output must be clean text and code only.
-- **Concise:** Avoid conversational filler. Go straight to the solution.
+---
+
+## 3. Architectural Style: Package-by-Feature
+**STRICT RULE:** Do NOT organize code by technical layers. Organize by **Feature Modules**.
+
+**Directory Structure:**
+* **Root:** `com.pegasus.backend` (ArtifactId: backend)
+* **`/features`**: Business modules. Each folder (e.g., `/features/catalog`, `/features/order`) MUST contain:
+    * `controller/`
+    * `service/`
+    * `repository/`
+    * `entity/`
+    * `dto/`
+    * `mapper/` (For MapStruct interfaces)
+* **`/shared`**: Common utilities (e.g., `locations/`, `utils/`, `enums/`). This is the only place for enums.
+* **`/security`**: Authentication infrastructure (`auth/`, `jwt/`).
+* **`/config`**: Global configurations.
+* **`/exception`**: Global exception handling.
+
+---
+
+## 4. Database & JPA Conventions
+* **Naming:** Tables and columns in **snake_case** (English).
+* **IDs:** `BIGINT GENERATED ALWAYS AS IDENTITY`.
+* **Money:** `NUMERIC(12, 2)` mapped to `BigDecimal`. **NEVER** use Float/Double.
+* **JSONB:** Heavily used (e.g., `shipping_address`, `specs`). Map to `Map<String, Object>` or `JsonNode` using Hibernate 6+ types (`@JdbcTypeCode(SqlTypes.JSON)`).
+* **Logic:** Business logic stays in Java Services, not DB triggers.
+
+---
+
+## 5. Security Strategy (Dual-Model)
+**We separate Admins and Customers:**
+1.  **Backoffice:** Entity `User` (in `features/user`). Managed by `UserAuthService`.
+2.  **Storefront:** Entity `Customer` (in `features/crm`). Managed by `CustomerAuthService`.
+3.  **Orchestration:** `security/auth` handles login requests and delegates to the correct service.
+4.  **JWT:** `security/jwt/JwtUtils` signs tokens with a custom claim `userType` ("ADMIN" or "CUSTOMER").
+
+---
+
+## 6. Coding Standards
+* **DTOs:** Mandatory. Never expose Entities in Controllers. Use Java `record` for DTOs if possible, or Lombok-annotated classes.
+* **Validation:** Use `jakarta.validation` (`@NotNull`, `@Email`) in DTOs.
+* **Repository:** Use `JpaRepository`.
+* **MapStruct:** Example:
+    ```java
+    @Mapper(componentModel = "spring")
+    public interface ProductMapper {
+        ProductResponse toResponse(Product product);
+    }
+    ```
+
+---
+
+## 7. Tone & Output Format
+* **Professional & Technical:** Maintain a strict, professional tone.
+* **NO Emojis:** Do NOT use emojis. Output must be clean text and code only.
+* **Concise:** Go straight to the solution.
