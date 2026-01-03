@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.ts, **/*.tsx, package.json, index.html, vite.config.ts"
+applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/**/*.css, pegasus-frontend/package.json, pegasus-frontend/index.html, pegasus-frontend/vite.config.ts"
 ---
 
 # 🦅 Frontend Context: React 19 + Vite
@@ -11,6 +11,15 @@ applyTo: "**/*.ts, **/*.tsx, package.json, index.html, vite.config.ts"
     * **Server State:** TanStack Query (React Query) v5. **MANDATORY for API calls.**
     * **Global Client State:** Zustand.
 * **HTTP Client:** Axios (configured in `src/config/api.ts`).
+    * **Base URL:** Use environment variable `VITE_API_BASE_URL`.
+    * **Interceptors:** Request interceptor adds `Authorization: Bearer <token>` from Zustand auth store.
+    * **Error Handling:** Response interceptor catches 401 (redirect to login) and 500 (show toast).
+* **Environment Variables:**
+    * `VITE_API_BASE_URL` (Backend API URL, e.g., `http://localhost:8080/api`). **REQUIRED.**
+    * `VITE_ENV` (Environment: `development`, `staging`, `production`). Optional, for conditional logic.
+    * `VITE_ENABLE_LOGS` (Enable debug logs: `true`/`false`). Optional, for development debugging.
+    * Store in `.env.local` (development, not committed) or `.env.production` (production build).
+    * **Important:** All Vite env vars MUST start with `VITE_` prefix to be exposed to client.
 * **Forms:** React Hook Form + Zod (`@hookform/resolvers`).
 * **UI Libraries (STRICT):**
     * `features/backoffice/**` -> **MUST** use **Ant Design** (`antd`). Ant Design is strictly for Backoffice Staff UIs.
@@ -24,17 +33,70 @@ applyTo: "**/*.ts, **/*.tsx, package.json, index.html, vite.config.ts"
 **Directory Structure:**
 `src/features/{scope}/{module}/`
 
+* **Root Folders (Outside features):**
+    * **`src/config/`**: Global configurations.
+        * **`api.ts`**: Axios instance with interceptors, base URL, auth headers.
+        * **`queryClient.ts`**: TanStack Query client configuration (staleTime, cacheTime, retry logic).
+    * **`src/types/`**: Global TypeScript interfaces/types shared across features.
+        * **Examples:** `PageResponse<T>`, `ApiError`, `User`, `Customer`, `AuthToken`.
+        * Do NOT put feature-specific types here. Use `features/{scope}/{module}/types/` instead.
+    * **`src/routes/`**: React Router configuration.
+        * **`AppRoutes.tsx`**: Main routing logic with route guards (protected routes).
+        * Split by scope if needed: `BackofficeRoutes.tsx`, `StorefrontRoutes.tsx`.
+    * **`src/layouts/`**: Layout components (Shell/Wrapper components).
+        * **`layouts/backoffice/`**: Ant Design layouts (Sidebar, Header, MainLayout).
+        * **`layouts/storefront/`**: Mantine layouts (Navbar, Footer, MainLayout).
+    * **`src/components/`**: Global reusable components (NOT feature-specific).
+        * **`components/backoffice/`**: Shared Ant Design components (e.g., `DataTable`, `PageHeader`).
+        * **`components/storefront/`**: Shared Mantine components (e.g., `ProductCard`, `CartIcon`).
+    * **`src/shared/utils/`**: Utility functions (formatters, validators, constants).
+        * **Examples:** `formatCurrency`, `validateEmail`, `API_ENDPOINTS`, `formatDate`, `formatPhone`.
+        * **Peru-specific:** `formatDNI`, `formatRUC`, `validateDNI` (8 digits), `validateCE` (Carné de Extranjería).
+        * Use for cross-cutting logic shared across ALL features (not feature-specific).
+    * **`src/stores/`**: Zustand global state stores.
+        * **`stores/backoffice/`**: Admin session state (e.g., `useAuthStore`).
+        * **`stores/storefront/`**: Customer session state (e.g., `useCartStore`, `useCustomerAuthStore`).
+
 * **Scopes:**
     * `backoffice`: Admin panel logic.
     * `storefront`: Customer facing logic.
+
 * **Module Anatomy:**
     Inside `src/features/backoffice/catalog/` (example):
     * `api/`: Axios functions (e.g., `getProducts`, `createProduct`).
     * `components/`: UI-only components (The "Views").
     * `hooks/`: Custom hooks containing logic & mutations (The "Brains").
     * `pages/`: Route entry points (Layout + Integration).
+    * `constants/`: Feature-specific constants (e.g., `PRODUCT_STATUSES`, `API_ENDPOINTS`).
+    * `utils/`: Feature-specific utilities (e.g., `calculateDiscount`, `validateSKU`).
     * `types/` (Optional): Feature-specific interfaces if not in global types.
-    * `index.ts`: Public API of the module.
+    * `index.ts`: Public API of the module (see Section 2.1).
+
+### 2.1. Module Public API (`index.ts`)
+Each feature module MUST export only what is needed by other modules. This enforces encapsulation.
+
+**What to Export:**
+* Pages (for routing).
+* Public hooks (if reusable).
+* Public types (if shared).
+
+**What NOT to Export:**
+* Internal components (keep them private).
+* API functions (only hooks should consume them).
+* Utils (unless explicitly needed outside).
+
+**Example (`features/backoffice/catalog/index.ts`):**
+```typescript
+// Public Pages (for Router)
+export { ProductListPage } from './pages/ProductListPage';
+export { ProductDetailPage } from './pages/ProductDetailPage';
+
+// Public Hooks (if reusable)
+export { useProductList } from './hooks/useProductList';
+
+// Public Types (if shared)
+export type { Product, ProductFormData } from './types';
+```
 
 ## 3. UI Libraries Strategy (STRICT)
 Based on the `features` folder structure:
@@ -102,18 +164,66 @@ We replace the old Container/View pattern with the **Custom Hook Pattern**.
     ```
 
 
-## 5. Coding Standards
+## 5. Naming Conventions
+* **Files:**
+    * Components: PascalCase (e.g., `ProductList.tsx`, `UserCard.tsx`).
+    * Hooks: camelCase with `use` prefix (e.g., `useProductList.ts`, `useAuth.ts`).
+    * API functions: camelCase (e.g., `getProducts.ts`, `createOrder.ts`).
+    * Types: PascalCase (e.g., `Product.ts`, `User.ts`).
+    * Utils: camelCase (e.g., `formatCurrency.ts`, `validateEmail.ts`).
+* **Functions/Variables:**
+    * camelCase (e.g., `handleSubmit`, `isLoading`, `productList`).
+    * Event handlers: `handle{Action}` (e.g., `handleClick`, `handleSubmit`).
+* **Interfaces/Types:**
+    * PascalCase (e.g., `Product`, `UserFormData`).
+    * Props interfaces: `{Component}Props` (e.g., `ProductListProps`).
+* **Constants:** UPPER_SNAKE_CASE (e.g., `API_BASE_URL`, `MAX_RETRIES`).
+
+## 6. Coding Standards
 * **TypeScript:**
     * Use `interface` for Models (mirroring Backend DTOs).
     * Avoid `any`. Use `unknown` or specific types.
     * Props must be typed: `interface Props { ... }`.
+* **Peru-Specific Validations:**
+    * **DNI:** 8 numeric digits (e.g., `12345678`).
+    * **CE (Carné de Extranjería):** 9-12 alphanumeric characters.
+    * **Phone:** Peru format (9 digits starting with 9, e.g., `987654321`).
+    * **Ubigeo:** Always use IDs from `ubigeos` table (department, province, district).
+    * **Currency:** Peruvian Sol (PEN). Format: `S/ 1,234.56`.
 * **Global State:**
     * Use **Zustand** stores (`src/stores/`) only for global session data (Auth, Cart, UI Theme).
     * Do NOT put API data in Zustand (use React Query cache for that).
+* **SOLID/DRY Principles:**
+    * **SRP:** Each component/hook has ONE responsibility. Separate logic (hooks) from UI (components).
+    * **DRY:** Extract repeated logic to custom hooks or utils. Do NOT copy-paste code.
+    * **Example (BAD):**
+        ```tsx
+        // ProductList.tsx - Logic mixed with UI ❌
+        const [products, setProducts] = useState([]);
+        useEffect(() => { axios.get('/products').then(...); }, []);
+        ```
+    * **Example (GOOD):**
+        ```tsx
+        // hooks/useProductList.ts - Logic separated ✅
+        export const useProductList = () => {
+            return useQuery({ queryKey: ['products'], queryFn: getProducts });
+        };
+        
+        // components/ProductList.tsx - Pure UI ✅
+        const { data } = useProductList();
+        ```
 * **Imports:**
-    * Use absolute paths if configured (`@/features/...`) or clean relative paths.
+    * Use relative paths (e.g., `../../hooks/useAuth`). Path aliases (`@/`) are NOT configured in this project.
     * Do NOT duplicate logic. If it's shared, move to `src/hooks` or `src/components`.
+* **Forms & Validation:**
+    * Use React Hook Form + Zod for form validation.
+    * Define Zod schema, use `zodResolver`.
+    * **Example:**
+        ```tsx
+        const schema = z.object({ email: z.string().email(), password: z.string().min(6) });
+        const { register, handleSubmit } = useForm({ resolver: zodResolver(schema) });
+        ```
 
-## 6. Quality Assurance
+## 7. Quality Assurance
 * **Linter:** Before outputting code, ensure it follows ESLint rules (no unused vars).
 * **Build:** Ensure the code provided is syntactically correct and would pass `tsc` (TypeScript Compiler).
