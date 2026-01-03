@@ -1,8 +1,9 @@
-package com.pegasus.backend.features.crm.repository;
+package com.pegasus.backend.features.customer.repository;
 
-import com.pegasus.backend.features.crm.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.pegasus.backend.features.customer.entity.Customer;
 
 import java.util.Optional;
 

@@ -1,8 +1,8 @@
 package com.pegasus.backend.security.auth.service;
 
-import com.pegasus.backend.features.crm.entity.Customer;
-import com.pegasus.backend.features.crm.repository.CustomerRepository;
 import com.pegasus.backend.shared.enums.DocumentType;
+import com.pegasus.backend.features.customer.entity.Customer;
+import com.pegasus.backend.features.customer.repository.CustomerRepository;
 import com.pegasus.backend.security.auth.dto.AuthResponse;
 import com.pegasus.backend.security.auth.dto.LoginRequest;
 import com.pegasus.backend.security.auth.dto.RegisterCustomerRequest;

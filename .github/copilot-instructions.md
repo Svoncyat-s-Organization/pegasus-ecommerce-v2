@@ -38,12 +38,16 @@ Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and 
 * **Root:** `com.pegasus.backend` (ArtifactId: backend)
 
 * **`/features`**: Core business modules (Domain Driven).
-    * Each folder (e.g., `/features/catalog`, `/features/order`, `/features/crm`, `/features/user`) MUST contain its own technical sub-packages: `controller`, `service`, `repository`, `entity`, `dto`, `mapper`.
-    * **Note:** Entities `User` (Staff) live in `features/user`, and `Customer` (Storefront) live in `features/crm`.
+    * Each folder (e.g., `/features/catalog`, `/features/order`, `/features/customer`, `/features/user`) MUST contain its own technical sub-packages: `controller`, `service`, `repository`, `entity`, `dto`, `mapper`.
+    * **Note:** Entities `User` (Staff) live in `features/user`, and `Customer` (Storefront) live in `features/customer`.
+    * **`/features/user` vs `/features/rbac`**: Separation of concerns for backoffice staff management:
+        * **`/features/user`**: Manages user **identities** (CRUD of staff members, credentials, personal data). Contains `User` entity and `UserAuthService`.
+        * **`/features/rbac`**: Manages **what each role can do** (roles, permissions, assignments). Contains `Role`, `Permission`, `UserRole` entities. Separated to avoid bloating `/features/user` with authorization logic.
+    * **`/features/customer`**: Manages storefront customers. Contains `Customer` entity and all customer-related logic (addresses, contact info, segmentation). Do NOT mix with `/features/user`.
 
 * **`/shared`**: Cross-cutting concerns and shared resources.
     * **`/shared/locations`**: Handles the **Ubigeo** logic based on the single `ubigeos` table.
-        * It acts like a "Read-Only Feature" (Service/Repository/Entity) used by `crm` (addresses) and `inventory` (warehouses) to validate location IDs.
+        * It acts like a "Read-Only Feature" (Service/Repository/Entity) used by `customer` (addresses) and `inventory` (warehouses) to validate location IDs.
     * **`/shared/enums`**: The **ONLY** place for global enums (e.g., `DocumentType`, `OrderStatus`, `PaymentMethod`). This prevents circular dependencies between features.
     * **`/shared/utils`**: Stateless helper classes (e.g., `DateUtils`, `PasswordUtils`, `StringHelper`). No business logic here.
     * **`/shared/dto`**: Global DTOs (e.g., `PageResponse<T>`, `ErrorResponse`).
@@ -68,7 +72,7 @@ Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and 
 ## 5. Security Strategy (Dual-Model)
 **We separate Admins and Customers:**
 1.  **Backoffice:** Entity `User` (in `features/user`). Managed by `UserAuthService`.
-2.  **Storefront:** Entity `Customer` (in `features/crm`). Managed by `CustomerAuthService`.
+2.  **Storefront:** Entity `Customer` (in `features/customer`). Managed by `CustomerAuthService`.
 3.  **Orchestration:** `security/auth` handles login requests and delegates to the correct service.
 4.  **JWT:** `security/jwt/JwtUtils` signs tokens with a custom claim `userType` ("ADMIN" or "CUSTOMER").
 

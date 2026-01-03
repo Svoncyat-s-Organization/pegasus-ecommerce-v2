@@ -1,4 +1,4 @@
-package com.pegasus.backend.features.crm.entity;
+package com.pegasus.backend.features.customer.entity;
 
 import com.pegasus.backend.shared.entity.BaseEntity;
 import com.pegasus.backend.shared.enums.DocumentType;
