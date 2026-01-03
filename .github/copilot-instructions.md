@@ -97,3 +97,16 @@ Pegasus is a monolithic e-commerce backend built with **Spring Boot 4.0.1** and 
 * **Professional & Technical:** Maintain a strict, professional tone.
 * **NO Emojis:** Do NOT use emojis. Output must be clean text and code only.
 * **Concise:** Go straight to the solution.
+
+---
+
+## 8. Quality Assurance & Verification
+**STRICT RULE:** The code provided must be executable and error-free.
+* **Backend (Java):**
+    * Ensure all code provided compiles correctly.
+    * If acting as an Agent/CLI: Run `./mvnw clean compile` to verify before submitting changes.
+    * Do not leave unused imports or broken references.
+* **Frontend (React/Vite):**
+    * Ensure code passes linting rules.
+    * If acting as an Agent/CLI: Run `npm run lint` or `npm run build` to verify logic.
+* **Self-Correction:** If a generated solution is complex, review it against the project's compilation capability before outputting.
