@@ -48,6 +48,12 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
     * `features/backoffice/**` -> **MUST** use **Ant Design** (`antd`). Ant Design is strictly for Backoffice Staff UIs.
     * `features/storefront/**` -> **MUST** use **Mantine** (`@mantine/core`). Mantine is strictly for Storefront Customer UIs.
     * **Icons:** Tabler Icons (`@tabler/icons-react`).
+* **Design Philosophy:**
+    * **Professional, Elegant, Minimalist:** NO flashy designs, NO bright gradients, NO excessive colors.
+    * Use neutral color palettes: whites, grays, subtle blues.
+    * Clean layouts with proper spacing and typography hierarchy.
+    * Avoid animations unless necessary for UX feedback.
+    * Focus on readability and usability over visual impact.
 * **Dates:** Day.js.
 
 ## 1.1. Import Strategy & TypeScript Configuration
@@ -193,6 +199,110 @@ Based on the `features` folder structure:
 * **`features/storefront/**`**: MUST use **Mantine v8** (`@mantine/core`).
     * Styles: Use CSS Modules or Mantine style props. Do NOT use Emotion/Styled-Components.
     * Icons: `@tabler/icons-react`.
+
+## 3.1. UI/UX Design Guidelines
+**CRITICAL: All user-facing content MUST be in Spanish.**
+
+### A. Language & Content Rules
+* **Code:** Variables, functions, comments in English.
+* **User Interface:** ALL text visible to users MUST be in Spanish:
+    * Labels: "Nombre de usuario", "Contraseña", "Correo electrónico"
+    * Buttons: "Iniciar sesión", "Guardar", "Cancelar", "Eliminar"
+    * Messages: "Usuario creado exitosamente", "Error al guardar los datos"
+    * Placeholders: "Ingrese su correo", "Buscar productos..."
+    * Validations: "Este campo es requerido", "Formato de correo inválido"
+    * Tables: "Nombre", "Acciones", "Fecha de creación"
+* **Exception:** Technical logs and error codes in console can be in English.
+
+### B. CSS Reset & Global Styles
+**Base reset in `src/index.css` (MANDATORY):**
+```css
+/* CSS Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+```
+
+### C. Design Principles (MANDATORY)
+**Visual Identity: Elegant, Professional, Modern, Minimalist**
+
+1. **Color Palette:**
+   * Primary: Professional blues/teals (e.g., `#1677ff` Ant Design primary)
+   * Neutral: Grays for text/backgrounds (`#000`, `#595959`, `#f0f0f0`, `#fff`)
+   * Semantic: Success (green), Error (red), Warning (orange), Info (blue)
+   * Use library defaults (Ant Design / Mantine) unless branding requires override
+
+2. **Typography:**
+   * Font: System fonts or 'Inter' (clean, modern)
+   * Hierarchy: Clear sizes (h1: 32px, h2: 24px, h3: 20px, body: 14-16px)
+   * Weight: Regular (400) for body, Medium (500) for emphasis, Bold (600-700) for headings
+   * Line height: 1.5 for readability
+
+3. **Spacing:**
+   * Consistent: Use multiples of 4px or 8px (4, 8, 12, 16, 24, 32, 48, 64)
+   * Breathing room: Avoid cramped layouts
+   * Whitespace: Embrace negative space for minimalist feel
+
+4. **Components:**
+   * **Clean:** Minimal borders, subtle shadows
+   * **Rounded corners:** 4-8px border-radius (modern)
+   * **Hover states:** Subtle transitions (200-300ms)
+   * **Focus states:** Clear focus indicators for accessibility
+
+5. **Layout:**
+   * **Grid-based:** Consistent alignment
+   * **Responsive:** Mobile-first approach
+   * **Card-based:** Use cards for content grouping (subtle elevation)
+
+6. **Icons:**
+   * **Consistent:** Same library throughout (Ant Icons for backoffice, Tabler for storefront)
+   * **Size:** 16-24px for inline, 32-48px for prominent actions
+   * **Color:** Match text color or primary color
+
+### D. Styling Conventions
+**Backoffice (Ant Design):**
+* Use Ant Design components as-is (don't override heavily)
+* Theme: Professional, dashboard-like
+* Density: Comfortable (not too compact)
+
+**Storefront (Mantine):**
+* Use Mantine components with custom styling via props or CSS Modules
+* Theme: Customer-friendly, approachable
+* Density: Spacious, easy to interact
+
+**CSS Modules (when needed):**
+```css
+/* ProductCard.module.css */
+.card {
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+```
 
 ## 4. Pattern: Logic/UI Separation (The "Hook" Pattern)
 We replace the old Container/View pattern with the **Custom Hook Pattern**.
