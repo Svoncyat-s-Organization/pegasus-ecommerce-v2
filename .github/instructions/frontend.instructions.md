@@ -27,6 +27,7 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
 - Use RELATIVE paths (../../) - NO path aliases (@/) are configured
 
 ## 1. Tech Stack (from package.json)
+* **Package Manager:** pnpm (NOT npm or yarn).
 * **Core:** React 19, TypeScript, Vite 7.
 * **Router:** React Router DOM v7 (Use strict typed routes).
 * **State Management:**
@@ -312,6 +313,7 @@ We replace the old Container/View pattern with the **Custom Hook Pattern**.
         ```
 
 ## 7. Quality Assurance
+* **Package Manager:** Always use `pnpm` commands, NOT `npm` or `yarn`.
 * **Linter:** Before outputting code, ensure it follows ESLint rules (no unused vars).
 * **Build:** Ensure the code provided is syntactically correct and would pass `tsc` (TypeScript Compiler).
 
@@ -328,7 +330,7 @@ We replace the old Container/View pattern with the **Custom Hook Pattern**.
    - Remember: NO extensions, NO aliases
 
 3. **Compilation Errors:**
-   - Run `npm run build` to see TypeScript errors
+   - Run `pnpm run build` to see TypeScript errors
    - Fix actual code issues FIRST (undefined vars, wrong types)
    - Do NOT modify tsconfig.json as first solution
 
@@ -349,3 +351,5 @@ We replace the old Container/View pattern with the **Custom Hook Pattern**.
 - Delete `node_modules` or cache without verification
 - Keep trying different import syntaxes in a loop
 - Change build scripts without explicit user request
+- Use `npm` or `yarn` commands (this project uses `pnpm`)
+- Modify or delete `pnpm-lock.yaml` without explicit user request

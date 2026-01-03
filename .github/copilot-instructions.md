@@ -37,7 +37,7 @@ Always identify the correct folder before creating or modifying files.
     * Do not leave unused imports or broken references.
 * **Frontend (React/Vite):**
     * Ensure code passes linting rules.
-    * If acting as an Agent/CLI: Run `npm run lint` or `npm run build` to verify logic.
+    * If acting as an Agent/CLI: Run `pnpm run lint` or `pnpm run build` to verify logic.
 * **Testing Strategy:**
     * **Backend:** Unit tests go in `src/test/java/com/pegasus/backend/` mirroring the main structure.
     * **Frontend:** Test files should be colocated (e.g., `ProductList.test.tsx` next to `ProductList.tsx`).
