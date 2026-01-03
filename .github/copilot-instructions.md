@@ -49,3 +49,31 @@ Always identify the correct folder before creating or modifying files.
 * **NO Emojis:** Do NOT use emojis in responses, comments, or commit messages. Output must be clean text and code only. In code, only icons are allowed.
 * **English:** All code, variables, and comments must be in English.
 * **Concise:** Go straight to the solution.
+
+## 3. Development Approach (CRITICAL)
+**When developing features, follow this pragmatic approach:**
+
+1. **Understand First:**
+   - Read existing code to understand patterns
+   - Verify what files exist vs what needs to be created
+   - Do NOT assume - always verify
+
+2. **Plan Before Code:**
+   - Identify dependencies (what files need to exist first)
+   - Create files in correct order (config → types → stores → features)
+   - Follow the scaffolding structure strictly
+
+3. **Incremental Development:**
+   - Create ONE file at a time
+   - Verify it works before moving to next file
+   - Do NOT create 10 files and then debug
+
+4. **Error Handling:**
+   - If compilation fails, check file existence FIRST
+   - Fix actual code errors BEFORE changing configuration
+   - Do NOT enter troubleshooting loops (max 3 attempts, then stop and report)
+
+5. **Communication:**
+   - Explain what you're creating and why
+   - If stuck, ask user for clarification
+   - Do NOT silently try 10 different solutions

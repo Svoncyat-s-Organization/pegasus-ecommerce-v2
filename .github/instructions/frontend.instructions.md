@@ -4,6 +4,28 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
 
 # 🦅 Frontend Context: React 19 + Vite
 
+## 0. Initial Setup Strategy (When Starting from Empty Project)
+**If the project is empty or missing core configuration, follow this order:**
+
+1. **First: Core Configuration** (BEFORE writing features)
+   - Create `src/config/api.ts` (Axios instance)
+   - Create `src/config/queryClient.ts` (React Query config)
+   - Create `src/types/index.ts` (Global types)
+
+2. **Second: Global Setup** (BEFORE feature code)
+   - Wrap App with `QueryClientProvider` in `main.tsx`
+   - Setup React Router in `App.tsx`
+
+3. **Third: Feature Development**
+   - Create stores if needed (Zustand)
+   - Develop features following the structure
+
+**CRITICAL RULES for Initial Setup:**
+- DO NOT create feature code before config files exist
+- DO NOT assume files exist - verify with file_search or read_file first
+- If imports fail, check if the imported file was created in previous steps
+- Use RELATIVE paths (../../) - NO path aliases (@/) are configured
+
 ## 1. Tech Stack (from package.json)
 * **Core:** React 19, TypeScript, Vite 7.
 * **Router:** React Router DOM v7 (Use strict typed routes).
@@ -27,6 +49,30 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
     * **Icons:** Tabler Icons (`@tabler/icons-react`).
 * **Dates:** Day.js.
 
+## 1.1. Import Strategy & TypeScript Configuration
+**CRITICAL: This project uses RELATIVE imports, NOT path aliases.**
+
+**Import Rules:**
+- Use relative paths: `../../config/api`, `../hooks/useAuth`
+- Do NOT use `@/` aliases (not configured)
+- Do NOT add `.ts` or `.tsx` extensions in imports (Vite handles this)
+- **Example:**
+  ```tsx
+  // CORRECT ✅
+  import { api } from '../../config/api';
+  import { useAuth } from '../hooks/useAuth';
+  
+  // WRONG ❌
+  import { api } from '@/config/api';  // NO path aliases
+  import { api } from '../../config/api.ts';  // NO extensions
+  ```
+
+**TypeScript Configuration (tsconfig.app.json):**
+- Keep default Vite configuration
+- Do NOT modify `baseUrl` or `paths` unless explicitly requested
+- `moduleResolution: "Bundler"` is correct for Vite
+- If build fails, check file existence first before modifying tsconfig
+
 ## 2. Architectural Style: Package-by-Feature
 **STRICT RULE:** Organize code by **Domain Feature**, split by User Scope.
 
@@ -36,7 +82,48 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
 * **Root Folders (Outside features):**
     * **`src/config/`**: Global configurations.
         * **`api.ts`**: Axios instance with interceptors, base URL, auth headers.
+            * **Template:**
+            ```typescript
+            import axios from 'axios';
+            
+            export const api = axios.create({
+              baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+              headers: { 'Content-Type': 'application/json' },
+            });
+            
+            // Request interceptor: add auth token
+            api.interceptors.request.use((config) => {
+              const token = localStorage.getItem('token');
+              if (token) config.headers.Authorization = `Bearer ${token}`;
+              return config;
+            });
+            
+            // Response interceptor: handle errors
+            api.interceptors.response.use(
+              (response) => response,
+              (error) => {
+                if (error.response?.status === 401) {
+                  localStorage.removeItem('token');
+                  window.location.href = '/login';
+                }
+                return Promise.reject(error);
+              }
+            );
+            ```
         * **`queryClient.ts`**: TanStack Query client configuration (staleTime, cacheTime, retry logic).
+            * **Template:**
+            ```typescript
+            import { QueryClient } from '@tanstack/react-query';
+            
+            export const queryClient = new QueryClient({
+              defaultOptions: {
+                queries: {
+                  staleTime: 1000 * 60 * 5, // 5 minutes
+                  retry: 1,
+                },
+              },
+            });
+            ```
     * **`src/types/`**: Global TypeScript interfaces/types shared across features.
         * **Examples:** `PageResponse<T>`, `ApiError`, `User`, `Customer`, `AuthToken`.
         * Do NOT put feature-specific types here. Use `features/{scope}/{module}/types/` instead.
@@ -227,3 +314,38 @@ We replace the old Container/View pattern with the **Custom Hook Pattern**.
 ## 7. Quality Assurance
 * **Linter:** Before outputting code, ensure it follows ESLint rules (no unused vars).
 * **Build:** Ensure the code provided is syntactically correct and would pass `tsc` (TypeScript Compiler).
+
+## 8. Error Recovery Strategy
+**When errors occur during development, follow this priority:**
+
+1. **File Existence Check:**
+   - Use `file_search` or `read_file` to verify files exist before debugging imports
+   - DO NOT assume files were created successfully
+
+2. **Import Path Verification:**
+   - Verify relative paths are correct from the importing file's location
+   - Count `../` levels carefully
+   - Remember: NO extensions, NO aliases
+
+3. **Compilation Errors:**
+   - Run `npm run build` to see TypeScript errors
+   - Fix actual code issues FIRST (undefined vars, wrong types)
+   - Do NOT modify tsconfig.json as first solution
+
+4. **Module Not Found:**
+   - Check if the imported file exists
+   - Check if the file has the correct export
+   - Verify the relative path is correct
+   - Only THEN consider configuration issues
+
+5. **Stop Infinite Loops:**
+   - If same error persists after 3 attempts, STOP
+   - Report the issue clearly to user
+   - Suggest manual verification
+   - DO NOT keep trying random solutions
+
+**NEVER:**
+- Modify `tsconfig.json` without understanding the root cause
+- Delete `node_modules` or cache without verification
+- Keep trying different import syntaxes in a loop
+- Change build scripts without explicit user request
