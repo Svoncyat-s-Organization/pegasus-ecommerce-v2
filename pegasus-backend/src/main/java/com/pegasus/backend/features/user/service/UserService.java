@@ -29,11 +29,20 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Obtener todos los usuarios (paginado)
+     * Obtener todos los usuarios (paginado y con búsqueda opcional)
+     * @param search Término de búsqueda (username, email, firstName, lastName)
+     * @param pageable Configuración de paginación
      */
     @Transactional(readOnly = true)
-    public PageResponse<UserResponse> getAllUsers(Pageable pageable) {
-        Page<User> page = userRepository.findAll(pageable);
+    public PageResponse<UserResponse> getAllUsers(String search, Pageable pageable) {
+        Page<User> page;
+        
+        if (search != null && !search.isBlank()) {
+            page = userRepository.searchUsers(search.trim(), pageable);
+        } else {
+            page = userRepository.findAll(pageable);
+        }
+        
         return new PageResponse<>(
                 page.getContent().stream().map(userMapper::toResponse).toList(),
                 page.getNumber(),

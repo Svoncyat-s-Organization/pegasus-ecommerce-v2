@@ -32,15 +32,16 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * GET /api/admin/users - Listar todos los usuarios (paginado)
+     * GET /api/admin/users - Listar todos los usuarios (paginado y con búsqueda)
      */
     @GetMapping
-    @Operation(summary = "Listar usuarios", description = "Obtener todos los usuarios con paginación")
+    @Operation(summary = "Listar usuarios", description = "Obtener todos los usuarios con paginación y búsqueda opcional")
     @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
     public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
+            @RequestParam(required = false) String search,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        PageResponse<UserResponse> response = userService.getAllUsers(pageable);
+        PageResponse<UserResponse> response = userService.getAllUsers(search, pageable);
         return ResponseEntity.ok(response);
     }
 

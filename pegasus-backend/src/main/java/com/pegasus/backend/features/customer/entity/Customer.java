@@ -36,7 +36,7 @@ public class Customer extends BaseEntity {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "doc_type", nullable = false, columnDefinition = "document_type_enum")
+    @Column(name = "doc_type", nullable = false)
     private DocumentType docType;
 
     @Column(name = "doc_number", nullable = false, unique = true, length = 20)
