@@ -10,12 +10,23 @@ applyTo: "pegasus-backend/**/*.java, pegasus-backend/pom.xml, pegasus-backend/sr
 * **Java:** Version 17.
 * **Security:** Spring Security + **JJWT (0.13.0)**. (Dual Auth: User vs Customer).
 * **Database:** PostgreSQL + Flyway (Migrations in `src/main/resources/db/migration`).
+    * **Flyway Dependency:** Use `spring-boot-starter-flyway` for auto-configuration in Spring Boot 4.
     * **Flyway Naming:** `V{version}__{description}.sql` (versioned), `R__{description}.sql` (repeatable seeds).
     * **Example:** `V1__init_schema.sql`, `R__01_seed_ubigeo.sql`.
-* **Environment Variables (required):**
-    * `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` (Database connection).
-    * `JWT_SECRET`, `JWT_EXPIRATION_MS` (Authentication).
-    * `SERVER_PORT` (Application port).
+    * **Automatic Execution:** Flyway runs automatically on application startup when `spring.flyway.enabled=true`.
+    * **Repeatable Migrations (R__):** These MUST be idempotent - use `DELETE FROM table WHERE ...` before `INSERT` to ensure safe re-execution.
+* **Environment Variables (MANDATORY):**
+    * **CRITICAL:** ALL environment variables MUST be defined in `.env` file at project root (`pegasus-backend/.env`).
+    * **springboot4-dotenv** dependency (v5.1.0) automatically loads `.env` when running `./mvnw spring-boot:run`.
+    * **Required Variables:**
+        * `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` (Database connection).
+        * `JWT_SECRET`, `JWT_EXPIRATION_MS` (Authentication).
+        * `SERVER_PORT` (Application port).
+    * **NEVER ask user for passwords or credentials - READ from `.env` file directly.**
+    * **PostgreSQL Commands:** When running psql commands, ALWAYS use `PGPASSWORD` from `.env`:
+        ```bash
+        source .env && PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USERNAME -d $DB_NAME -c "YOUR SQL"
+        ```
 * **Mapping:** **MapStruct 1.6.3**.
     * Always use MapStruct interfaces for DTO-Entity conversion.
     * Use `@Mapper(componentModel = "spring")`.
@@ -168,6 +179,11 @@ applyTo: "pegasus-backend/**/*.java, pegasus-backend/pom.xml, pegasus-backend/sr
 ## 7. Quality Assurance & Verification
 **CRITICAL:** After code changes, verify the backend works correctly.
 
+**Execution Commands (ALWAYS use these):**
+* **Compile:** `./mvnw clean compile` → Must show `BUILD SUCCESS`.
+* **Run Application:** `./mvnw spring-boot:run` → `.env` loaded automatically, no wrapper script needed.
+* **NEVER use `run.sh` or manually source `.env` - spring-dotenv handles it automatically.**
+
 **If acting as Agent/CLI, run in sequence:**
 1. `./mvnw clean compile` → Must show `BUILD SUCCESS`, no errors.
 2. `./mvnw spring-boot:run` → Must start with `Started PegasusEcommerceApplication in X seconds`. **NO red error text** in console (yellow warnings OK).
@@ -177,3 +193,10 @@ applyTo: "pegasus-backend/**/*.java, pegasus-backend/pom.xml, pegasus-backend/sr
 * Ensure proper Spring annotations (`@Service`, `@Repository`, `@RestController`).
 * Fix compilation errors, circular dependencies, and missing beans.
 * Code MUST compile and run without errors.
+
+**Database Commands:**
+* **ALWAYS read credentials from `.env` before running psql:**
+    ```bash
+    source .env && PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USERNAME -d $DB_NAME -c "SELECT 1;"
+    ```
+* **NEVER prompt user for database passwords - credentials are in `.env`.**

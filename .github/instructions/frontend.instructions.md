@@ -421,6 +421,23 @@ We replace the old Container/View pattern with the **Custom Hook Pattern**.
         const schema = z.object({ email: z.string().email(), password: z.string().min(6) });
         const { register, handleSubmit } = useForm({ resolver: zodResolver(schema) });
         ```
+* **Error Handling (MANDATORY):**
+    * **API Errors:** Always wrap mutations in try-catch blocks.
+    * **User Feedback:** Use Ant Design `message` (backoffice) or Mantine `notifications` (storefront) for error messages.
+    * **Error Messages:** MUST be in Spanish and user-friendly (avoid technical jargon).
+    * **Backend Errors:** Extract message from `error.response?.data?.message` or provide fallback.
+    * **Example:**
+        ```tsx
+        try {
+          await loginMutation.mutateAsync(values);
+          message.success('Inicio de sesión exitoso');
+        } catch (error: unknown) {
+          const err = error as { response?: { data?: { message?: string } } };
+          message.error(err.response?.data?.message || 'Error al iniciar sesión');
+        }
+        ```
+    * **Loading States:** Always disable buttons during mutation with `loading` prop.
+    * **Validation Errors:** Show inline validation messages in Spanish below form fields.
 
 ## 7. Quality Assurance
 * **Package Manager:** Always use `pnpm` commands, NOT `npm` or `yarn`.
