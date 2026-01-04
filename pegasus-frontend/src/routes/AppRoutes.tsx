@@ -12,79 +12,16 @@ import { HomePage } from '@features/storefront/home/pages/HomePage';
 
 // Temporary placeholder pages
 const DashboardPage = () => (
-  <div>
-    <h1>Dashboard</h1>
-    <p>Panel de control principal del backoffice</p>
+  <div style={{ padding: '24px' }}>
+    <h1 style={{ marginBottom: '8px', fontSize: '24px', fontWeight: 600 }}>Dashboard</h1>
+    <p style={{ color: '#666' }}>Panel de control principal del backoffice</p>
   </div>
 );
 
-const CatalogProductsPage = () => (
-  <div>
-    <h1>Productos</h1>
-    <p>Gestión de productos</p>
-  </div>
-);
-
-const InventoryStockPage = () => (
-  <div>
-    <h1>Stock</h1>
-    <p>Gestión de stock</p>
-  </div>
-);
-
-const CustomersPage = () => (
-  <div>
-    <h1>Clientes</h1>
-    <p>Gestión de clientes</p>
-  </div>
-);
-
-const SecurityUsersPage = () => (
-  <div>
-    <h1>Usuarios</h1>
-    <p>Gestión de usuarios del sistema</p>
-  </div>
-);
-
-const SecurityRolesPage = () => (
-  <div>
-    <h1>Roles</h1>
-    <p>Gestión de roles</p>
-  </div>
-);
-
-const SecurityPermissionsPage = () => (
-  <div>
-    <h1>Permisos</h1>
-    <p>Asignación de permisos</p>
-  </div>
-);
-
-const ReportsPage = () => (
-  <div>
-    <h1>Reportes</h1>
-    <p>Generación de reportes</p>
-  </div>
-);
-
-const SettingsPage = () => (
-  <div>
-    <h1>Configuración</h1>
-    <p>Configuración general del sistema</p>
-  </div>
-);
-
-const StorefrontLoginPage = () => (
-  <div style={{ padding: '2rem' }}>
-    <h1>Login Cliente</h1>
-    <p>Página de login para clientes (storefront)</p>
-  </div>
-);
-
-const ProfilePage = () => (
-  <div style={{ padding: '2rem' }}>
-    <h1>Mi Perfil</h1>
-    <p>Perfil del usuario</p>
+const PlaceholderPage = ({ title, description }: { title: string; description: string }) => (
+  <div style={{ padding: '24px' }}>
+    <h1 style={{ marginBottom: '8px', fontSize: '24px', fontWeight: 600 }}>{title}</h1>
+    <p style={{ color: '#666' }}>{description}</p>
   </div>
 );
 
@@ -112,51 +49,55 @@ export const AppRoutes = () => {
         <Route path="dashboard" element={<DashboardPage />} />
 
         {/* Catalog */}
-        <Route path="catalog/products" element={<CatalogProductsPage />} />
-        <Route
-          path="catalog/categories"
-          element={<div>Categorías (TODO)</div>}
-        />
-        <Route path="catalog/brands" element={<div>Marcas (TODO)</div>} />
+        <Route path="catalog/products" element={<PlaceholderPage title="Productos" description="Gestión de productos del catálogo" />} />
+        <Route path="catalog/categories" element={<PlaceholderPage title="Categorías" description="Gestión de categorías de productos" />} />
+        <Route path="catalog/brands" element={<PlaceholderPage title="Marcas" description="Gestión de marcas de productos" />} />
+
+        {/* Orders */}
+        <Route path="orders" element={<PlaceholderPage title="Pedidos" description="Gestión de pedidos y órdenes" />} />
 
         {/* Inventory */}
-        <Route path="inventory/stock" element={<InventoryStockPage />} />
-        <Route
-          path="inventory/movements"
-          element={<div>Movimientos (TODO)</div>}
-        />
-        <Route
-          path="inventory/warehouses"
-          element={<div>Almacenes (TODO)</div>}
-        />
+        <Route path="inventory/stock" element={<PlaceholderPage title="Stock" description="Gestión de stock e inventario" />} />
+        <Route path="inventory/movements" element={<PlaceholderPage title="Movimientos" description="Registro de movimientos de inventario" />} />
+        <Route path="inventory/warehouses" element={<PlaceholderPage title="Almacenes" description="Gestión de almacenes y bodegas" />} />
+
+        {/* Purchases */}
+        <Route path="purchases/suppliers" element={<PlaceholderPage title="Proveedores" description="Gestión de proveedores" />} />
+        <Route path="purchases/orders" element={<PlaceholderPage title="Órdenes de Compra" description="Gestión de órdenes de compra" />} />
+
+        {/* Logistics */}
+        <Route path="logistics/shipments" element={<PlaceholderPage title="Envíos" description="Gestión de envíos y despachos" />} />
+        <Route path="logistics/carriers" element={<PlaceholderPage title="Transportistas" description="Gestión de empresas transportistas" />} />
+
+        {/* Invoices */}
+        <Route path="invoices" element={<PlaceholderPage title="Facturación" description="Gestión de facturas y comprobantes" />} />
+
+        {/* RMA / Returns */}
+        <Route path="rma" element={<PlaceholderPage title="Devoluciones" description="Gestión de devoluciones y RMA" />} />
 
         {/* Customers */}
-        <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers" element={<PlaceholderPage title="Clientes" description="Gestión de clientes" />} />
 
         {/* Security (RBAC) */}
-        <Route path="security/users" element={<SecurityUsersPage />} />
-        <Route path="security/roles" element={<SecurityRolesPage />} />
-        <Route
-          path="security/permissions"
-          element={<SecurityPermissionsPage />}
-        />
+        <Route path="security/users" element={<PlaceholderPage title="Usuarios" description="Gestión de usuarios del sistema" />} />
+        <Route path="security/roles" element={<PlaceholderPage title="Roles" description="Gestión de roles y permisos" />} />
+        <Route path="security/modules" element={<PlaceholderPage title="Módulos" description="Gestión de módulos del sistema" />} />
 
         {/* Reports */}
-        <Route path="reports" element={<ReportsPage />} />
+        <Route path="reports" element={<PlaceholderPage title="Reportes" description="Generación de reportes y estadísticas" />} />
 
         {/* Settings */}
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings" element={<PlaceholderPage title="Configuración" description="Configuración general del sistema" />} />
       </Route>
 
       {/* ==================== STOREFRONT ROUTES ==================== */}
       {/* Public storefront routes */}
       <Route path="/" element={<StorefrontLayout />}>
         <Route path="home" element={<HomePage />} />
-        <Route path="login" element={<StorefrontLoginPage />} />
-        <Route path="register" element={<div>Registro (TODO)</div>} />
-        <Route path="products" element={<div>Productos (TODO)</div>} />
-        <Route path="products/:id" element={<div>Detalle Producto (TODO)</div>} />
-        <Route path="cart" element={<div>Carrito (TODO)</div>} />
+        <Route path="login" element={<PlaceholderPage title="Login Cliente" description="Inicia sesión con tu cuenta" />} />
+        <Route path="register" element={<PlaceholderPage title="Registro" description="Crea tu cuenta de cliente" />} />
+        <Route path="products" element={<PlaceholderPage title="Productos" description="Catálogo de productos" />} />
+        <Route path="products/:id" element={<PlaceholderPage title="Detalle del Producto" description="Información del producto" />} />
       </Route>
 
       {/* Protected storefront routes */}
@@ -168,10 +109,10 @@ export const AppRoutes = () => {
           </StorefrontProtectedRoute>
         }
       >
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="orders" element={<div>Mis Pedidos (TODO)</div>} />
-        <Route path="favorites" element={<div>Favoritos (TODO)</div>} />
-        <Route path="settings" element={<div>Configuración (TODO)</div>} />
+        <Route path="cart" element={<PlaceholderPage title="Carrito" description="Tu carrito de compras" />} />
+        <Route path="checkout" element={<PlaceholderPage title="Checkout" description="Finalizar compra" />} />
+        <Route path="profile" element={<PlaceholderPage title="Mi Perfil" description="Perfil del usuario" />} />
+        <Route path="orders" element={<PlaceholderPage title="Mis Pedidos" description="Historial de pedidos" />} />
       </Route>
 
       {/* 404 Not Found */}

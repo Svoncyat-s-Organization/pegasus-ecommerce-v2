@@ -8,6 +8,10 @@ import {
   IconShield,
   IconPackage,
   IconFileText,
+  IconShoppingBag,
+  IconTruck,
+  IconFileInvoice,
+  IconRotate,
 } from '@tabler/icons-react';
 import { useSidebarStore } from '@stores/backoffice/sidebarStore';
 import type { MenuItem } from '@types';
@@ -44,6 +48,12 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    key: '/admin/orders',
+    label: 'Pedidos',
+    icon: <IconShoppingBag size={18} />,
+    path: '/admin/orders',
+  },
+  {
     key: '/admin/inventory',
     label: 'Inventario',
     icon: <IconPackage size={18} />,
@@ -64,6 +74,52 @@ const menuItems: MenuItem[] = [
         path: '/admin/inventory/warehouses',
       },
     ],
+  },
+  {
+    key: '/admin/purchases',
+    label: 'Compras',
+    icon: <IconFileInvoice size={18} />,
+    children: [
+      {
+        key: '/admin/purchases/suppliers',
+        label: 'Proveedores',
+        path: '/admin/purchases/suppliers',
+      },
+      {
+        key: '/admin/purchases/orders',
+        label: 'Órdenes de Compra',
+        path: '/admin/purchases/orders',
+      },
+    ],
+  },
+  {
+    key: '/admin/logistics',
+    label: 'Logística',
+    icon: <IconTruck size={18} />,
+    children: [
+      {
+        key: '/admin/logistics/shipments',
+        label: 'Envíos',
+        path: '/admin/logistics/shipments',
+      },
+      {
+        key: '/admin/logistics/carriers',
+        label: 'Transportistas',
+        path: '/admin/logistics/carriers',
+      },
+    ],
+  },
+  {
+    key: '/admin/invoices',
+    label: 'Facturación',
+    icon: <IconFileText size={18} />,
+    path: '/admin/invoices',
+  },
+  {
+    key: '/admin/rma',
+    label: 'Devoluciones',
+    icon: <IconRotate size={18} />,
+    path: '/admin/rma',
   },
   {
     key: '/admin/customers',
@@ -87,9 +143,9 @@ const menuItems: MenuItem[] = [
         path: '/admin/security/roles',
       },
       {
-        key: '/admin/security/permissions',
-        label: 'Permisos',
-        path: '/admin/security/permissions',
+        key: '/admin/security/modules',
+        label: 'Módulos',
+        path: '/admin/security/modules',
       },
     ],
   },
@@ -158,13 +214,16 @@ export const BackofficeSidebar = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          padding: '0 16px',
           color: '#fff',
-          fontSize: collapsed ? 20 : 24,
-          fontWeight: 600,
+          fontSize: collapsed ? 18 : 20,
+          fontWeight: 700,
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          letterSpacing: '0.5px',
+          background: 'rgba(0, 0, 0, 0.2)',
         }}
       >
-        {collapsed ? '🦄' : '🦄 Pegasus'}
+        {collapsed ? 'P' : 'PEGASUS'}
       </div>
       <Menu
         theme="dark"
