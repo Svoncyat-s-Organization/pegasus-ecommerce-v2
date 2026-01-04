@@ -1,5 +1,6 @@
 import { Layout, Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useMemo } from 'react';
 import {
   IconDashboard,
   IconShoppingCart,
@@ -14,6 +15,7 @@ import {
   IconRotate,
 } from '@tabler/icons-react';
 import { useSidebarStore } from '@stores/backoffice/sidebarStore';
+import { useUserPermissions } from '@shared/hooks/useUserPermissions';
 import type { MenuItem } from '@types';
 
 const { Sider } = Layout;
@@ -162,14 +164,54 @@ export const BackofficeSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { collapsed, toggleCollapsed } = useSidebarStore();
+  const { data: allowedPaths, isLoading } = useUserPermissions();
+
+  // Filter menu items based on user permissions
+  const filteredMenuItems = useMemo(() => {
+    // Si aún está cargando o el usuario es admin (null), mostrar todo
+    if (isLoading || allowedPaths === null) {
+      return menuItems;
+    }
+
+    // Si allowedPaths es un array vacío, el usuario no tiene permisos
+    if (!allowedPaths || allowedPaths.length === 0) {
+      return [];
+    }
+
+    // Filtrar items basándose en los permisos
+    const filterItems = (items: MenuItem[]): MenuItem[] => {
+      return items
+        .map((item) => {
+          // Si tiene children, filtrar recursivamente
+          if (item.children) {
+            const filteredChildren = filterItems(item.children);
+            // Solo incluir el padre si tiene hijos visibles
+            if (filteredChildren.length > 0) {
+              return { ...item, children: filteredChildren };
+            }
+            return null;
+          }
+
+          // Si no tiene children, verificar si la ruta está permitida
+          if (item.path && allowedPaths.includes(item.path)) {
+            return item;
+          }
+
+          return null;
+        })
+        .filter((item): item is MenuItem => item !== null);
+    };
+
+    return filterItems(menuItems);
+  }, [allowedPaths, isLoading]);
 
   // Find selected key based on current path
-  const selectedKey = menuItems.find((item) =>
+  const selectedKey = filteredMenuItems.find((item) =>
     location.pathname.startsWith(item.key)
   )?.key || location.pathname;
 
   // Find open keys (parent menu items)
-  const defaultOpenKeys = menuItems
+  const defaultOpenKeys = filteredMenuItems
     .filter((item) => item.children && location.pathname.startsWith(item.key))
     .map((item) => item.key);
 
@@ -184,9 +226,47 @@ export const BackofficeSidebar = () => {
       }
     };
 
-    const path = findPath(menuItems, key);
+    const path = findPath(filteredMenuItems, key);
     if (path) navigate(path);
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={toggleCollapsed}
+        width={240}
+        style={{
+          overflow: 'auto',
+          height: '100vh',
+          position: 'sticky',
+          left: 0,
+          top: 0,
+          bottom: 0,
+        }}
+      >
+        <div
+          style={{
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 16px',
+            color: '#fff',
+            fontSize: collapsed ? 18 : 20,
+            fontWeight: 700,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            letterSpacing: '0.5px',
+            background: 'rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          {collapsed ? 'P' : 'PEGASUS'}
+        </div>
+      </Sider>
+    );
+  }
 
   return (
     <Sider
@@ -225,7 +305,7 @@ export const BackofficeSidebar = () => {
         mode="inline"
         selectedKeys={[selectedKey]}
         defaultOpenKeys={defaultOpenKeys}
-        items={menuItems.map((item) => ({
+        items={filteredMenuItems.map((item) => ({
           key: item.key,
           icon: item.icon,
           label: item.label,

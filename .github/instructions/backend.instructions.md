@@ -399,6 +399,19 @@ logging.level.org.hibernate.SQL=DEBUG
 source .env && PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USERNAME -d $DB_NAME -c "SELECT 1;"
 ```
 
+**Alternative Approach, Development Workflow (ONLY IN WSL2 OR LINUX):**
+During development, when testing migrations, use this workflow:
+```bash
+# Drop the entire database
+sudo -u postgres dropdb pegasus_v2_db
+
+# Recreate from scratch
+sudo -u postgres createdb pegasus_v2_db
+
+# Run backend (Flyway will apply all migrations)
+./mvnw spring-boot:run
+```
+
 **Checklist:**
 - [ ] Code compiles
 - [ ] No unused imports

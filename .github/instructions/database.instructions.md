@@ -151,21 +151,66 @@ ENUM ('PENDING','AWAIT_PAYMENT','PAID','PROCESSING','SHIPPED','DELIVERED','CANCE
 
 ## 6. Repeatable Migrations (Seeds)
 
-**Rules for R__ files:**
+**Development Workflow (Recommended):**
+During development, when testing migrations, use this workflow:
+```bash
+# Drop the entire database
+sudo -u postgres dropdb pegasus_v2_db
+
+# Recreate from scratch
+sudo -u postgres createdb pegasus_v2_db
+
+# Run backend (Flyway will apply all migrations)
+./mvnw spring-boot:run
+```
+
+This ensures a clean state and validates all migrations work from scratch.
+
+**Idempotency Rules for R__ files:**
 - MUST be idempotent (can run multiple times safely)
-- ALWAYS start with DELETE for the data being inserted
-- Use specific WHERE clauses, not TRUNCATE
+- ALWAYS start with DELETE for the data being inserted (at the TOP of the same file)
+- Use specific WHERE clauses in DELETE, not TRUNCATE
+- Delete in correct order (children before parents) to respect foreign keys
 
 **Pattern:**
 ```sql
--- Clear specific seed data (NOT all data)
-DELETE FROM {table} WHERE {identifying_condition};
+-- R__XX_seed_example.sql
+
+-- Limpiar datos existentes para idempotencia (orden: hijo → padre)
+DELETE FROM child_table WHERE parent_id IN (SELECT id FROM parent_table WHERE condition);
+DELETE FROM parent_table WHERE {identifying_condition};
 
 -- Insert seed data
-INSERT INTO {table} (col1, col2, ...)
+INSERT INTO parent_table (col1, col2, ...)
 VALUES 
-    ('value1', 'value2', ...),
-    ('value3', 'value4', ...);
+    ('value1', 'value2', ...);
+
+INSERT INTO child_table (parent_id, col1, ...)
+SELECT 
+    (SELECT id FROM parent_table WHERE condition),
+    'value1', ...;
+```
+
+**CRITICAL: Delete Order for Foreign Keys**
+When seed data has relationships, delete in this order:
+1. Junction tables (roles_users, roles_modules)
+2. Dependent children (order_items, addresses)
+3. Parent entities (orders, users, products)
+
+Example for RBAC seeds:
+```sql
+-- R__04_seed_roles_permissions.sql
+
+-- Limpiar relaciones primero (hijo → padre)
+DELETE FROM roles_users WHERE id_roles IN (SELECT id FROM roles WHERE name IN ('Admin', 'Worker'));
+DELETE FROM roles_modules WHERE id_roles IN (SELECT id FROM roles WHERE name IN ('Admin', 'Worker'));
+DELETE FROM roles WHERE name IN ('Admin', 'Worker');
+
+-- Insertar roles
+INSERT INTO roles (name, description) VALUES (...);
+-- Insertar asignaciones
+INSERT INTO roles_users (...) SELECT ...;
+```
 ```
 
 ---
