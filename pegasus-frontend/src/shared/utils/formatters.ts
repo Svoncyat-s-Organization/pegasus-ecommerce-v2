@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 /**
  * Format currency in Peruvian Soles (PEN)
  */
@@ -61,6 +63,30 @@ export const validateEmail = (email: string): boolean => {
 };
 
 /**
+ * Format phone to Peru format (+51 999 999 999)
+ */
+export const formatPhone = (phone: string): string => {
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length !== 9) return phone;
+  return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 9)}`;
+};
+
+/**
+ * Clean phone number (remove formatting, keep only digits)
+ */
+export const cleanPhone = (phone: string): string => {
+  return phone.replace(/\D/g, '').slice(0, 9);
+};
+
+/**
+ * Validate Peru phone (9 digits starting with 9)
+ */
+export const validatePhone = (phone: string): boolean => {
+  const cleaned = cleanPhone(phone);
+  return /^9\d{8}$/.test(cleaned);
+};
+
+/**
  * Get initials from name
  */
 export const getInitials = (name: string): string => {
@@ -70,4 +96,23 @@ export const getInitials = (name: string): string => {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+};
+
+/**
+ * Custom hook for debounced value
+ */
+export const useDebounce = <T>(value: T, delay: number = 500): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 };

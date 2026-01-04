@@ -68,3 +68,55 @@ export interface BreadcrumbItem {
   title: string;
   path?: string;
 }
+
+// ============================================
+// User Management Types (Backoffice Staff)
+// ============================================
+export interface UserDetail extends BaseEntity {
+  username: string;
+  email: string;
+  docType: DocumentType;
+  docNumber: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  password: string;
+  docType: DocumentType;
+  docNumber: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export interface UpdateUserRequest {
+  username: string;
+  email: string;
+  docType: DocumentType;
+  docNumber: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export interface ChangePasswordRequest {
+  newPassword: string;
+}
+
+export interface UserResponse {
+  id: number;
+  username: string;
+  email: string;
+  docType: DocumentType;
+  docNumber: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
