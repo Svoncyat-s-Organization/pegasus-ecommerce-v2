@@ -260,6 +260,15 @@ const { data } = useUsers(page, 10, debouncedSearch || undefined);
 />
 ```
 
+**Column Width Guidelines:**
+- **# (row number):** `width: 60`
+- **Actions:** `width: 120`
+- **Status/Tags:** `width: 100-120`
+- **Phone (formatted):** `width: 160` (to fit `+51 999 999 999`)
+- **Email:** `width: 200-250`
+- **Names/Short text:** No width constraint (flexible)
+- **Others colums**: Adjust as needed
+
 ### E. Action Buttons (MAX 3 icons)
 
 ```tsx
@@ -288,7 +297,131 @@ const { data } = useUsers(page, 10, debouncedSearch || undefined);
 </Modal>
 ```
 
-### G. Design Principles
+### G. Form Layout
+
+**RULE:** Use Row/Col grid layout. NEVER use monotonous single-column vertical layouts.
+
+```tsx
+// ✅ CORRECT: Varied layout with Row/Col
+<Form form={form} layout="vertical">
+  <Row gutter={16}>
+    <Col span={12}>
+      <Form.Item label="Usuario" name="username"><Input /></Form.Item>
+    </Col>
+    <Col span={12}>
+      <Form.Item label="Email" name="email"><Input /></Form.Item>
+    </Col>
+  </Row>
+  
+  <Row gutter={16}>
+    <Col span={12}>
+      <Form.Item label="Nombre" name="firstName"><Input /></Form.Item>
+    </Col>
+    <Col span={12}>
+      <Form.Item label="Apellido" name="lastName"><Input /></Form.Item>
+    </Col>
+  </Row>
+  
+  <Row gutter={16}>
+    <Col span={8}>
+      <Form.Item label="Tipo Doc" name="docType"><Select /></Form.Item>
+    </Col>
+    <Col span={8}>
+      <Form.Item label="Número" name="docNumber"><Input /></Form.Item>
+    </Col>
+    <Col span={8}>
+      <Form.Item label="Teléfono" name="phone"><Input /></Form.Item>
+    </Col>
+  </Row>
+  
+  <Form.Item label="Dirección" name="address"><Input /></Form.Item>
+</Form>
+
+// ❌ WRONG: All fields stacked vertically
+<Form form={form} layout="vertical">
+  <Form.Item label="Usuario" name="username"><Input /></Form.Item>
+  <Form.Item label="Email" name="email"><Input /></Form.Item>
+  <Form.Item label="Nombre" name="firstName"><Input /></Form.Item>
+  <Form.Item label="Apellido" name="lastName"><Input /></Form.Item>
+  {/* ... monotonous, wastes space */}
+</Form>
+```
+
+**Column Span Guidelines:**
+- **span={12}:** Paired fields (username/email, firstName/lastName)
+- **span={8}:** Triple fields (docType/docNumber/phone)
+- **span={6}:** Quadruple fields (dates, short codes)
+- **span={24}:** Full-width (long text, addresses, descriptions)
+- **gutter={16}:** Standard spacing between columns
+
+### H. Peru Ubigeo Fields (CRITICAL)
+
+**RULE:** NEVER use manual input for ubigeo. ALWAYS use 3 cascading selectors.
+
+```tsx
+// ✅ CORRECT: 3 cascading Select components
+const [selectedDepartment, setSelectedDepartment] = useState<string>();
+const [selectedProvince, setSelectedProvince] = useState<string>();
+
+const { data: departments } = useDepartments();
+const { data: provinces } = useProvinces(selectedDepartment);
+const { data: districts } = useDistricts(selectedProvince);
+
+<Row gutter={16}>
+  <Col span={8}>
+    <Form.Item label="Departamento" name="department" rules={[{ required: true }]}>
+      <Select
+        options={departments?.map(d => ({ label: d.name, value: d.id }))}
+        onChange={(value) => {
+          setSelectedDepartment(value);
+          setSelectedProvince(undefined);
+          form.setFieldsValue({ province: undefined, district: undefined });
+        }}
+        showSearch
+        optionFilterProp="label"
+      />
+    </Form.Item>
+  </Col>
+  <Col span={8}>
+    <Form.Item label="Provincia" name="province" rules={[{ required: true }]}>
+      <Select
+        disabled={!selectedDepartment}
+        options={provinces?.map(p => ({ label: p.name, value: p.id }))}
+        onChange={(value) => {
+          setSelectedProvince(value);
+          form.setFieldsValue({ district: undefined });
+        }}
+        showSearch
+        optionFilterProp="label"
+      />
+    </Form.Item>
+  </Col>
+  <Col span={8}>
+    <Form.Item label="Distrito" name="district" rules={[{ required: true }]}>
+      <Select
+        disabled={!selectedProvince}
+        options={districts?.map(d => ({ label: d.name, value: d.id }))}
+        showSearch
+        optionFilterProp="label"
+      />
+    </Form.Item>
+  </Col>
+</Row>
+
+// ❌ WRONG: Manual 6-digit input
+<Form.Item label="Ubigeo" name="ubigeoId">
+  <Input placeholder="150101" maxLength={6} />  // NO
+</Form.Item>
+```
+
+**API Integration:**
+- **Departments:** `GET /api/locations/departments` (25 departments)
+- **Provinces:** `GET /api/locations/provinces/{departmentId}` (196 provinces)
+- **Districts:** `GET /api/locations/districts/{provinceId}` (1866 districts)
+- **Hooks:** `useDepartments()`, `useProvinces(deptId)`, `useDistricts(provId)`
+- **Storage:** Final district.id (6 digits) = ubigeoId for backend
+
+### I. Design Principles
 
 **Colors:** Professional blues/grays, semantic colors for status  
 **Typography:** System fonts, clear hierarchy (h1: 32px, h2: 24px, body: 14-16px)  

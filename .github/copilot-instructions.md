@@ -44,7 +44,26 @@ Always identify the correct folder before creating or modifying files.
     * **Format:** Peru mobile numbers have 9 digits starting with 9.
     * **Display:** `+51 999 999 999` (with country code and spaces).
     * **Storage:** Backend stores plain 9 digits without country code or spaces.
+    * **Input:** Use simple Input with `maxLength={9}` and pattern validation. NEVER use `getValueFromEvent` for auto-formatting as it causes input bugs (double prefixes, character replacement).
     * **Example:** Stored: `987654321` → Displayed: `+51 987 654 321`.
+    * **Frontend Implementation:**
+      ```tsx
+      // ✅ CORRECT: Simple validation, no auto-formatting
+      <Form.Item
+        name="phone"
+        rules={[{ pattern: /^9\d{8}$/, message: 'Debe ser 9 dígitos e iniciar con 9' }]}
+      >
+        <Input placeholder="987654321" addonBefore="+51" maxLength={9} />
+      </Form.Item>
+      
+      // ❌ WRONG: getValueFromEvent causes bugs
+      <Form.Item
+        name="phone"
+        getValueFromEvent={(e) => formatPhone(cleanPhone(e.target.value))} // NO
+      >
+        <Input />
+      </Form.Item>
+      ```
 * **Currency:**
     * **Symbol:** Peruvian Sol (PEN) - `S/`.
     * **Format:** `S/ 1,234.56` (thousands separator: comma, decimal: period).
