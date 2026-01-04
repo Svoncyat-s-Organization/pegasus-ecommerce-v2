@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Modal, Form, Input, Select, Button } from 'antd';
+import { Modal, Form, Input, Select, Button, Row, Col } from 'antd';
 import { useCustomer } from '../hooks/useCustomers';
 import { useCreateCustomer, useUpdateCustomer } from '../hooks/useCustomerMutations';
 import { DOCUMENT_TYPES, CUSTOMER_VALIDATION_RULES } from '../constants/customerConstants';
@@ -97,34 +97,39 @@ export const CustomerFormModal = ({ mode, customerId, visible, onClose }: Custom
           {mode === 'create' ? 'Crear' : 'Guardar'}
         </Button>,
       ]}
-      width={600}
+      width={700}
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-        <Form.Item
-          label="Usuario"
-          name="username"
-          rules={[
-            { required: true, message: 'El usuario es requerido' },
-            {
-              min: CUSTOMER_VALIDATION_RULES.usernameMin,
-              max: CUSTOMER_VALIDATION_RULES.usernameMax,
-              message: `El usuario debe tener entre ${CUSTOMER_VALIDATION_RULES.usernameMin} y ${CUSTOMER_VALIDATION_RULES.usernameMax} caracteres`,
-            },
-          ]}
-        >
-          <Input placeholder="Ingrese el usuario" />
-        </Form.Item>
-
-        <Form.Item
-          label="Email"
-          name="email"
-          rules={[
-            { required: true, message: 'El email es requerido' },
-            { type: 'email', message: 'Email inválido' },
-          ]}
-        >
-          <Input placeholder="cliente@ejemplo.com" />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Usuario"
+              name="username"
+              rules={[
+                { required: true, message: 'El usuario es requerido' },
+                {
+                  min: CUSTOMER_VALIDATION_RULES.usernameMin,
+                  max: CUSTOMER_VALIDATION_RULES.usernameMax,
+                  message: `Entre ${CUSTOMER_VALIDATION_RULES.usernameMin} y ${CUSTOMER_VALIDATION_RULES.usernameMax} caracteres`,
+                },
+              ]}
+            >
+              <Input placeholder="usuario123" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                { required: true, message: 'El email es requerido' },
+                { type: 'email', message: 'Email inválido' },
+              ]}
+            >
+              <Input placeholder="cliente@ejemplo.com" />
+            </Form.Item>
+          </Col>
+        </Row>
 
         {mode === 'create' && (
           <Form.Item
@@ -134,7 +139,7 @@ export const CustomerFormModal = ({ mode, customerId, visible, onClose }: Custom
               { required: true, message: 'La contraseña es requerida' },
               {
                 min: CUSTOMER_VALIDATION_RULES.passwordMin,
-                message: `La contraseña debe tener al menos ${CUSTOMER_VALIDATION_RULES.passwordMin} caracteres`,
+                message: `Mínimo ${CUSTOMER_VALIDATION_RULES.passwordMin} caracteres`,
               },
             ]}
           >
@@ -142,60 +147,71 @@ export const CustomerFormModal = ({ mode, customerId, visible, onClose }: Custom
           </Form.Item>
         )}
 
-        <Form.Item
-          label="Tipo de Documento"
-          name="docType"
-          rules={[{ required: true, message: 'El tipo de documento es requerido' }]}
-        >
-          <Select
-            placeholder="Seleccione el tipo"
-            options={DOCUMENT_TYPES.map((type) => ({ label: type.label, value: type.value }))}
-            onChange={() => form.validateFields(['docNumber'])}
-          />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Nombre"
+              name="firstName"
+              rules={[
+                { required: true, message: 'El nombre es requerido' },
+                { max: CUSTOMER_VALIDATION_RULES.firstNameMax, message: 'Nombre muy largo' },
+              ]}
+            >
+              <Input placeholder="Juan" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Apellido"
+              name="lastName"
+              rules={[
+                { required: true, message: 'El apellido es requerido' },
+                { max: CUSTOMER_VALIDATION_RULES.lastNameMax, message: 'Apellido muy largo' },
+              ]}
+            >
+              <Input placeholder="Pérez" />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item
-          label="Número de Documento"
-          name="docNumber"
-          rules={[{ required: true, validator: validateDocNumber }]}
-        >
-          <Input placeholder="Ingrese el número de documento" />
-        </Form.Item>
-
-        <Form.Item
-          label="Nombre"
-          name="firstName"
-          rules={[
-            { required: true, message: 'El nombre es requerido' },
-            { max: CUSTOMER_VALIDATION_RULES.firstNameMax, message: 'Nombre muy largo' },
-          ]}
-        >
-          <Input placeholder="Ingrese el nombre" />
-        </Form.Item>
-
-        <Form.Item
-          label="Apellido"
-          name="lastName"
-          rules={[
-            { required: true, message: 'El apellido es requerido' },
-            { max: CUSTOMER_VALIDATION_RULES.lastNameMax, message: 'Apellido muy largo' },
-          ]}
-        >
-          <Input placeholder="Ingrese el apellido" />
-        </Form.Item>
-
-        <Form.Item
-          label="Teléfono"
-          name="phone"
-          rules={[
-            {
-              pattern: CUSTOMER_VALIDATION_RULES.phonePattern,
-              message: CUSTOMER_VALIDATION_RULES.phoneMessage,
-            },
-          ]}
-        >
-          <Input placeholder="987654321" addonBefore="+51" maxLength={9} />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item
+              label="Tipo de Documento"
+              name="docType"
+              rules={[{ required: true, message: 'Requerido' }]}
+            >
+              <Select
+                placeholder="Tipo"
+                options={DOCUMENT_TYPES.map((type) => ({ label: type.value, value: type.value }))}
+                onChange={() => form.validateFields(['docNumber'])}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              label="Número de Documento"
+              name="docNumber"
+              rules={[{ required: true, validator: validateDocNumber }]}
+            >
+              <Input placeholder="12345678" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              label="Teléfono"
+              name="phone"
+              rules={[
+                {
+                  pattern: CUSTOMER_VALIDATION_RULES.phonePattern,
+                  message: CUSTOMER_VALIDATION_RULES.phoneMessage,
+                },
+              ]}
+            >
+              <Input placeholder="987654321" addonBefore="+51" maxLength={9} />
+            </Form.Item>
+          </Col>
+        </Row>
       </Form>
     </Modal>
   );

@@ -73,7 +73,7 @@ export const CustomersListPage = () => {
       title: 'Teléfono',
       dataIndex: 'phone',
       key: 'phone',
-      width: 130,
+      width: 140,
       render: (phone) => (phone ? formatPhone(phone) : '-'),
     },
     {
