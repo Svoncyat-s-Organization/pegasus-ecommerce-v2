@@ -10,6 +10,7 @@ import com.pegasus.backend.features.user.mapper.UserMapper;
 import com.pegasus.backend.features.user.repository.UserRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Servicio de gestión de usuarios backoffice
  * Maneja CRUD y lógica de negocio de User
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {

@@ -98,7 +98,7 @@ export const UserFormModal = ({ mode, userId, visible, onClose }: UserFormModalP
             },
           ]}
         >
-          <Input placeholder="Ej: jperez" disabled={mode === 'edit'} />
+          <Input placeholder="Ej: jperez" />
         </Form.Item>
 
         <Form.Item

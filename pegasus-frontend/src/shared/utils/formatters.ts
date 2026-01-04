@@ -42,10 +42,10 @@ export const formatDNI = (dni: string): string => {
 };
 
 /**
- * Format CE (Carné de Extranjería)
+ * Format CE (Carnet de Extranjeria) - 9-12 alphanumeric characters
  */
 export const formatCE = (ce: string): string => {
-  return ce.replace(/\D/g, '').slice(0, 20);
+  return ce.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
 };
 
 /**
@@ -63,12 +63,14 @@ export const validateEmail = (email: string): boolean => {
 };
 
 /**
- * Format phone to Peru format (+51 999 999 999)
+ * Format phone to Peru display format (+51 999 999 999)
+ * Input: 9 digits stored plain (e.g., '987654321')
+ * Output: '+51 987 654 321'
  */
 export const formatPhone = (phone: string): string => {
   const cleaned = phone.replace(/\D/g, '');
   if (cleaned.length !== 9) return phone;
-  return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 9)}`;
+  return `+51 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 9)}`;
 };
 
 /**

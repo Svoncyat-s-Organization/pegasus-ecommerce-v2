@@ -16,13 +16,8 @@ CREATE DATABASE pegasus_v2_db;
 SET search_path TO pg_catalog,public;
 -- ddl-end --
 
--- object: public.document_type_enum | type: TYPE --
--- DROP TYPE IF EXISTS public.document_type_enum CASCADE;
-CREATE TYPE public.document_type_enum AS
-ENUM ('DNI','CE');
--- ddl-end --
-ALTER TYPE public.document_type_enum OWNER TO postgres;
--- ddl-end --
+-- NOTE: document_type_enum was replaced by VARCHAR + CHECK constraint in V2 migration
+-- See V2__fix_doc_type_enum.sql for details
 
 -- object: public.users | type: TABLE --
 -- DROP TABLE IF EXISTS public.users CASCADE;
@@ -31,7 +26,7 @@ CREATE TABLE public.users (
 	username varchar(50) NOT NULL,
 	email varchar(255) NOT NULL,
 	password_hash varchar(255) NOT NULL,
-	doc_type public.document_type_enum NOT NULL,
+	doc_type varchar(3) NOT NULL,
 	doc_number varchar(20) NOT NULL,
 	first_name varchar(100) NOT NULL,
 	last_name varchar(100) NOT NULL,
@@ -42,7 +37,8 @@ CREATE TABLE public.users (
 	CONSTRAINT users_pk PRIMARY KEY (id),
 	CONSTRAINT users_email_uq UNIQUE (email),
 	CONSTRAINT users_username_uq UNIQUE (username),
-	CONSTRAINT "users_docNumber_uq" UNIQUE (doc_number)
+	CONSTRAINT "users_docNumber_uq" UNIQUE (doc_number),
+	CONSTRAINT users_doc_type_check CHECK (doc_type IN ('DNI', 'CE'))
 );
 -- ddl-end --
 ALTER TABLE public.users OWNER TO postgres;
@@ -383,7 +379,7 @@ CREATE TABLE public.customers (
 	username varchar(50) NOT NULL,
 	email varchar(255) NOT NULL,
 	password_hash varchar(255) NOT NULL,
-	doc_type public.document_type_enum NOT NULL,
+	doc_type varchar(3) NOT NULL,
 	doc_number varchar(20) NOT NULL,
 	first_name varchar(100) NOT NULL,
 	last_name varchar(100) NOT NULL,
@@ -394,7 +390,8 @@ CREATE TABLE public.customers (
 	CONSTRAINT customers_pk PRIMARY KEY (id),
 	CONSTRAINT customers_email_uq UNIQUE (email),
 	CONSTRAINT customers_username_uq UNIQUE (username),
-	CONSTRAINT "customers_docNumber_uq" UNIQUE (doc_number)
+	CONSTRAINT "customers_docNumber_uq" UNIQUE (doc_number),
+	CONSTRAINT customers_doc_type_check CHECK (doc_type IN ('DNI', 'CE'))
 );
 -- ddl-end --
 ALTER TABLE public.customers OWNER TO postgres;
