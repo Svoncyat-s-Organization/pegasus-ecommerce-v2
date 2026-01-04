@@ -8,9 +8,12 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const authStorage = localStorage.getItem('auth-storage');
+  if (authStorage) {
+    const { state } = JSON.parse(authStorage);
+    if (state?.token) {
+      config.headers.Authorization = `Bearer ${state.token}`;
+    }
   }
   return config;
 });
@@ -18,11 +21,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Solo redirigir si ya estamos autenticados y recibimos 401
-    // NO redirigir si estamos en la página de login
     if (error.response?.status === 401 && window.location.pathname !== '/login') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem('auth-storage');
       window.location.href = '/login';
     }
     return Promise.reject(error);
