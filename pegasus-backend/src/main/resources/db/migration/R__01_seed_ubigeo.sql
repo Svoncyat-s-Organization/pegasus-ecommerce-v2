@@ -4,6 +4,9 @@
 -- Total Districts: 1833
 -- ============================================================================
 
+-- Limpiar datos existentes para idempotencia
+DELETE FROM ubigeos;
+
 INSERT INTO ubigeos (id, department_name, province_name, district_name)
 VALUES
   ('010101', 'Amazonas', 'Chachapoyas', 'Chachapoyas'),
