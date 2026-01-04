@@ -8,6 +8,7 @@ import { StorefrontProtectedRoute } from '@routes/StorefrontProtectedRoute';
 import { LoginPage as AdminLoginPage } from '@features/backoffice/auth/pages/LoginPage';
 import { UsersListPage } from '@features/backoffice/security';
 import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
+import { CustomersListPage } from '@features/backoffice/customer';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -78,7 +79,7 @@ export const AppRoutes = () => {
         <Route path="rma" element={<PlaceholderPage title="Devoluciones" description="Gestión de devoluciones y RMA" />} />
 
         {/* Customers */}
-        <Route path="customers" element={<PlaceholderPage title="Clientes" description="Gestión de clientes" />} />
+        <Route path="customers" element={<CustomersListPage />} />
 
         {/* Security (RBAC) */}
         <Route path="security/users" element={<UsersListPage />} />

@@ -182,3 +182,70 @@ export interface AssignRolesToUserRequest {
   userId: number;
   roleIds: number[];
 }
+
+// ============================================
+// Customer Management Types (Storefront Customers)
+// ============================================
+export interface CustomerResponse {
+  id: number;
+  username: string;
+  email: string;
+  docType: DocumentType;
+  docNumber: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCustomerRequest {
+  username: string;
+  email: string;
+  password: string;
+  docType: DocumentType;
+  docNumber: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export interface UpdateCustomerRequest {
+  username?: string;
+  email?: string;
+  docType?: DocumentType;
+  docNumber?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}
+
+export interface CustomerAddressResponse {
+  id: number;
+  customerId: number;
+  ubigeoId: string;
+  address: string;
+  reference?: string;
+  postalCode?: string;
+  isDefaultShipping: boolean;
+  isDefaultBilling: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCustomerAddressRequest {
+  ubigeoId: string;
+  address: string;
+  reference?: string;
+  postalCode?: string;
+  isDefaultShipping?: boolean;
+  isDefaultBilling?: boolean;
+}
+
+export interface UpdateCustomerAddressRequest {
+  ubigeoId?: string;
+  address?: string;
+  reference?: string;
+  postalCode?: string;
+}
