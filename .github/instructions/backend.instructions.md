@@ -2,245 +2,523 @@
 applyTo: "pegasus-backend/**/*.java, pegasus-backend/pom.xml, pegasus-backend/src/main/resources/**/*"
 ---
 
-# 🐎 Backend Context: Spring Boot 4.x
+# Backend Context: Spring Boot 4.x
 
-## 1. Tech Stack (from pom.xml)
-* **Framework:** Spring Boot 4.0.1 (Jakarta EE environment).
-    * Use `jakarta.*` imports (e.g., `jakarta.persistence.*`, `jakarta.validation.*`), NOT `javax.*`.
-* **Java:** Version 17.
-* **Security:** Spring Security + **JJWT (0.13.0)**. (Dual Auth: User vs Customer).
-* **Database:** PostgreSQL + Flyway (Migrations in `src/main/resources/db/migration`).
-    * **Flyway Dependency:** Use `spring-boot-starter-flyway` for auto-configuration in Spring Boot 4.
-    * **Flyway Naming:** `V{version}__{description}.sql` (versioned), `R__{description}.sql` (repeatable seeds).
-    * **Example:** `V1__init_schema.sql`, `R__01_seed_ubigeo.sql`.
-    * **Automatic Execution:** Flyway runs automatically on application startup when `spring.flyway.enabled=true`.
-    * **Repeatable Migrations (R__):** These MUST be idempotent - use `DELETE FROM table WHERE ...` before `INSERT` to ensure safe re-execution.
-* **Environment Variables (MANDATORY):**
-    * **CRITICAL:** ALL environment variables MUST be defined in `.env` file at project root (`pegasus-backend/.env`).
-    * **springboot4-dotenv** dependency (v5.1.0) automatically loads `.env` when running `./mvnw spring-boot:run`.
-    * **Required Variables:**
-        * `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` (Database connection).
-        * `JWT_SECRET`, `JWT_EXPIRATION_MS` (Authentication).
-        * `SERVER_PORT` (Application port).
-    * **NEVER ask user for passwords or credentials - READ from `.env` file directly.**
-    * **PostgreSQL Commands:** When running psql commands, ALWAYS use `PGPASSWORD` from `.env`:
-        ```bash
-        source .env && PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USERNAME -d $DB_NAME -c "YOUR SQL"
-        ```
-* **Mapping:** **MapStruct 1.6.3**.
-    * Always use MapStruct interfaces for DTO-Entity conversion.
-    * Use `@Mapper(componentModel = "spring")`.
-* **Boilerplate:** **Lombok**.
-    * Use `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`.
-    * Use `@RequiredArgsConstructor` for Constructor Injection.
-* **Documentation:** **SpringDoc OpenAPI (Swagger)**.
-    * Document Controllers with `@Operation`, `@ApiResponse`, and `@Tag`.
+## CRITICAL RULES (Read First)
 
-## 2. Architectural Style & Directory Structure
-**STRICT RULE:** Do NOT organize code by technical layers. Organize by **Feature Modules**.
+**Peru Validations:** See `copilot-instructions.md` for DNI/CE/Phone/Currency/Ubigeo/Timezone rules.
 
-**Directory Structure:**
-* **Root:** `com.pegasus.backend` (ArtifactId: backend)
+**Jakarta EE:** Use `jakarta.*` imports (NOT `javax.*`)
 
-* **`/features`**: Core business modules (Domain Driven).
-    * Each folder (e.g., `/features/catalog`, `/features/order`, `/features/customer`, `/features/user`) MUST contain its own technical sub-packages: `controller`, `service`, `repository`, `entity`, `dto`, `mapper`.
-    * **`mapper/` Subpackage:** Contains MapStruct interfaces for DTO-Entity conversion.
-        * **Naming:** `{Entity}Mapper.java` (e.g., `UserMapper.java`, `ProductMapper.java`).
-        * **Example:**
-        ```java
-        @Mapper(componentModel = "spring")
-        public interface UserMapper {
-            UserResponse toResponse(User entity);
-            User toEntity(CreateUserRequest request);
-        }
-        ```
-    * **Note:** Entities `User` (Staff) live in `features/user`, and `Customer` (Storefront) live in `features/customer`.
-    * **`/features/user` vs `/features/rbac`**: Separation of concerns for backoffice staff management:
-        * **`/features/user`**: Manages user **identities** (CRUD of staff members, credentials, personal data). Contains `User` entity and `UserAuthService`.
-            * **Tables:** `users`
-            * **Responsibilities:** Create/Update/Delete users, manage credentials, personal info.
-            * **Does NOT handle:** Roles, permissions, or access control logic.
-        * **`/features/rbac`**: Manages **access control** (what each role can do, which modules users can access).
-            * **Tables:** `roles`, `modules`, `roles_users` (user-role assignments), `roles_modules` (role-module permissions).
-            * **Entities:** `Role`, `Module`, `RoleUser`, `RoleModule`.
-            * **Responsibilities:** Assign roles to users, define module permissions per role, manage access control.
-            * **Related to User:** RBAC reads from `User` table via foreign keys, but does NOT manage user identity.
-    * **`/features/customer`**: Manages storefront customers. Contains `Customer` entity and all customer-related logic (addresses, contact info, segmentation). Do NOT mix with `/features/user`.
-    * **`/features/dashboard`**: Analytics dashboard module.
-        * **Structure:** `controller/`, `dto/`, `service/`. NO `entity/`, NO `repository/`.
-        * **NO database tables:** Reads data from other modules (catalog, orders, inventory) to generate metrics.
-        * **Purpose:** Aggregate and present business KPIs (sales, inventory levels, top products, etc.).
-    * **`/features/report`**: Report generation module.
-        * **Structure:** `controller/`, `dto/`, `service/`. NO `entity/`, NO `repository/`.
-        * **NO database tables:** Queries data from other modules to generate reports (PDF, Excel, CSV).
-        * **Purpose:** Generate downloadable reports (sales reports, inventory reports, customer reports).
+**Environment Variables (MANDATORY):**
+- `.env` file at `pegasus-backend/.env` root
+- `spring-boot-dotenv` v5.1.0 loads automatically on startup
+- NO manual sourcing, NO wrapper scripts needed
+- Required vars: DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD, JWT_SECRET, JWT_EXPIRATION_MS, SERVER_PORT
+- NEVER commit .env, use .env.example for team
 
-* **`/shared`**: Cross-cutting concerns and shared resources.
-    * **`/shared/entity`**: Base classes for entities.
-        * **`BaseEntity.java`**: Abstract `@MappedSuperclass` with common fields (`isActive`, `createdAt`, `updatedAt`).
-        * All feature entities MUST extend `BaseEntity` to apply DRY principle.
-    * **`/shared/locations`**: Handles the **Ubigeo** logic based on the single `ubigeos` table.
-        * Structure: `controller/`, `dto/`, `entity/`, `repository/`, `service/`.
-        * It acts like a "Read-Only Feature" used by `customer` (addresses) and `inventory` (warehouses) to validate location IDs (department, province, district).
-        * **Entity:** `Ubigeo` (table: `ubigeos`, fields: `id`, `department`, `province`, `district`).
-    * **`/shared/enums`**: The **ONLY** place for global enums (e.g., `DocumentType`, `OrderStatus`, `PaymentMethod`). This prevents circular dependencies between features.
-    * **`/shared/utils`**: Stateless helper classes (e.g., `DateUtils`, `PasswordUtils`, `StringHelper`). No business logic here.
-    * **`/shared/dto`**: Global DTOs (e.g., `PageResponse<T>`, `ErrorResponse`).
+**Quality:** Code MUST compile (`./mvnw clean compile`) before submission.
 
-* **`/security`**: Centralized Authentication Infrastructure.
-    * **`/security/jwt`**: The "Key Maker". Contains `JwtUtils` to generate/validate tokens. Agnostic of user type.
-    * **`/security/auth`**: The "Orchestrator". Contains `AuthController`. It receives login requests and routes them to the correct feature service (`UserAuthService` or `CustomerAuthService`).
+---
 
-* **`/config`**: Global configurations.
-    * **Files:** `SecurityConfig.java`, `CorsConfig.java`, `OpenApiConfig.java`, `JacksonConfig.java` (if needed).
-    * Do NOT create feature-specific configs here. Keep them in their respective feature packages.
-* **`/exception`**: Global exception handling.
-    * **`GlobalExceptionHandler.java`**: `@RestControllerAdvice` class to handle all exceptions (`@ExceptionHandler`).
-    * **Custom Exceptions:** Create custom exceptions here (e.g., `ResourceNotFoundException`, `InvalidCredentialsException`).
-    * Return structured error responses using `ErrorResponse` DTO from `shared/dto`.
+## 1. Tech Stack
 
-* **JSONB:** Use heavily for snapshots (Address, Product Specs). Map to `Map<String, Object>`.
+```json
+{
+  "framework": "Spring Boot 4.0.1 (Jakarta EE)",
+  "java": "17",
+  "security": "Spring Security + JJWT 0.13.0",
+  "database": "PostgreSQL + Flyway",
+  "mapping": "MapStruct 1.6.3",
+  "boilerplate": "Lombok",
+  "docs": "SpringDoc OpenAPI (Swagger)"
+}
+```
 
-## 3. Database & JPA Conventions
-* **Naming:** Tables and columns in **snake_case** (English).
-* **IDs:** `BIGINT GENERATED ALWAYS AS IDENTITY`.
-* **Money:** `NUMERIC(12, 2)` mapped to `BigDecimal`. **NEVER** use Float/Double.
-* **JSONB:** Heavily used (e.g., `shipping_address`, `specs`). Map to `Map<String, Object>` or `JsonNode` using Hibernate 6+ types (`@JdbcTypeCode(SqlTypes.JSON)`).
-* **Logic:** Business logic stays in Java Services, not DB triggers.
+**Flyway:**
+- Auto-runs on startup (`spring.flyway.enabled=true`)
+- Naming: `V{version}__{description}.sql` (versioned), `R__{description}.sql` (repeatable)
+- Repeatable MUST be idempotent: `DELETE FROM ... WHERE ...` before `INSERT`
+- NEVER modify executed migrations (creates checksum mismatch)
 
-## 4. Security Strategy (Dual-Model)
-**We separate Admins and Customers:**
-1.  **Backoffice:** Entity `User` (in `features/user`). Managed by `UserAuthService`.
-2.  **Storefront:** Entity `Customer` (in `features/customer`). Managed by `CustomerAuthService`.
-3.  **Orchestration:** `security/auth` handles login requests and delegates to the correct service.
-4.  **JWT:** `security/jwt/JwtUtils` signs tokens with a custom claim `userType` ("ADMIN" or "CUSTOMER").
+**MapStruct:**
+```java
+@Mapper(componentModel = "spring")
+public interface UserMapper {
+    UserResponse toResponse(User entity);
+    User toEntity(CreateUserRequest request);
+}
+```
 
-**API Endpoint Patterns:**
-* **Public:** `/api/auth/**` (login, register).
-* **Backoffice:** `/api/admin/**` (requires ADMIN role, e.g., `/api/admin/users`, `/api/admin/products`).
-* **Storefront:** `/api/customer/**` (requires CUSTOMER role, e.g., `/api/customer/orders`, `/api/customer/profile`).
-* **Authentication Flow:**
-    1. Client sends credentials to `/api/auth/{admin|customer}/login`.
-    2. Backend validates, generates JWT with `userType` claim.
-    3. Client stores token (localStorage/sessionStorage).
-    4. Client includes token in header: `Authorization: Bearer <token>`.
-    5. `JwtAuthenticationFilter` validates token and sets `SecurityContext`.
+---
+
+## 2. Architecture: Package-by-Feature
+
+**Structure:** `com.pegasus.backend/features/{module}/`
+
+```
+backend/
+├── features/
+│   ├── catalog/       # controller, service, repository, entity, dto, mapper
+│   ├── customer/      # Storefront customers
+│   ├── user/          # Backoffice staff identities
+│   ├── rbac/          # Roles, permissions, assignments
+│   ├── order/
+│   ├── inventory/
+│   ├── dashboard/     # NO entity/repository (reads from other modules)
+│   └── report/        # NO entity/repository (aggregates data)
+├── shared/
+│   ├── entity/        # BaseEntity.java (isActive, createdAt, updatedAt)
+│   ├── locations/     # Ubigeo (controller, dto, entity, repository, service)
+│   ├── enums/         # DocumentType, OrderStatus, PaymentMethod
+│   ├── utils/         # DateUtils, PasswordUtils (NO business logic)
+│   └── dto/           # PageResponse<T>, ErrorResponse
+├── security/
+│   ├── jwt/           # JwtUtils (generate/validate tokens)
+│   └── auth/          # AuthController (routes to UserAuthService/CustomerAuthService)
+├── config/            # SecurityConfig, CorsConfig, OpenApiConfig
+└── exception/         # GlobalExceptionHandler, custom exceptions
+```
+
+**Module Anatomy:** `features/catalog/`
+```
+catalog/
+├── controller/   # REST endpoints (@RestController)
+├── service/      # Business logic (@Service)
+├── repository/   # JpaRepository
+├── entity/       # Product.java (extends BaseEntity)
+├── dto/          # ProductResponse, CreateProductRequest
+└── mapper/       # ProductMapper (MapStruct interface)
+```
+
+**User vs RBAC Separation:**
+- `/features/user`: Manages identities (CRUD staff, credentials, personal data) → Table: `users`
+- `/features/rbac`: Manages access control (roles, permissions, user-role assignments) → Tables: `roles`, `modules`, `roles_users`, `roles_modules`
+
+**Dashboard/Report:** NO entities/repositories, read from other modules
+
+---
+
+## 3. Database & JPA
+
+**Conventions:**
+- Tables/columns: `snake_case` (English)
+- IDs: `BIGINT GENERATED ALWAYS AS IDENTITY`
+- Money: `NUMERIC(12, 2)` → `BigDecimal` (NEVER Float/Double)
+- JSONB: Map to `Map<String, Object>` using `@JdbcTypeCode(SqlTypes.JSON)`
+
+**BaseEntity Pattern (MANDATORY):**
+```java
+@MappedSuperclass
+@Data
+public abstract class BaseEntity {
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+    
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+}
+
+// All entities MUST extend BaseEntity
+@Entity
+@Table(name = "products")
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class Product extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    // ...
+}
+```
+
+---
+
+## 4. Security: Dual-Model (Admin vs Customer)
+
+**Separation:**
+1. **Backoffice:** `User` entity (features/user), managed by `UserAuthService`
+2. **Storefront:** `Customer` entity (features/customer), managed by `CustomerAuthService`
+3. **Orchestration:** `security/auth/AuthController` routes login requests
+4. **JWT:** `security/jwt/JwtUtils` signs tokens with claim `userType` ("ADMIN" or "CUSTOMER")
+
+**Endpoint Patterns:**
+- Public: `/api/auth/**` (login, register)
+- Backoffice: `/api/admin/**` (requires ADMIN role)
+- Storefront: `/api/customer/**` (requires CUSTOMER role)
+
+**Flow:**
+1. Client → `/api/auth/{admin|customer}/login`
+2. Backend validates → generates JWT with `userType`
+3. Client stores token → includes in `Authorization: Bearer <token>`
+4. `JwtAuthenticationFilter` validates → sets `SecurityContext`
+
+---
 
 ## 5. Naming Conventions
-* **Packages:** lowercase, no underscores (e.g., `customer`, `productcatalog`).
-* **Classes:**
-    * Entities: Singular noun (e.g., `User`, `Product`).
-    * DTOs: `{Entity}{Purpose}` (e.g., `UserResponse`, `CreateProductRequest`).
-    * Services: `{Entity}Service` (e.g., `UserService`, `OrderService`).
-    * Repositories: `{Entity}Repository` (e.g., `UserRepository`).
-    * Controllers: `{Entity}Controller` (e.g., `UserController`).
-    * Mappers: `{Entity}Mapper` (e.g., `UserMapper`).
-* **Methods:**
-    * Services: Business action verbs (e.g., `createUser`, `findById`, `updateOrder`, `deactivateProduct`).
-    * Repositories: JPA naming conventions (e.g., `findByEmail`, `existsByUsername`).
-    * Controllers: HTTP method mapping (e.g., `@GetMapping`, `@PostMapping`).
-* **Variables:** camelCase (e.g., `userId`, `productName`).
-* **Constants:** UPPER_SNAKE_CASE (e.g., `MAX_RETRIES`, `DEFAULT_PAGE_SIZE`).
 
-## 6. Coding Standards & Principles
-* **Peru-Specific Business Rules:**
-    * **DocumentType Enum:** Only `DNI` (8 digits) or `CE` (9-12 alphanumeric).
-    * **Ubigeo:** Always validate location IDs against `ubigeos` table (department, province, district).
-    * **Phone:** Peru mobile format (9 digits starting with 9).
-    * **Currency:** Peruvian Sol (PEN). Use `BigDecimal` with `NUMERIC(12, 2)` for money.
-    * **Timezone:** Peru uses UTC-5 (no DST). Store timestamps as `timestamptz` (UTC), convert to Peru time in frontend.
-* **SOLID Principles (Applied):**
-    * **SRP (Single Responsibility):** Controllers MUST be thin (routing only). All business logic MUST live in Services. Entities MUST only represent DB state.
-    * **DIP (Dependency Inversion):** Always use Constructor Injection (`@RequiredArgsConstructor`). Do not use `@Autowired` on fields.
-    * **OCP (Open/Closed):** Use Strategy Pattern or Polymorphism for complex conditional logic (e.g., Payment Methods), instead of massive `if/else` blocks.
-* **DRY (Don't Repeat Yourself):**
-    * Extract common logic (e.g., date formatting, price calculation) to `shared/utils`.
-    * **BaseEntity Pattern (MANDATORY):** All entities MUST extend `BaseEntity` to inherit common fields (`isActive`, `createdAt`, `updatedAt`).
-        * Example:
-        ```java
-        @Entity
-        @Table(name = "products")
-        @Data
-        @EqualsAndHashCode(callSuper = true) // Important!
-        public class Product extends BaseEntity {
-            @Id
-            @GeneratedValue(strategy = GenerationType.IDENTITY)
-            private Long id;
-            // ... other fields
-        }
-        ```
-* **DTOs:** Mandatory. Never expose Entities in Controllers. Use Java `record` for DTOs when possible (simple data carriers). Use classes with Lombok when you need builders or mutable state.
-* **Validation:** Use `jakarta.validation` (`@NotNull`, `@Email`) in DTOs.
-* **Repository:** Use `JpaRepository`.
-    * **Search Queries (MANDATORY):** When implementing list endpoints with search functionality, MUST create a `@Query` method in the repository for multi-field filtering.
-        * Use JPQL with `LOWER()` and `LIKE` for case-insensitive search.
-        * Search MUST filter across ALL relevant text fields (username, email, firstName, lastName, etc.).
-        * Return `Page<Entity>` for pagination support.
-        * Example:
-        ```java
-        @Query("SELECT u FROM User u WHERE " +
-               "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-               "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-               "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-               "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))")
-        Page<User> searchUsers(@Param("search") String search, Pageable pageable);
-        ```
-* **Service Layer (MANDATORY):**
-    * All list methods MUST accept `search` parameter (nullable).
-    * If search is provided (not null/blank), call `repository.search()`, otherwise call `repository.findAll()`.
-    * Example:
-    ```java
-    public PageResponse<UserResponse> getAllUsers(String search, Pageable pageable) {
-        Page<User> page;
-        
-        if (search != null && !search.isBlank()) {
-            page = userRepository.searchUsers(search.trim(), pageable);
-        } else {
-            page = userRepository.findAll(pageable);
-        }
-        
-        return new PageResponse<>(...);
+**Packages:** lowercase, no underscores (`customer`, `productcatalog`)  
+**Classes:**
+- Entities: Singular (`User`, `Product`)
+- DTOs: `{Entity}{Purpose}` (`UserResponse`, `CreateProductRequest`)
+- Services: `{Entity}Service` (`UserService`)
+- Repositories: `{Entity}Repository` (`UserRepository`)
+- Controllers: `{Entity}Controller` (`UserController`)
+- Mappers: `{Entity}Mapper` (`UserMapper`)
+
+**Methods:**
+- Services: Business verbs (`createUser`, `findById`, `updateOrder`)
+- Repositories: JPA conventions (`findByEmail`, `existsByUsername`)
+
+**Variables:** camelCase (`userId`, `productName`)  
+**Constants:** UPPER_SNAKE_CASE (`MAX_RETRIES`)
+
+---
+
+## 6. Coding Standards
+
+### A. SOLID Principles
+
+**SRP:** Controllers = routing ONLY, Services = business logic, Entities = DB state  
+**DIP:** Constructor injection (`@RequiredArgsConstructor`), NO `@Autowired` on fields  
+**OCP:** Strategy Pattern for complex conditionals (e.g., payment methods)
+
+### B. DRY
+
+- Common logic → `shared/utils`
+- All entities extend `BaseEntity`
+- Extract repeated queries to repository methods
+
+### C. DTOs (MANDATORY)
+
+```java
+// Use records for simple DTOs
+public record UserResponse(Long id, String username, String email) {}
+
+// Use classes with Lombok for builders
+@Data
+@Builder
+public class CreateUserRequest {
+    private String username;
+    private String email;
+    private String password;
+}
+```
+
+### D. Validation
+
+```java
+@NotNull(message = "El nombre es requerido")
+@Email(message = "Formato de correo inválido")
+private String email;
+```
+
+### E. Repository Search (MANDATORY)
+
+```java
+@Query("SELECT u FROM User u WHERE " +
+       "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+       "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+       "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))")
+Page<User> searchUsers(@Param("search") String search, Pageable pageable);
+```
+
+### F. Service Layer
+
+```java
+public PageResponse<UserResponse> getAllUsers(String search, Pageable pageable) {
+    Page<User> page = (search != null && !search.isBlank())
+        ? userRepository.searchUsers(search.trim(), pageable)
+        : userRepository.findAll(pageable);
+    
+    return new PageResponse<>(...);
+}
+```
+
+### G. Controller Layer
+
+```java
+@GetMapping
+public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
+        @RequestParam(required = false) String search,
+        @PageableDefault(size = 20) Pageable pageable) {
+    return ResponseEntity.ok(userService.getAllUsers(search, pageable));
+}
+```
+
+### H. Transactions
+
+```java
+@Transactional  // ONLY on methods that modify data
+public UserResponse createUser(CreateUserRequest request) {
+    // ...
+}
+```
+
+---
+
+## 7. Testing (Write ONLY when requested)
+
+**Location:** `src/test/java/com/pegasus/backend/` (mirrors main structure)
+
+**Unit Tests:**
+```java
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+    @Mock private UserRepository userRepository;
+    @InjectMocks private UserService userService;
+    
+    @Test
+    void createUser_ShouldReturnUserResponse() {
+        when(userRepository.save(any())).thenReturn(new User());
+        UserResponse response = userService.createUser(request);
+        assertNotNull(response);
+        verify(userRepository).save(any());
     }
-    ```
-* **Controller Layer (MANDATORY):**
-    * All list endpoints MUST accept `@RequestParam(required = false) String search`.
-    * Pass search parameter to service layer.
-    * Example:
-    ```java
+}
+```
+
+**Integration Tests:**
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+class UserControllerIntegrationTest {
+    @Autowired private MockMvc mockMvc;
+    
+    @Test
+    void getAllUsers_ShouldReturnPagedResponse() throws Exception {
+        mockMvc.perform(get("/api/admin/users"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content").isArray());
+    }
+}
+```
+
+**Coverage:** 70% for critical paths (auth, payments, inventory)
+
+---
+
+## 8. Error Handling
+
+**Strategy:**
+- **Controller:** Catch NOTHING
+- **Service:** Throw business exceptions (`ResourceNotFoundException`)
+- **Repository:** Let JPA exceptions bubble up
+- **GlobalExceptionHandler:** Convert to `ErrorResponse`
+
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            ResourceNotFoundException ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.NOT_FOUND.value(),
+            "Not Found",
+            ex.getMessage(),
+            extractPath(request),
+            OffsetDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+    
+    private String extractPath(WebRequest request) {
+        return request.getDescription(false).replace("uri=", "");
+    }
+}
+
+public record ErrorResponse(
+    int status,
+    String error,
+    String message,
+    String path,
+    OffsetDateTime timestamp
+) {}
+```
+
+---
+
+## 9. Logging
+
+**Use:** SLF4J + Logback with `@Slf4j` Lombok annotation
+
+```java
+@Slf4j
+@Service
+public class UserService {
+    public UserResponse createUser(CreateUserRequest request) {
+        log.info("Creating user: {}", request.getUsername());
+        try {
+            // ...
+        } catch (Exception e) {
+            log.error("Failed to create user: {}", request.getUsername(), e);
+            throw e;
+        }
+    }
+}
+```
+
+**Levels:**
+- **ERROR:** Exceptions, data loss (`log.error("Failed to create user: {}", username, exception)`)
+- **WARN:** Degraded functionality (`log.warn("User attempted login with invalid credentials: {}", username)`)
+- **INFO:** Business events (`log.info("User created successfully: {}", user.getUsername())`)
+- **DEBUG:** Detailed flow (`log.debug("Processing order with {} items", orderItems.size())`)
+
+**Best Practices:**
+- Parameterized logging: `log.info("User: {}", username)` NOT `"User: " + username`
+- Log exceptions with context: `log.error("Error processing order: {}", orderId, exception)`
+- NO sensitive data (passwords, tokens, credit cards)
+
+**Config (application.properties):**
+```properties
+logging.level.root=INFO
+logging.level.com.pegasus.backend=DEBUG
+logging.level.org.hibernate.SQL=DEBUG
+```
+
+---
+
+## 10. Quality Verification
+
+**Before submitting:**
+
+```bash
+# 1. Compile
+./mvnw clean compile  # MUST show BUILD SUCCESS
+
+# 2. Run
+./mvnw spring-boot:run  # MUST start without red errors
+
+# 3. Database (if needed)
+source .env && PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USERNAME -d $DB_NAME -c "SELECT 1;"
+```
+
+**Checklist:**
+- [ ] Code compiles
+- [ ] No unused imports
+- [ ] Proper annotations (@Service, @Repository, @RestController)
+- [ ] All entities extend BaseEntity
+- [ ] DTOs used (NO exposed entities)
+- [ ] Constructor injection (@RequiredArgsConstructor)
+- [ ] Search queries with JPQL multi-field LIKE
+- [ ] Transactions on write methods
+- [ ] BCrypt for passwords
+- [ ] Application starts without errors
+
+---
+
+## 11. Troubleshooting (Quick Reference)
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Bean not found | Missing @Service/@Repository | Add annotation |
+| Circular dependency | Two services depend on each other | Refactor or use @Lazy (not recommended) |
+| Failed to configure DataSource | Missing .env | Verify .env exists with DB credentials |
+| Flyway checksum mismatch | Modified executed migration | NEVER modify V__ files, create new migration |
+| Table already exists | Migrations on existing DB | Use Flyway repair or drop/recreate DB |
+| 401 Unauthorized | Missing/invalid JWT | Verify Authorization: Bearer <token> header |
+| JWT signature mismatch | JWT_SECRET changed | Login again with correct secret |
+| Connection refused 5432 | PostgreSQL not running | Start PostgreSQL, verify port in .env |
+| Password authentication failed | Wrong DB credentials | Verify DB_USERNAME/DB_PASSWORD in .env |
+
+---
+
+## Appendix: Common Patterns
+
+### BaseEntity (Mandatory)
+```java
+@MappedSuperclass
+@Data
+public abstract class BaseEntity {
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+    
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+}
+```
+
+**Note:** Use `OffsetDateTime` (not `LocalDateTime`) for proper timezone handling with PostgreSQL `timestamptz`. Hibernate's `@CreationTimestamp` and `@UpdateTimestamp` handle automatic population.
+
+### Typical Controller
+```java
+@RestController
+@RequestMapping("/api/admin/users")
+@RequiredArgsConstructor
+@Tag(name = "Users", description = "User management")
+public class UserController {
+    
+    private final UserService userService;
+    
     @GetMapping
+    @Operation(summary = "Get all users")
     public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
             @RequestParam(required = false) String search,
-            @PageableDefault(size = 20) Pageable pageable
-    ) {
-        PageResponse<UserResponse> response = userService.getAllUsers(search, pageable);
-        return ResponseEntity.ok(response);
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(userService.getAllUsers(search, pageable));
     }
-    ```
-* **MapStruct:** Use interfaces with `@Mapper(componentModel = "spring")`.
-* **Transactions:** Use `@Transactional` on Service methods that modify data (create, update, delete). Do NOT use on read-only methods.
-* **Password Handling:** Always use `BCryptPasswordEncoder` (injected via Spring Security). Store only hashed passwords in `password_hash` column.
+    
+    @PostMapping
+    @Operation(summary = "Create user")
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(userService.createUser(request));
+    }
+}
+```
 
-## 7. Quality Assurance & Verification
-**CRITICAL:** After code changes, verify the backend works correctly.
-
-**Execution Commands (ALWAYS use these):**
-* **Compile:** `./mvnw clean compile` → Must show `BUILD SUCCESS`.
-* **Run Application:** `./mvnw spring-boot:run` → `.env` loaded automatically, no wrapper script needed.
-* **NEVER use `run.sh` or manually source `.env` - spring-dotenv handles it automatically.**
-
-**If acting as Agent/CLI, run in sequence:**
-1. `./mvnw clean compile` → Must show `BUILD SUCCESS`, no errors.
-2. `./mvnw spring-boot:run` → Must start with `Started PegasusEcommerceApplication in X seconds`. **NO red error text** in console (yellow warnings OK).
-
-**Before submitting code:**
-* Remove unused imports.
-* Ensure proper Spring annotations (`@Service`, `@Repository`, `@RestController`).
-* Fix compilation errors, circular dependencies, and missing beans.
-* Code MUST compile and run without errors.
-
-**Database Commands:**
-* **ALWAYS read credentials from `.env` before running psql:**
-    ```bash
-    source .env && PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USERNAME -d $DB_NAME -c "SELECT 1;"
-    ```
-* **NEVER prompt user for database passwords - credentials are in `.env`.**
+### Typical Service
+```java
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional(readOnly = true)
+public class UserService {
+    
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
+    
+    public PageResponse<UserResponse> getAllUsers(String search, Pageable pageable) {
+        Page<User> page = (search != null && !search.isBlank())
+            ? userRepository.searchUsers(search.trim(), pageable)
+            : userRepository.findAll(pageable);
+        
+        List<UserResponse> content = page.getContent().stream()
+            .map(userMapper::toResponse)
+            .toList();
+        
+        return new PageResponse<>(
+            content,
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+    
+    @Transactional
+    public UserResponse createUser(CreateUserRequest request) {
+        log.info("Creating user: {}", request.getUsername());
+        
+        User user = userMapper.toEntity(request);
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        
+        User saved = userRepository.save(user);
+        log.info("User created successfully: {}", saved.getUsername());
+        
+        return userMapper.toResponse(saved);
+    }
+}
+```
