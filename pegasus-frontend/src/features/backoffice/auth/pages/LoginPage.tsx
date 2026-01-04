@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message, Alert } from 'antd';
-import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { IconLock, IconMail } from '@tabler/icons-react';
 import { useLogin } from '../hooks/useLogin';
 import { useNavigate } from 'react-router-dom';
-import type { LoginRequest } from '../../../../types';
+import type { LoginRequest } from '@types';
 
 const { Title, Text } = Typography;
 
@@ -18,7 +18,7 @@ export const LoginPage = () => {
     try {
       await loginMutation.mutateAsync(values);
       message.success('Inicio de sesión exitoso');
-      navigate('/dashboard');
+      navigate('/admin/dashboard');
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       const errorMessage = err.response?.data?.message || 'Error al iniciar sesión. Verifica tus credenciales.';
@@ -55,7 +55,7 @@ export const LoginPage = () => {
         </div>
 
         <Alert
-          message="Credenciales de Prueba"
+          title="Credenciales de Prueba"
           description={
             <div style={{ fontSize: '13px' }}>
               <div>Correo: admin@pegasus.com</div>
@@ -83,7 +83,7 @@ export const LoginPage = () => {
             ]}
           >
             <Input
-              prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<IconMail size={18} style={{ color: '#bfbfbf' }} />}
               placeholder="Ingresa tu correo"
               size="large"
             />
@@ -95,7 +95,7 @@ export const LoginPage = () => {
             rules={[{ required: true, message: 'Por favor ingresa tu contraseña' }]}
           >
             <Input.Password
-              prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<IconLock size={18} style={{ color: '#bfbfbf' }} />}
               placeholder="Ingresa tu contraseña"
               size="large"
             />

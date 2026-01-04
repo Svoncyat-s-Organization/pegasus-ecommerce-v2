@@ -47,7 +47,16 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
 * **UI Libraries (STRICT):**
     * `features/backoffice/**` -> **MUST** use **Ant Design** (`antd`). Ant Design is strictly for Backoffice Staff UIs.
     * `features/storefront/**` -> **MUST** use **Mantine** (`@mantine/core`). Mantine is strictly for Storefront Customer UIs.
-    * **Icons:** Tabler Icons (`@tabler/icons-react`).
+    * **Icons:** **ONLY** use **Tabler Icons** (`@tabler/icons-react`) for ALL icons across the entire project.
+    * **NEVER** use `@ant-design/icons` or any other icon library. Tabler Icons are the single source of truth for icons.
+    * **Icon Usage Examples:**
+      ```tsx
+      import { IconUser, IconLock, IconDashboard } from '@tabler/icons-react';
+      
+      // In components
+      <IconUser size={18} />
+      <IconDashboard size={20} stroke={1.5} />
+      ```
 * **Design Philosophy:**
     * **Professional, Elegant, Minimalist:** NO flashy designs, NO bright gradients, NO excessive colors.
     * Use neutral color palettes: whites, grays, subtle blues.
@@ -56,29 +65,97 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
     * Focus on readability and usability over visual impact.
 * **Dates:** Day.js.
 
-## 1.1. Import Strategy & TypeScript Configuration
-**CRITICAL: This project uses RELATIVE imports, NOT path aliases.**
+## 1.1. Import Strategy & TypeScript Configuration (Path Aliases)
+**CRITICAL: This project uses PATH ALIASES for cleaner imports.**
+
+**Path Aliases Configuration:**
+The project is configured with the following path aliases in `tsconfig.app.json` and `vite.config.ts`:
+
+```typescript
+@/*           → src/*
+@config/*     → src/config/*
+@types        → src/types/index.ts
+@stores/*     → src/stores/*
+@layouts/*    → src/layouts/*
+@routes/*     → src/routes/*
+@shared/*     → src/shared/*
+@features/*   → src/features/*
+@components/* → src/components/*
+```
 
 **Import Rules:**
-- Use relative paths: `../../config/api`, `../hooks/useAuth`
-- Do NOT use `@/` aliases (not configured)
+- **ALWAYS use path aliases** for absolute imports (recommended)
+- Use relative paths ONLY for files within the same directory or nearby
 - Do NOT add `.ts` or `.tsx` extensions in imports (Vite handles this)
-- **Example:**
-  ```tsx
-  // CORRECT ✅
-  import { api } from '../../config/api';
-  import { useAuth } from '../hooks/useAuth';
-  
-  // WRONG ❌
-  import { api } from '@/config/api';  // NO path aliases
-  import { api } from '../../config/api.ts';  // NO extensions
-  ```
+
+**Examples:**
+```tsx
+// CORRECT ✅ - Use aliases for cross-directory imports
+import { api } from '@config/api';
+import type { User, LoginRequest } from '@types';
+import { useAuthStore } from '@stores/backoffice/authStore';
+import { BackofficeLayout } from '@layouts/backoffice';
+import { LoginPage } from '@features/backoffice/auth/pages/LoginPage';
+import { formatCurrency } from '@shared/utils/formatters';
+
+// ACCEPTABLE ✅ - Relative for same directory
+import { useLogin } from '../hooks/useLogin';
+import { authApi } from './authApi';
+
+// WRONG ❌ - Deep relative paths
+import { api } from '../../../../config/api';  // Use @config/api instead
+import { User } from '../../types';  // Use @types instead
+
+// WRONG ❌ - File extensions
+import { api } from '@config/api.ts';  // NO extensions
+```
 
 **TypeScript Configuration (tsconfig.app.json):**
-- Keep default Vite configuration
-- Do NOT modify `baseUrl` or `paths` unless explicitly requested
-- `moduleResolution: "Bundler"` is correct for Vite
-- If build fails, check file existence first before modifying tsconfig
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@config/*": ["src/config/*"],
+      "@types": ["src/types/index.ts"],
+      "@stores/*": ["src/stores/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@routes/*": ["src/routes/*"],
+      "@shared/*": ["src/shared/*"],
+      "@features/*": ["src/features/*"],
+      "@components/*": ["src/components/*"]
+    }
+  }
+}
+```
+
+**Vite Configuration (vite.config.ts):**
+```typescript
+import path from 'path';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@config': path.resolve(__dirname, './src/config'),
+      '@types': path.resolve(__dirname, './src/types/index.ts'),
+      '@stores': path.resolve(__dirname, './src/stores'),
+      '@layouts': path.resolve(__dirname, './src/layouts'),
+      '@routes': path.resolve(__dirname, './src/routes'),
+      '@shared': path.resolve(__dirname, './src/shared'),
+      '@features': path.resolve(__dirname, './src/features'),
+      '@components': path.resolve(__dirname, './src/components'),
+    },
+  },
+});
+```
+
+**Benefits:**
+- ✅ Cleaner, more readable imports
+- ✅ Easier refactoring (no path recalculation when moving files)
+- ✅ Consistent import style across the codebase
+- ✅ Better IDE autocomplete and navigation
 
 ## 2. Architectural Style: Package-by-Feature
 **STRICT RULE:** Organize code by **Domain Feature**, split by User Scope.
@@ -195,7 +272,7 @@ export type { Product, ProductFormData } from './types';
 ## 3. UI Libraries Strategy (STRICT)
 Based on the `features` folder structure:
 * **`features/backoffice/**`**: MUST use **Ant Design v6** (`antd`).
-    * Icons: `@ant-design/icons`.
+    * Icons: `@tabler/icons-react`.
 * **`features/storefront/**`**: MUST use **Mantine v8** (`@mantine/core`).
     * Styles: Use CSS Modules or Mantine style props. Do NOT use Emotion/Styled-Components.
     * Icons: `@tabler/icons-react`.
@@ -276,7 +353,7 @@ body {
    * **Card-based:** Use cards for content grouping (subtle elevation)
 
 6. **Icons:**
-   * **Consistent:** Same library throughout (Ant Icons for backoffice, Tabler for storefront)
+   * **Consistent:** Same library throughout (Tabler for both, backoffice and storefront)
    * **Size:** 16-24px for inline, 32-48px for prominent actions
    * **Color:** Match text color or primary color
 

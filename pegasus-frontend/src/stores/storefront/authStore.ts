@@ -10,7 +10,7 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+export const useStorefrontAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'auth-storage',
+      name: 'storefront-auth-storage',
     }
   )
 );
