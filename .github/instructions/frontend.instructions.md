@@ -291,6 +291,376 @@ Based on the `features` folder structure:
     * Tables: "Nombre", "Acciones", "Fecha de creación"
 * **Exception:** Technical logs and error codes in console can be in English.
 
+### A.1. Page Structure & Layout Composition (MANDATORY)
+**CRITICAL: Layout provides SPACING only. Features decide their visual structure (Cards or not).**
+
+**Layout Responsibility (BackofficeLayout):**
+```tsx
+// ✅ CORRECT: Layout only handles spacing, NO visual styling
+<Content
+  style={{
+    margin: '24px',  // Spacing around content
+    minHeight: 'calc(100vh - 112px)',
+  }}
+>
+  <Outlet />  {/* Features render here */}
+</Content>
+
+// ❌ WRONG: Layout should NOT have background/borders/shadows
+<Content
+  style={{
+    margin: '24px',
+    background: '#fff',      // ❌ NO - Let features decide
+    borderRadius: 8,         // ❌ NO - Let features decide
+    boxShadow: '...',        // ❌ NO - Let features decide
+  }}
+>
+```
+
+**Feature Responsibility (Pages in /features/):**
+
+**Single Card Page (Most common):**
+```tsx
+// ✅ CORRECT: One card with all content
+export const UsersListPage = () => {
+  return (
+    <Card>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={2}>Usuarios</Title>
+        <Text type="secondary">Gestión de usuarios del backoffice.</Text>
+      </div>
+      
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+        <Search placeholder="Buscar..." style={{ width: 320 }} />
+        <Button type="primary" icon={<IconPlus />}>Nuevo</Button>
+      </div>
+      
+      <Table columns={columns} dataSource={data} bordered />
+    </Card>
+  );
+};
+```
+
+**Multiple Cards Page (When needed):**
+```tsx
+// ✅ CORRECT: Multiple cards for different sections
+export const ProductDetailPage = () => {
+  return (
+    <div>
+      <Card style={{ marginBottom: 16 }}>
+        <Title level={3}>Información Básica</Title>
+        <Descriptions>...</Descriptions>
+      </Card>
+      
+      <Card style={{ marginBottom: 16 }}>
+        <Title level={3}>Variantes</Title>
+        <Table>...</Table>
+      </Card>
+      
+      <Card>
+        <Title level={3}>Imágenes</Title>
+        <Upload>...</Upload>
+      </Card>
+    </div>
+  );
+};
+```
+
+**Grid Layout with Cards:**
+```tsx
+// ✅ CORRECT: Cards in grid for dashboard
+export const DashboardPage = () => {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+      <Card>
+        <Statistic title="Usuarios" value={123} />
+      </Card>
+      <Card>
+        <Statistic title="Productos" value={456} />
+      </Card>
+      <Card>
+        <Statistic title="Ventas" value={789} />
+      </Card>
+    </div>
+  );
+};
+```
+
+**No Card Page (Rare, for custom layouts):**
+```tsx
+// ✅ ACCEPTABLE: No card if custom background/layout needed
+export const LandingPage = () => {
+  return (
+    <div style={{ background: 'linear-gradient(...)' }}>
+      {/* Custom styled content */}
+    </div>
+  );
+};
+```
+
+**Rules:**
+* **Layout = Spacing** (margin, padding, minHeight)
+* **Features = Visual Structure** (Card, background, borders, shadows)
+* Most pages use **one Card** wrapping all content
+* Use **multiple Cards** when you need visual separation between sections
+* Use **grid + Cards** for dashboard-style layouts
+* Avoid deeply nested Cards (max 1 level: page Card → content, NO Card → Card → Card)
+
+### A.2. Table Column Guidelines (CRITICAL)
+**RULE: Maximum 5-7 columns in list views. First column MUST be # (row number).**
+
+**Why:**
+* Prevents horizontal scrolling
+* Maintains clean, scannable interface
+* Forces focus on essential information
+* Details available through "View" action modal
+* Row numbers help users reference specific items
+
+**Column Selection Strategy:**
+1. **# Column (MANDATORY)** - Row number, always first column, width: 60-80px
+2. **Identifier Column** (1): Primary ID or unique name
+   - Example: Username, Product SKU, Order Number
+3. **Key Information** (3-4): Most important data points
+   - Example: Full Name, Email, Phone, Status
+4. **Actions Column** (1): Always last, fixed right
+
+**Example Structure:**
+```tsx
+// ✅ CORRECT: 7 columns maximum with # as first
+const columns = [
+  { 
+    title: '#', 
+    key: 'index',
+    width: 60,
+    align: 'center',
+    render: (_, __, index) => (page * pageSize) + index + 1,
+  },
+  { title: 'Usuario', dataIndex: 'username', width: 150 },
+  { title: 'Nombre Completo', render: (r) => `${r.firstName} ${r.lastName}` },
+  { title: 'Email', dataIndex: 'email' },
+  { title: 'Teléfono', dataIndex: 'phone', render: (p) => p ? `+51 ${formatPhone(p)}` : '-' },
+  { title: 'Estado', dataIndex: 'status', render: (s) => <Tag>{s}</Tag> },
+  { title: 'Acciones', key: 'actions', fixed: 'right', width: 120 },
+];
+```
+
+**What NOT to show in table:**
+* Document numbers (DNI, CE) → View modal
+* Full addresses → View modal
+* Detailed descriptions → View modal
+* Creation dates (unless critical) → View modal
+* Multiple status fields → View modal or combine
+* Complex nested data → View modal
+
+**Remember:** First column is ALWAYS # (row number). No exceptions.
+
+### A.2.1. Search and Pagination (MANDATORY)
+**When implementing ANY CRUD with lists, search and pagination MUST be implemented from the start.**
+
+**Backend Requirements:**
+* GET endpoint MUST accept: `page`, `size`, `search` query params
+* Response MUST include: `content[]`, `totalElements`, `totalPages`, `number`, `size`
+* Search MUST filter across ALL relevant text fields (username, email, name, etc.)
+* Use `@Query` with JPQL for multi-field LIKE search (case-insensitive)
+
+**Frontend Implementation:**
+```tsx
+// State management
+const [page, setPage] = useState(0);
+const [pageSize, setPageSize] = useState(10);
+const [searchTerm, setSearchTerm] = useState('');
+
+// Debounce search (500ms) to avoid excessive API calls
+const debouncedSearch = useDebounce(searchTerm, 500);
+
+// Query with search parameter
+const { data, isLoading } = useUsers(page, pageSize, debouncedSearch || undefined);
+
+// Search input
+<Input
+  placeholder="Buscar por usuario, email o nombre..."
+  prefix={<IconSearch size={16} />}
+  value={searchTerm}
+  onChange={(e) => {
+    setSearchTerm(e.target.value);
+    setPage(0);  // Reset to first page on search
+  }}
+  allowClear
+  onClear={() => {
+    setSearchTerm('');
+    setPage(0);
+  }}
+/>
+
+// Pagination
+<Table
+  pagination={{
+    current: page + 1,  // Backend uses 0-based, UI uses 1-based
+    pageSize,
+    total: data?.totalElements || 0,
+    showSizeChanger: true,
+    showTotal: (total) => `Total: ${total} registros`,
+    onChange: (newPage, newPageSize) => {
+      setPage(newPage - 1);  // Convert back to 0-based
+      setPageSize(newPageSize);
+    },
+  }}
+/>
+```
+
+**useDebounce Hook:**
+* Located in `@shared/utils/formatters.ts`
+* Default delay: 500ms
+* Usage: `const debouncedValue = useDebounce(value, 500);`
+
+**API Integration:**
+```typescript
+// API function
+getUsers: async (page = 0, size = 10, search?: string) => {
+  const { data } = await api.get(BASE_URL, {
+    params: { 
+      page, 
+      size,
+      ...(search && { search }),  // Only include if not empty
+    },
+  });
+  return data;
+}
+
+// Hook
+export const useUsers = (page = 0, size = 10, search?: string) => {
+  return useQuery({
+    queryKey: ['users', page, size, search],  // Include search in cache key
+    queryFn: () => usersApi.getUsers(page, size, search),
+  });
+};
+```
+
+### A.3. Action Buttons Design (MANDATORY)
+**RULE: Maximum 3 action icons. Self-descriptive. No text labels needed.**
+
+**Standard Actions (Pick 3):**
+1. **View Details** (Icon: `IconEye`) - Opens modal with full information
+2. **Edit** (Icon: `IconEdit`) - Opens edit modal
+3. **Delete** (Icon: `IconTrash`) - Shows confirmation popconfirm
+
+**Alternative Actions (based on use case):**
+* **Toggle Status** - Use `<Switch>` instead of button (more intuitive)
+* **Download/Export** - `IconDownload`
+* **Duplicate** - `IconCopy`
+* **Archive** - `IconArchive`
+
+**Implementation:**
+```tsx
+// ✅ CORRECT: 3 self-descriptive icon buttons
+{
+  title: 'Acciones',
+  key: 'actions',
+  fixed: 'right',
+  width: 120,
+  render: (_, record) => (
+    <Space size="small">
+      <Button
+        type="link"
+        size="small"
+        icon={<IconEye size={16} />}
+        onClick={() => handleView(record.id)}
+      />
+      <Button
+        type="link"
+        size="small"
+        icon={<IconEdit size={16} />}
+        onClick={() => handleEdit(record.id)}
+      />
+      <Popconfirm title="¿Eliminar?" onConfirm={() => handleDelete(record.id)}>
+        <Button type="link" danger size="small" icon={<IconTrash size={16} />} />
+      </Popconfirm>
+    </Space>
+  ),
+}
+
+// ❌ WRONG: Too many actions, text labels, cramped
+<Space>
+  <Button icon={<IconEdit />}>Editar</Button> {/* Text not needed */}
+  <Button icon={<IconKey />}>Contraseña</Button> {/* Too specific */}
+  <Switch /> {/* Mixed with buttons */}
+  <Button icon={<IconTrash />} /> {/* OK but too many total */}
+</Space>
+```
+
+**Rules:**
+* Icon size: 16px for table actions
+* Button type: `link` (clean, no background)
+* Button size: `small`
+* Spacing: `<Space size="small">`
+* Destructive actions: Use `danger` prop + `Popconfirm`
+* No text labels on icon buttons in tables (icons must be self-explanatory)
+
+### A.4. Modal vs Full Page Decision (CRITICAL)
+**RULE: Use modals for simple forms. Use full pages only for complex workflows.**
+
+**Use MODAL when:**
+* Form has ≤8 fields
+* Single-step operation (create/edit entity)
+* No complex relationships or nested forms
+* Quick action that doesn't require user's full attention
+
+**Use FULL PAGE when:**
+* Form has >8 fields
+* Multi-step wizard or complex workflow
+* Requires file uploads or rich text editing
+* Needs side-by-side comparison or complex layout
+
+**Examples:**
+
+**Modal Form (Users, Roles, simple entities):**
+```tsx
+// ✅ CORRECT: Simple CRUD uses modal
+<Modal
+  title="Crear Usuario"
+  open={visible}
+  onCancel={onClose}
+  onOk={() => form.submit()}
+  width={600}
+>
+  <Form form={form} layout="vertical">
+    <Form.Item label="Usuario" name="username">
+      <Input />
+    </Form.Item>
+    {/* 4-8 fields max */}
+  </Form>
+</Modal>
+```
+
+**Full Page Form (Products with variants, complex orders):**
+```tsx
+// ✅ CORRECT: Complex entity uses full page
+export const ProductCreatePage = () => {
+  return (
+    <div>
+      <PageHeader title="Crear Producto" onBack={goBack} />
+      <Form layout="vertical">
+        {/* Multiple sections */}
+        <Card title="Información Básica">...</Card>
+        <Card title="Precios y Stock">...</Card>
+        <Card title="Variantes">...</Card>
+        <Card title="Imágenes">...</Card>
+      </Form>
+    </div>
+  );
+};
+```
+
+**Decision Matrix:**
+| Entity | Fields | Use | Reason |
+|--------|--------|-----|--------|
+| Users | 7 | Modal | Simple identity data |
+| Roles | 3 | Modal | Name + description |
+| Customers | 10+ | Full Page | Addresses, multiple contacts |
+| Products | 15+ | Full Page | Variants, images, specs |
+| Orders | View only | Full Page | Complex read-only data |
+| Settings | Varies | Full Page | Multiple tabs/sections |
+
 ### B. CSS Reset & Global Styles
 **Base reset in `src/index.css` (MANDATORY):**
 ```css

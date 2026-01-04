@@ -172,6 +172,50 @@ applyTo: "pegasus-backend/**/*.java, pegasus-backend/pom.xml, pegasus-backend/sr
 * **DTOs:** Mandatory. Never expose Entities in Controllers. Use Java `record` for DTOs when possible (simple data carriers). Use classes with Lombok when you need builders or mutable state.
 * **Validation:** Use `jakarta.validation` (`@NotNull`, `@Email`) in DTOs.
 * **Repository:** Use `JpaRepository`.
+    * **Search Queries (MANDATORY):** When implementing list endpoints with search functionality, MUST create a `@Query` method in the repository for multi-field filtering.
+        * Use JPQL with `LOWER()` and `LIKE` for case-insensitive search.
+        * Search MUST filter across ALL relevant text fields (username, email, firstName, lastName, etc.).
+        * Return `Page<Entity>` for pagination support.
+        * Example:
+        ```java
+        @Query("SELECT u FROM User u WHERE " +
+               "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))")
+        Page<User> searchUsers(@Param("search") String search, Pageable pageable);
+        ```
+* **Service Layer (MANDATORY):**
+    * All list methods MUST accept `search` parameter (nullable).
+    * If search is provided (not null/blank), call `repository.search()`, otherwise call `repository.findAll()`.
+    * Example:
+    ```java
+    public PageResponse<UserResponse> getAllUsers(String search, Pageable pageable) {
+        Page<User> page;
+        
+        if (search != null && !search.isBlank()) {
+            page = userRepository.searchUsers(search.trim(), pageable);
+        } else {
+            page = userRepository.findAll(pageable);
+        }
+        
+        return new PageResponse<>(...);
+    }
+    ```
+* **Controller Layer (MANDATORY):**
+    * All list endpoints MUST accept `@RequestParam(required = false) String search`.
+    * Pass search parameter to service layer.
+    * Example:
+    ```java
+    @GetMapping
+    public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        PageResponse<UserResponse> response = userService.getAllUsers(search, pageable);
+        return ResponseEntity.ok(response);
+    }
+    ```
 * **MapStruct:** Use interfaces with `@Mapper(componentModel = "spring")`.
 * **Transactions:** Use `@Transactional` on Service methods that modify data (create, update, delete). Do NOT use on read-only methods.
 * **Password Handling:** Always use `BCryptPasswordEncoder` (injected via Spring Security). Store only hashed passwords in `password_hash` column.
