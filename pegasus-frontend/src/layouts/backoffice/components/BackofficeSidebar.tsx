@@ -139,13 +139,8 @@ const menuItems: MenuItem[] = [
       },
       {
         key: '/admin/security/roles',
-        label: 'Roles',
+        label: 'Roles y Permisos',
         path: '/admin/security/roles',
-      },
-      {
-        key: '/admin/security/modules',
-        label: 'Módulos',
-        path: '/admin/security/modules',
       },
     ],
   },

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Table, Button, Space, Tag, Input, Typography, Popconfirm, Card } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconSearch, IconEye } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconSearch, IconEye, IconKey } from '@tabler/icons-react';
 import type { ColumnsType } from 'antd/es/table';
 import { useUsers } from '../hooks/useUsers';
 import { useDeleteUser } from '../hooks/useUserMutations';
 import { UserFormModal } from '../components/UserFormModal';
 import { UserDetailModal } from '../components/UserDetailModal';
+import { AssignRolesToUserModal } from '../rbac';
 import { USER_STATUS } from '../constants/userConstants';
 import { formatPhone, useDebounce } from '@shared/utils/formatters';
 import type { UserResponse } from '@types';
@@ -19,6 +20,8 @@ export const UsersListPage = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [formModalVisible, setFormModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [assignRolesVisible, setAssignRolesVisible] = useState(false);
+  const [selectedUsername, setSelectedUsername] = useState('');
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Debounce search to avoid excessive API calls
@@ -46,6 +49,12 @@ export const UsersListPage = () => {
 
   const handleDelete = (id: number) => {
     deleteUser.mutate(id);
+  };
+
+  const handleAssignRoles = (id: number, username: string) => {
+    setSelectedUserId(id);
+    setSelectedUsername(username);
+    setAssignRolesVisible(true);
   };
 
   const columns: ColumnsType<UserResponse> = [
@@ -94,20 +103,29 @@ export const UsersListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 120,
+      width: 150,
       render: (_, record) => (
         <Space size="small">
           <Button
             type="link"
             size="small"
+            icon={<IconKey size={16} />}
+            onClick={() => handleAssignRoles(record.id, record.username)}
+            title="Asignar roles"
+          />
+          <Button
+            type="link"
+            size="small"
             icon={<IconEye size={16} />}
             onClick={() => handleView(record.id)}
+            title="Ver detalle"
           />
           <Button
             type="link"
             size="small"
             icon={<IconEdit size={16} />}
             onClick={() => handleEdit(record.id)}
+            title="Editar"
           />
           <Popconfirm
             title="¿Eliminar usuario?"
@@ -201,6 +219,16 @@ export const UsersListPage = () => {
         visible={detailModalVisible}
         onClose={() => {
           setDetailModalVisible(false);
+          setSelectedUserId(null);
+        }}
+      />
+
+      <AssignRolesToUserModal
+        userId={selectedUserId}
+        username={selectedUsername}
+        visible={assignRolesVisible}
+        onClose={() => {
+          setAssignRolesVisible(false);
           setSelectedUserId(null);
         }}
       />

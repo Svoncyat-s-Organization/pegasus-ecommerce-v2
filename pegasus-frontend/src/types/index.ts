@@ -120,3 +120,65 @@ export interface UserResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+// ============================================
+// RBAC Types (Roles, Modules, Permissions, Assignments)
+// ============================================
+export interface RoleResponse {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+export interface CreateRoleRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateRoleRequest {
+  name: string;
+  description?: string;
+}
+
+export interface ModuleResponse {
+  id: number;
+  icon?: string;
+  name: string;
+  path: string;
+}
+
+export interface CreateModuleRequest {
+  icon?: string;
+  name: string;
+  path: string;
+}
+
+export interface UpdateModuleRequest {
+  icon?: string;
+  name: string;
+  path: string;
+}
+
+export interface RoleWithModulesResponse {
+  roleId: number;
+  roleName: string;
+  roleDescription?: string;
+  modules: ModuleResponse[];
+}
+
+export interface UserWithRolesResponse {
+  userId: number;
+  username: string;
+  email: string;
+  roles: RoleResponse[];
+}
+
+export interface AssignModulesToRoleRequest {
+  roleId: number;
+  moduleIds: number[];
+}
+
+export interface AssignRolesToUserRequest {
+  userId: number;
+  roleIds: number[];
+}
