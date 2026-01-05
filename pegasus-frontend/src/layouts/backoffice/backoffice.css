@@ -90,7 +90,7 @@
 /* Fondo del menú en modo oscuro - cambiar azul oscuro por gris oscuro */
 .ant-menu-dark.custom-sidebar-menu,
 .ant-menu-dark.custom-sidebar-menu .ant-menu-sub {
-  background: #141414 !important;
+  background: #1f1f1f !important;
 }
 
 /* Items del menú sin seleccionar en modo oscuro */
@@ -131,6 +131,6 @@
 
 /* Botón de colapsar sidebar en modo oscuro */
 .ant-layout-sider-dark .ant-layout-sider-trigger {
-  background: #141414 !important;
+  background: #1f1f1f !important;
   border-right: 1px solid #303030 !important;
 }
