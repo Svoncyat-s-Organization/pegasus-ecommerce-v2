@@ -20,7 +20,7 @@ const pageTitles: Record<string, string> = {
   '/admin/logistics/shipping-methods': 'Métodos de Envío',
   '/admin/logistics/shipments': 'Envíos',
   '/admin/logistics/carriers': 'Transportistas',
-  '/admin/invoicing': 'Facturación',
+  '/admin/invoices': 'Facturación',
   '/admin/rma': 'Devoluciones',
   '/admin/customers': 'Clientes',
   '/admin/security': 'Seguridad',

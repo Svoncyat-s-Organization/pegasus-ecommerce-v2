@@ -56,6 +56,255 @@ export interface BaseEntity {
 }
 
 // ============================================
+// Inventory Module Types
+// ============================================
+export interface WarehouseResponse {
+  id: number;
+  code: string;
+  name: string;
+  ubigeoId: string;
+  address: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// Purchase Module Types
+// ============================================
+export type SupplierDocumentType = 'DNI' | 'RUC';
+
+export interface SupplierResponse {
+  id: number;
+  docType: SupplierDocumentType;
+  docNumber: string;
+  companyName: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  ubigeoId?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSupplierRequest {
+  docType: SupplierDocumentType;
+  docNumber: string;
+  companyName: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  ubigeoId?: string;
+}
+
+export interface UpdateSupplierRequest {
+  docType: SupplierDocumentType;
+  docNumber: string;
+  companyName: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  ubigeoId?: string;
+}
+
+export type PurchaseStatus = 'PENDING' | 'RECEIVED' | 'CANCELLED';
+
+export interface PurchaseItemResponse {
+  id: number;
+  variantId: number;
+  quantity: number;
+  unitCost: number;
+  subtotal: number;
+  createdAt: string;
+}
+
+export interface CreatePurchaseItemRequest {
+  variantId: number;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface CreatePurchaseRequest {
+  supplierId: number;
+  warehouseId: number;
+  userId: number;
+  invoiceType: string;
+  invoiceNumber: string;
+  purchaseDate?: string;
+  notes?: string;
+  items: CreatePurchaseItemRequest[];
+}
+
+export interface UpdatePurchaseStatusRequest {
+  status: PurchaseStatus;
+}
+
+export interface PurchaseResponse {
+  id: number;
+  supplier: SupplierResponse;
+  warehouseId: number;
+  userId: number;
+  status: PurchaseStatus;
+  invoiceType: string;
+  invoiceNumber: string;
+  totalAmount: number;
+  purchaseDate?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: PurchaseItemResponse[];
+}
+
+// ============================================
+// Billing Module Types (Invoices & Payments)
+// ============================================
+export type InvoiceType = 'BILL' | 'INVOICE';
+
+export type InvoiceStatus = 'ISSUED' | 'CANCELLED' | 'REJECTED';
+
+export type DocumentSeriesType = 'BILL' | 'INVOICE' | 'CREDIT_NOTE';
+
+export interface DocumentSeriesResponse {
+  id: number;
+  documentType: DocumentSeriesType;
+  series: string;
+  currentNumber: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDocumentSeriesRequest {
+  documentType: DocumentSeriesType;
+  series: string;
+  currentNumber?: number;
+}
+
+export interface UpdateDocumentSeriesRequest {
+  series: string;
+  currentNumber?: number;
+}
+
+// ============================================
+// Orders Module Types (Backoffice select)
+// ============================================
+export type OrderStatus =
+  | 'PENDING'
+  | 'AWAIT_PAYMENT'
+  | 'PAID'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'REFUNDED';
+
+export interface OrderSummaryResponse {
+  id: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  customerDocType?: DocumentType;
+  customerDocNumber?: string;
+  status: OrderStatus;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceSummaryResponse {
+  id: number;
+  orderId: number;
+  seriesId?: number | null;
+  invoiceType: InvoiceType;
+  series: string;
+  number: string;
+  totalAmount: number;
+  status: InvoiceStatus;
+  issuedAt?: string;
+}
+
+export interface InvoiceResponse {
+  id: number;
+  orderId: number;
+  seriesId?: number | null;
+  invoiceType: InvoiceType;
+  series: string;
+  number: string;
+  receiverTaxId: string;
+  receiverName: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: InvoiceStatus;
+  issuedAt?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInvoiceRequest {
+  orderId: number;
+  invoiceType: InvoiceType;
+  series?: string;
+  number?: string;
+  receiverTaxId: string;
+  receiverName: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  issuedAt?: string;
+  seriesId?: number;
+}
+
+export interface UpdateInvoiceStatusRequest {
+  status: InvoiceStatus;
+}
+
+export interface PaymentMethodResponse {
+  id: number;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentMethodRequest {
+  name: string;
+}
+
+export interface UpdatePaymentMethodRequest {
+  name: string;
+}
+
+export interface PaymentResponse {
+  id: number;
+  orderId: number;
+  paymentMethodId: number;
+  paymentMethodName?: string;
+  amount: number;
+  transactionId?: string;
+  paymentDate?: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentRequest {
+  orderId: number;
+  paymentMethodId: number;
+  amount: number;
+  transactionId?: string;
+  paymentDate?: string;
+  notes?: string;
+}
+
+// ============================================
 // Navigation Types
 // ============================================
 export interface MenuItem {
@@ -425,7 +674,7 @@ export interface Shipment {
   weightKg: number;
   status: string;
   estimatedDeliveryDate: string;
-  shippingAddress: Record<string, any>;
+  shippingAddress: Record<string, unknown>;
   recipientName: string;
   recipientPhone: string;
   requireSignature: boolean;
@@ -446,7 +695,7 @@ export interface CreateShipmentRequest {
   shippingCost: number;
   weightKg: number;
   estimatedDeliveryDate: string;
-  shippingAddress: Record<string, any>;
+  shippingAddress: Record<string, unknown>;
   recipientName: string;
   recipientPhone: string;
   requireSignature?: boolean;
