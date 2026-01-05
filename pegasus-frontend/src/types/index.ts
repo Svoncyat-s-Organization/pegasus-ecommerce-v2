@@ -251,3 +251,129 @@ export interface UpdateCustomerAddressRequest {
   reference?: string;
   postalCode?: string;
 }
+
+// ============================================
+// Catalog Types (Products, Brands, Categories, Variants, Images)
+// ============================================
+
+// Brand
+export interface BrandResponse extends BaseEntity {
+  name: string;
+  slug: string;
+  imageUrl: string;
+}
+
+export interface CreateBrandRequest {
+  name: string;
+  slug: string;
+  imageUrl: string;
+}
+
+export interface UpdateBrandRequest {
+  name?: string;
+  slug?: string;
+  imageUrl?: string;
+}
+
+// Category
+export interface CategoryResponse extends BaseEntity {
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: number;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: number;
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
+  slug?: string;
+  description?: string;
+  parentId?: number;
+}
+
+// Product
+export interface ProductResponse extends BaseEntity {
+  code: string;
+  name: string;
+  slug: string;
+  description?: string;
+  brandId?: number;
+  brandName?: string;
+  categoryId: number;
+  categoryName?: string;
+  specs: Record<string, unknown>;
+  isFeatured: boolean;
+}
+
+export interface CreateProductRequest {
+  code: string;
+  name: string;
+  slug: string;
+  description?: string;
+  brandId?: number;
+  categoryId: number;
+  specs?: Record<string, unknown>;
+  isFeatured?: boolean;
+}
+
+export interface UpdateProductRequest {
+  code?: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  brandId?: number;
+  categoryId?: number;
+  specs?: Record<string, unknown>;
+  isFeatured?: boolean;
+}
+
+// Variant
+export interface VariantResponse extends BaseEntity {
+  productId: number;
+  sku: string;
+  price: number;
+  attributes: Record<string, unknown>;
+}
+
+export interface CreateVariantRequest {
+  productId: number;
+  sku: string;
+  price: number;
+  attributes?: Record<string, unknown>;
+}
+
+export interface UpdateVariantRequest {
+  sku?: string;
+  price?: number;
+  attributes?: Record<string, unknown>;
+}
+
+// Image
+export interface ImageResponse {
+  id: number;
+  imageUrl: string;
+  productId: number;
+  variantId?: number;
+  isPrimary: boolean;
+  displayOrder: number;
+}
+
+export interface CreateImageRequest {
+  imageUrl: string;
+  productId: number;
+  variantId?: number;
+  isPrimary?: boolean;
+  displayOrder?: number;
+}
+
+export interface UpdateImageRequest {
+  imageUrl?: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
+}

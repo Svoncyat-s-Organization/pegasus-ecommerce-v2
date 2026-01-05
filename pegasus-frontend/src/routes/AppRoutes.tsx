@@ -9,6 +9,7 @@ import { LoginPage as AdminLoginPage } from '@features/backoffice/auth/pages/Log
 import { UsersListPage } from '@features/backoffice/security';
 import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
 import { CustomersListPage } from '@features/backoffice/customer';
+import { BrandsListPage, CategoriesListPage, ProductsListPage, ProductFormPage } from '@features/backoffice/catalog';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -52,9 +53,11 @@ export const AppRoutes = () => {
         <Route path="dashboard" element={<DashboardPage />} />
 
         {/* Catalog */}
-        <Route path="catalog/products" element={<PlaceholderPage title="Productos" description="Gestión de productos del catálogo" />} />
-        <Route path="catalog/categories" element={<PlaceholderPage title="Categorías" description="Gestión de categorías de productos" />} />
-        <Route path="catalog/brands" element={<PlaceholderPage title="Marcas" description="Gestión de marcas de productos" />} />
+        <Route path="catalog/products" element={<ProductsListPage />} />
+        <Route path="catalog/products/new" element={<ProductFormPage />} />
+        <Route path="catalog/products/:id/edit" element={<ProductFormPage />} />
+        <Route path="catalog/categories" element={<CategoriesListPage />} />
+        <Route path="catalog/brands" element={<BrandsListPage />} />
 
         {/* Orders */}
         <Route path="orders" element={<PlaceholderPage title="Pedidos" description="Gestión de pedidos y órdenes" />} />

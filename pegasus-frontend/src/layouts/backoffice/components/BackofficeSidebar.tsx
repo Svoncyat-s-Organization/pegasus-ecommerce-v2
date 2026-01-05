@@ -36,11 +36,6 @@ const menuItems: MenuItem[] = [
     icon: <IconShoppingCart size={18} />,
     children: [
       {
-        key: '/admin/catalog/products',
-        label: 'Productos',
-        path: '/admin/catalog/products',
-      },
-      {
         key: '/admin/catalog/categories',
         label: 'Categorías',
         path: '/admin/catalog/categories',
@@ -49,6 +44,11 @@ const menuItems: MenuItem[] = [
         key: '/admin/catalog/brands',
         label: 'Marcas',
         path: '/admin/catalog/brands',
+      },
+      {
+        key: '/admin/catalog/products',
+        label: 'Productos',
+        path: '/admin/catalog/products',
       },
     ],
   },
