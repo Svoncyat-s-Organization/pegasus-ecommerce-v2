@@ -22,16 +22,24 @@ Always identify the correct folder before creating or modifying files.
 * Do NOT hardcode versions in code - reference the build files instead.
 
 **Business Domain (E-commerce MVP):**
+* **Dashboard**: Analytics dashboard (NO database tables, reads from other modules for metrics).
 * **Catalog**: Product management (SKU, price, stock, categories, brands, specs, variants, images).
-* **Customer**: Customer accounts, addresses (Peru ubigeo), contact info.
 * **Order**: Order lifecycle (items, status history, subtotal, taxes, shipping, total).
 * **Inventory**: Warehouse stock, movements (in/out/adjustment), stock levels.
-* **User**: Backoffice staff identities (CRUD: username, email, password, personal data).
-* **RBAC**: Role-Based Access Control (roles, modules, permissions per module, user-role assignments).
+* **Purchases**: Supplier orders, incoming stock management (NOT customer orders).
+* **Logistics**: Shipping methods, tracking for customer orders, etc.
+* **Invoicing**: Managment of invoices of the company.
+* **RMA**: Return Merchandise Authorization for customer returns.
+* **Customer**: Customer accounts, addresses (Peru ubigeo), contact info.
+* **User**: Backoffice staff identities (CRUD: username, email, password, personal data). This is part of Security `features/backoffice/security` in the frontend.
+* **RBAC**: Role-Based Access Control (roles, modules, permissions per module, user-role assignments). This is part of Security `features/backoffice/security` in the frontend.
     * **Separation Logic:** `/features/user` = user identity CRUD. `/features/rbac` = roles/permissions/assignments logic.
-* **Locations**: Peru Ubigeo system (department, province, district) for addresses and warehouses.
-* **Dashboard**: Analytics dashboard (NO database tables, reads from other modules for metrics).
 * **Report**: Report generation (NO database tables, aggregates data from other modules).
+* **Settings**: Business configuration like preferences for storefront (colors, legal docs, etc) and identity of Pegasus.
+
+**Auxiliar Modules:**
+* **Authentication**: JWT-based authentication for both Backoffice and Storefront users.
+* **Locations**: Peru Ubigeo system (department, province, district) for addresses and warehouses.
 
 ## Peru-Specific Validations (Applies to Both Backend & Frontend)
 **CRITICAL: These validation rules must be consistently applied across the entire stack.**
