@@ -10,6 +10,7 @@ import { UsersListPage } from '@features/backoffice/security';
 import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
 import { CustomersListPage } from '@features/backoffice/customer';
 import { BrandsListPage, CategoriesListPage, ProductsListPage, ProductFormPage } from '@features/backoffice/catalog';
+import { ShippingMethodsListPage, ShipmentsListPage } from '@features/backoffice/logistic';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -72,7 +73,8 @@ export const AppRoutes = () => {
         <Route path="purchases/orders" element={<PlaceholderPage title="Órdenes de Compra" description="Gestión de órdenes de compra" />} />
 
         {/* Logistics */}
-        <Route path="logistics/shipments" element={<PlaceholderPage title="Envíos" description="Gestión de envíos y despachos" />} />
+        <Route path="logistics/shipping-methods" element={<ShippingMethodsListPage />} />
+        <Route path="logistics/shipments" element={<ShipmentsListPage />} />
         <Route path="logistics/carriers" element={<PlaceholderPage title="Transportistas" description="Gestión de empresas transportistas" />} />
 
         {/* Invoices */}

@@ -103,14 +103,14 @@ const menuItems: MenuItem[] = [
     icon: <IconTruck size={18} />,
     children: [
       {
+        key: '/admin/logistics/shipping-methods',
+        label: 'Métodos de Envío',
+        path: '/admin/logistics/shipping-methods',
+      },
+      {
         key: '/admin/logistics/shipments',
         label: 'Envíos',
         path: '/admin/logistics/shipments',
-      },
-      {
-        key: '/admin/logistics/carriers',
-        label: 'Transportistas',
-        path: '/admin/logistics/carriers',
       },
     ],
   },
