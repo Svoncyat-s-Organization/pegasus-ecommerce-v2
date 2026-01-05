@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal, Transfer, Spin, Alert } from 'antd';
 import type { TransferProps } from 'antd';
 import { useRoles } from '../../hooks/useRoles';
@@ -33,14 +33,10 @@ export const AssignRolesToUserModal = ({
   );
   const assignRoles = useAssignRolesToUser();
 
-  // Initialize targetKeys when userRoles loads
-  useEffect(() => {
-    if (userRoles?.roles) {
-      setTargetKeys(userRoles.roles.map((r) => r.id.toString()));
-    } else {
-      setTargetKeys([]);
-    }
-  }, [userRoles]);
+  const initialTargetKeys = useMemo(
+    () => userRoles?.roles?.map((r) => r.id.toString()) || [],
+    [userRoles]
+  );
 
   const handleChange: TransferProps['onChange'] = (newTargetKeys) => {
     setTargetKeys(newTargetKeys as string[]);
@@ -88,6 +84,12 @@ export const AssignRolesToUserModal = ({
       open={visible}
       onOk={handleSave}
       onCancel={handleCancel}
+      afterOpenChange={(open) => {
+        if (open) {
+          setTargetKeys(initialTargetKeys);
+          setSelectedKeys([]);
+        }
+      }}
       confirmLoading={assignRoles.isPending}
       okText="Guardar"
       cancelText="Cancelar"

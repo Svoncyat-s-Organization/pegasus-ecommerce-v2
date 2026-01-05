@@ -1,5 +1,6 @@
 package com.pegasus.backend.features.order.dto;
 
+import com.pegasus.backend.shared.enums.DocumentType;
 import com.pegasus.backend.shared.enums.OrderStatus;
 
 import java.math.BigDecimal;
@@ -10,13 +11,15 @@ import java.time.OffsetDateTime;
  * Usado en listados (sin items ni historial)
  */
 public record OrderSummaryResponse(
-        Long id,
-        String orderNumber,
-        Long customerId,
-        String customerName,
-        String customerEmail,
-        OrderStatus status,
-        BigDecimal total,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {}
+                Long id,
+                String orderNumber,
+                Long customerId,
+                String customerName,
+                String customerEmail,
+                DocumentType customerDocType,
+                String customerDocNumber,
+                OrderStatus status,
+                BigDecimal total,
+                OffsetDateTime createdAt,
+                OffsetDateTime updatedAt) {
+}

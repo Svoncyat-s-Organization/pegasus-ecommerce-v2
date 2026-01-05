@@ -39,7 +39,7 @@ export const VariantFormModal = ({ open, onCancel, productId, variant }: Variant
       if (values.attributes) {
         try {
           attributes = JSON.parse(values.attributes);
-        } catch (error) {
+        } catch {
           form.setFields([{ name: 'attributes', errors: ['JSON inválido'] }]);
           return;
         }
@@ -58,7 +58,7 @@ export const VariantFormModal = ({ open, onCancel, productId, variant }: Variant
 
       form.resetFields();
       onCancel();
-    } catch (error) {
+    } catch {
       // Errores de validación o del servidor ya manejados
     }
   };

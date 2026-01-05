@@ -55,7 +55,7 @@ export const ProductFormPage = () => {
         message.success('Producto creado exitosamente');
         navigate(`/admin/catalog/products/${newProduct.id}/edit`);
       }
-    } catch (error) {
+    } catch {
       // Error ya manejado por el hook
     }
   };

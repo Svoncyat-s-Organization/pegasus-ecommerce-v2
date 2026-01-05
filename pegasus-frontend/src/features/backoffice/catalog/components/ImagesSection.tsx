@@ -37,7 +37,7 @@ export const ImagesSection = ({ productId }: ImagesSectionProps) => {
         displayOrder: 0,
       });
       message.success('Imagen agregada exitosamente');
-    } catch (error) {
+    } catch {
       // Error manejado por el hook
     }
     
@@ -55,7 +55,7 @@ export const ImagesSection = ({ productId }: ImagesSectionProps) => {
         request: { isPrimary: true },
       });
       message.success('Imagen principal establecida');
-    } catch (error) {
+    } catch {
       // Error manejado por el hook
     }
   };

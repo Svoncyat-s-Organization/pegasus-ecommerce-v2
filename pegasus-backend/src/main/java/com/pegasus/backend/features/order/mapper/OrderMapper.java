@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Mapper MapStruct para Order
  */
-@Mapper(componentModel = "spring", uses = {OrderItemMapper.class, OrderStatusHistoryMapper.class})
+@Mapper(componentModel = "spring", uses = { OrderItemMapper.class, OrderStatusHistoryMapper.class })
 public interface OrderMapper {
 
     @Mapping(target = "customerName", expression = "java(getCustomerFullName(entity))")
@@ -20,6 +20,8 @@ public interface OrderMapper {
 
     @Mapping(target = "customerName", expression = "java(getCustomerFullName(entity))")
     @Mapping(target = "customerEmail", source = "customer.email")
+    @Mapping(target = "customerDocType", source = "customer.docType")
+    @Mapping(target = "customerDocNumber", source = "customer.docNumber")
     OrderSummaryResponse toSummaryResponse(Order entity);
 
     List<OrderResponse> toResponseList(List<Order> entities);

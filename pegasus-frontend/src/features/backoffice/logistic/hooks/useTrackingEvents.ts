@@ -9,6 +9,17 @@ import {
   deleteTrackingEvent,
 } from '../api/trackingEventsApi';
 
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown): string | undefined =>
+  (error as ApiErrorShape).response?.data?.message;
+
 export const useTrackingEventsByShipment = (
   shipmentId: number,
   page: number,
@@ -51,8 +62,8 @@ export const useCreateTrackingEvent = () => {
       queryClient.invalidateQueries({ queryKey: ['tracking-events-public', variables.shipmentId] });
       message.success('Evento de tracking creado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al crear el evento de tracking');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al crear el evento de tracking');
     },
   });
 };
@@ -66,8 +77,8 @@ export const useDeleteTrackingEvent = () => {
       queryClient.invalidateQueries({ queryKey: ['tracking-events'] });
       message.success('Evento de tracking eliminado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al eliminar el evento de tracking');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al eliminar el evento de tracking');
     },
   });
 };

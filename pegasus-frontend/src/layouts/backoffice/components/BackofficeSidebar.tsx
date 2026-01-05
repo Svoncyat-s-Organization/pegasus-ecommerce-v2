@@ -1,6 +1,7 @@
 import { Layout, Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import {
   IconDashboard,
   IconShoppingCart,
@@ -163,6 +164,32 @@ const menuItems: MenuItem[] = [
   },
 ];
 
+interface LogoHeaderProps {
+  collapsed: boolean;
+  currentLogo: string;
+  logoHeaderStyle: CSSProperties;
+  toggleTheme: () => void;
+}
+
+const LogoHeader = ({
+  collapsed,
+  currentLogo,
+  logoHeaderStyle,
+  toggleTheme,
+}: LogoHeaderProps) => (
+  <div onClick={toggleTheme} style={logoHeaderStyle}>
+    {collapsed ? (
+      <img src={currentLogo} alt="Pegasus" style={{ width: 28, height: 28 }} />
+    ) : (
+      <>
+        <span>PEGASUS</span>
+        <img src={currentLogo} alt="Pegasus" style={{ width: 24, height: 24 }} />
+        <span style={{ color: '#2f54eb' }}>ADMIN</span>
+      </>
+    )}
+  </div>
+);
+
 export const BackofficeSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -201,24 +228,6 @@ export const BackofficeSidebar = () => {
     userSelect: 'none' as const,
     transition: 'opacity 0.2s',
   };
-
-  // Componente reutilizable del logo
-  const LogoHeader = () => (
-    <div
-      onClick={toggleTheme}
-      style={logoHeaderStyle}
-    >
-      {collapsed ? (
-        <img src={currentLogo} alt="Pegasus" style={{ width: 28, height: 28 }} />
-      ) : (
-        <>
-          <span>PEGASUS</span>
-          <img src={currentLogo} alt="Pegasus" style={{ width: 24, height: 24 }} />
-          <span style={{ color: '#2f54eb' }}>ADMIN</span>
-        </>
-      )}
-    </div>
-  );
 
   // Filter menu items based on user permissions
   const filteredMenuItems = useMemo(() => {
@@ -316,7 +325,12 @@ export const BackofficeSidebar = () => {
         theme={isDark ? 'dark' : 'light'}
         style={siderStyle}
       >
-        <LogoHeader />
+        <LogoHeader
+          collapsed={collapsed}
+          currentLogo={currentLogo}
+          logoHeaderStyle={logoHeaderStyle}
+          toggleTheme={toggleTheme}
+        />
       </Sider>
     );
   }
@@ -330,7 +344,12 @@ export const BackofficeSidebar = () => {
       theme={isDark ? 'dark' : 'light'}
       style={siderStyle}
     >
-      <LogoHeader />
+      <LogoHeader
+        collapsed={collapsed}
+        currentLogo={currentLogo}
+        logoHeaderStyle={logoHeaderStyle}
+        toggleTheme={toggleTheme}
+      />
       <Menu
         className="custom-sidebar-menu"
         theme={isDark ? 'dark' : 'light'}

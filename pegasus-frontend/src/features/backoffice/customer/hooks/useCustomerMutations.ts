@@ -8,6 +8,17 @@ import type {
   UpdateCustomerAddressRequest,
 } from '@types';
 
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown): string | undefined =>
+  (error as ApiErrorShape).response?.data?.message;
+
 /**
  * Hook para crear un cliente
  */
@@ -20,8 +31,8 @@ export const useCreateCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       message.success('Cliente creado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al crear el cliente');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al crear el cliente');
     },
   });
 };
@@ -40,8 +51,8 @@ export const useUpdateCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ['customer', variables.id] });
       message.success('Cliente actualizado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al actualizar el cliente');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al actualizar el cliente');
     },
   });
 };
@@ -58,8 +69,8 @@ export const useDeleteCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       message.success('Cliente eliminado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al eliminar el cliente');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al eliminar el cliente');
     },
   });
 };
@@ -77,8 +88,8 @@ export const useToggleCustomerStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['customer', id] });
       message.success('Estado del cliente actualizado');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al cambiar el estado');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al cambiar el estado');
     },
   });
 };
@@ -98,8 +109,8 @@ export const useCreateAddress = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-addresses', variables.customerId] });
       message.success('Dirección agregada exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al agregar la dirección');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al agregar la dirección');
     },
   });
 };
@@ -124,8 +135,8 @@ export const useUpdateAddress = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-addresses', variables.customerId] });
       message.success('Dirección actualizada exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al actualizar la dirección');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al actualizar la dirección');
     },
   });
 };
@@ -143,8 +154,8 @@ export const useDeleteAddress = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-addresses', variables.customerId] });
       message.success('Dirección eliminada exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al eliminar la dirección');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al eliminar la dirección');
     },
   });
 };
@@ -162,8 +173,8 @@ export const useSetDefaultShipping = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-addresses', variables.customerId] });
       message.success('Dirección de envío actualizada');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al actualizar dirección de envío');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al actualizar dirección de envío');
     },
   });
 };
@@ -181,8 +192,8 @@ export const useSetDefaultBilling = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-addresses', variables.customerId] });
       message.success('Dirección de facturación actualizada');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al actualizar dirección de facturación');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al actualizar dirección de facturación');
     },
   });
 };
