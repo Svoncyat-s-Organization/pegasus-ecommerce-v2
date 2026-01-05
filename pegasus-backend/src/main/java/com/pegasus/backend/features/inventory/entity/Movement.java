@@ -46,7 +46,7 @@ public class Movement {
     private BigDecimal unitCost;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "operation_type", nullable = false)
+    @Column(name = "operation_type", nullable = false, length = 30)
     private OperationType operationType;
 
     @Column(name = "description", columnDefinition = "TEXT")

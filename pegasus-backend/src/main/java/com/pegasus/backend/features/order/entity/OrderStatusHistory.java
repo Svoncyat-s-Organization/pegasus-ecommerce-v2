@@ -31,7 +31,7 @@ public class OrderStatusHistory {
     private Long orderId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, length = 20)
     private OrderStatus status;
 
     @Column(name = "comments", columnDefinition = "TEXT")

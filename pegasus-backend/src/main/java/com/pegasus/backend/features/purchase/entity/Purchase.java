@@ -3,9 +3,7 @@ package com.pegasus.backend.features.purchase.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -38,8 +36,7 @@ public class Purchase {
     private Long userId;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "status", nullable = false, columnDefinition = "purchase_status_enum")
+    @Column(name = "status", nullable = false, length = 20)
     private PurchaseStatus status = PurchaseStatus.PENDING;
 
     @Column(name = "invoice_type", nullable = false, length = 20)
