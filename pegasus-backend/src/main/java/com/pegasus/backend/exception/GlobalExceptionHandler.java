@@ -40,6 +40,24 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * BadRequestException - 400 (Bad Request)
+     */
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequestException(
+            BadRequestException ex,
+            WebRequest request
+    ) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                extractPath(request),
+                OffsetDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
      * IllegalArgumentException - 400 (Bad Request)
      */
     @ExceptionHandler(IllegalArgumentException.class)
