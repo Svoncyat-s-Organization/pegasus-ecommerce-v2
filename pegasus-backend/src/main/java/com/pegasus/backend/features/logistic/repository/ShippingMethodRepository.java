@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface ShippingMethodRepository extends JpaRepository<ShippingMethod, Long> {
 
@@ -18,4 +20,6 @@ public interface ShippingMethodRepository extends JpaRepository<ShippingMethod, 
     Page<ShippingMethod> searchShippingMethods(@Param("search") String search, Pageable pageable);
 
     Page<ShippingMethod> findByIsActive(Boolean isActive, Pageable pageable);
+
+    List<ShippingMethod> findByIsActiveTrue();
 }

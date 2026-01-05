@@ -40,16 +40,29 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints públicos
+                        // Endpoints públicos - Autenticación
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         
+                        // Endpoints públicos - Storefront (sin autenticación)
+                        .requestMatchers("/api/public/**").permitAll()
+                        
+                        // Catálogo público (storefront sin autenticación)
+                        .requestMatchers("/api/admin/products/**").permitAll()
+                        .requestMatchers("/api/admin/categories/**").permitAll()
+                        .requestMatchers("/api/admin/brands/**").permitAll()
+                        .requestMatchers("/api/admin/variants/**").permitAll()
+                        .requestMatchers("/api/admin/images/**").permitAll()
+                        
+                        // Ubicaciones públicas (ubigeo para formularios)
+                        .requestMatchers("/api/admin/locations/**").permitAll()
+                        
+                        // Endpoints Storefront (requiere CUSTOMER)
+                        .requestMatchers("/api/storefront/**").hasRole("CUSTOMER")
+                        
                         // Endpoints backoffice (solo Admin)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        
-                        // Endpoints storefront (solo Customer)
-                        .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
                         
                         // Cualquier otro request requiere autenticación
                         .anyRequest().authenticated()
