@@ -2,8 +2,19 @@
 // Authentication Types
 // ============================================
 export interface LoginRequest {
-  email: string;
+  usernameOrEmail: string;
   password: string;
+}
+
+export interface RegisterCustomerRequest {
+  email: string;
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  docType: 'DNI' | 'CE';
+  docNumber: string;
+  phone?: string;
 }
 
 export interface AuthResponse {
@@ -11,14 +22,12 @@ export interface AuthResponse {
   userType: 'ADMIN' | 'CUSTOMER';
   userId: number;
   email: string;
-  username: string;
   expiresIn: number;
 }
 
 export interface User {
   userId: number;
   email: string;
-  username: string;
   userType: 'ADMIN' | 'CUSTOMER';
 }
 
@@ -707,4 +716,112 @@ export interface InspectItemRequest {
   itemCondition: ItemCondition;
   inspectionNotes?: string;
   restockApproved: boolean;
+}
+
+// ============================================
+// Inventory Module Types
+// ============================================
+
+export type OperationType =
+  | 'INVENTORY_ADJUSTMENT'
+  | 'PURCHASE'
+  | 'SALE'
+  | 'RETURN'
+  | 'CANCELLATION'
+  | 'TRANSFER_IN'
+  | 'TRANSFER_OUT';
+
+// Warehouse
+export interface WarehouseResponse {
+  id: number;
+  code: string;
+  name: string;
+  ubigeoId: string;
+  address: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWarehouseRequest {
+  code: string;
+  name: string;
+  ubigeoId: string;
+  address: string;
+}
+
+export interface UpdateWarehouseRequest {
+  code?: string;
+  name?: string;
+  ubigeoId?: string;
+  address?: string;
+}
+
+// Stock
+export interface StockResponse {
+  id: number;
+  warehouseId: number;
+  warehouseCode: string;
+  warehouseName: string;
+  variantId: number;
+  variantSku: string;
+  productName: string;
+  quantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  updatedAt: string;
+}
+
+export interface StockSummaryResponse {
+  warehouseId: number;
+  warehouseCode: string;
+  variantId: number;
+  variantSku: string;
+  quantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+}
+
+export interface StockAvailabilityResponse {
+  available: boolean;
+  currentStock: number;
+  reservedStock: number;
+  availableStock: number;
+  requestedQuantity: number;
+}
+
+export interface AdjustStockRequest {
+  variantId: number;
+  warehouseId: number;
+  quantityChange: number; // Puede ser negativo
+  reason: string;
+}
+
+export interface TransferStockRequest {
+  variantId: number;
+  fromWarehouseId: number;
+  toWarehouseId: number;
+  quantity: number;
+  reason?: string;
+}
+
+// Movement (Kardex)
+export interface MovementResponse {
+  id: number;
+  variantId: number;
+  variantSku: string;
+  productName: string;
+  warehouseId: number;
+  warehouseCode: string;
+  warehouseName: string;
+  quantity: number;
+  balance: number;
+  unitCost: number;
+  operationType: OperationType;
+  description: string;
+  referenceId: number | null;
+  referenceTable: string | null;
+  userId: number;
+  username: string;
+  createdAt: string;
 }

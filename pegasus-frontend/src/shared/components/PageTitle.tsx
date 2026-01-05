@@ -32,6 +32,7 @@ const pageTitles: Record<string, string> = {
   
   // Storefront
   '/': 'Inicio',
+  '/home': 'Inicio',
   '/products': 'Productos',
   '/cart': 'Carrito',
   '/checkout': 'Checkout',
@@ -45,7 +46,12 @@ export const PageTitle = () => {
 
   useEffect(() => {
     const path = location.pathname;
-    const pageTitle = pageTitles[path];
+    let pageTitle = pageTitles[path];
+    
+    // Handle dynamic routes (e.g., /products/123)
+    if (!pageTitle && path.startsWith('/products/')) {
+      pageTitle = 'Detalle del Producto';
+    }
     
     if (path.startsWith('/admin')) {
       document.title = pageTitle 

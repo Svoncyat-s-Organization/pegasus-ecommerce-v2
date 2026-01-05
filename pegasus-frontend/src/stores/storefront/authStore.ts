@@ -18,9 +18,11 @@ export const useStorefrontAuthStore = create<AuthState>()(
       isAuthenticated: false,
       setAuth: (user, token) => {
         set({ user, token, isAuthenticated: true });
+        localStorage.setItem('storefront-token', token);
       },
       logout: () => {
         set({ user: null, token: null, isAuthenticated: false });
+        localStorage.removeItem('storefront-token');
       },
     }),
     {

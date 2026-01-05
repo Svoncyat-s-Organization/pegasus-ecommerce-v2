@@ -9,6 +9,7 @@ import {
   Burger,
   Container,
   Box,
+  Image,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -20,6 +21,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';
+import logoSvg from '@assets/logo/default.svg';
 
 interface StorefrontHeaderProps {
   mobileOpened: boolean;
@@ -49,21 +51,26 @@ export const StorefrontHeader = ({
       <Container size="xl" style={{ height: '100%' }}>
         <Group justify="space-between" h="100%">
           {/* Logo */}
-          <Group>
+          <Group gap="xs">
             <Burger
               opened={mobileOpened}
               onClick={toggleMobile}
               hiddenFrom="sm"
               size="sm"
             />
-            <Text
-              size="xl"
-              fw={700}
+            <Group
+              gap={8}
               style={{ cursor: 'pointer' }}
               onClick={() => navigate('/')}
             >
-              🦄 Pegasus
-            </Text>
+              <Text size="xl" fw={700} c="dark">
+                PEGASUS
+              </Text>
+              <Image src={logoSvg} alt="Pegasus Logo" h={28} w="auto" />
+              <Text size="xl" fw={700} c="dark">
+                E-COMMERCE
+              </Text>
+            </Group>
           </Group>
 
           {/* Search */}

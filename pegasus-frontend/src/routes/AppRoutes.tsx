@@ -13,9 +13,12 @@ import { BrandsListPage, CategoriesListPage, ProductsListPage, ProductFormPage }
 import { ShippingMethodsListPage, ShipmentsListPage } from '@features/backoffice/logistic';
 import { OrderListPage } from '@features/backoffice/order';
 import { RmaListPage } from '@features/backoffice/rma';
+import { WarehouseListPage, StockListPage, MovementListPage } from '@features/backoffice/inventory';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
+import { LoginPage as CustomerLoginPage, RegisterPage } from '@features/storefront/auth';
+import { ProductListPage, ProductDetailPage } from '@features/storefront/catalog';
 
 // Temporary placeholder pages
 const DashboardPage = () => (
@@ -66,9 +69,9 @@ export const AppRoutes = () => {
         <Route path="orders" element={<OrderListPage />} />
 
         {/* Inventory */}
-        <Route path="inventory/stock" element={<PlaceholderPage title="Stock" description="Gestión de stock e inventario" />} />
-        <Route path="inventory/movements" element={<PlaceholderPage title="Movimientos" description="Registro de movimientos de inventario" />} />
-        <Route path="inventory/warehouses" element={<PlaceholderPage title="Almacenes" description="Gestión de almacenes y bodegas" />} />
+        <Route path="inventory/warehouses" element={<WarehouseListPage />} />
+        <Route path="inventory/stock" element={<StockListPage />} />
+        <Route path="inventory/movements" element={<MovementListPage />} />
 
         {/* Purchases */}
         <Route path="purchases/suppliers" element={<PlaceholderPage title="Proveedores" description="Gestión de proveedores" />} />
@@ -103,10 +106,10 @@ export const AppRoutes = () => {
       {/* Public storefront routes */}
       <Route path="/" element={<StorefrontLayout />}>
         <Route path="home" element={<HomePage />} />
-        <Route path="login" element={<PlaceholderPage title="Login Cliente" description="Inicia sesión con tu cuenta" />} />
-        <Route path="register" element={<PlaceholderPage title="Registro" description="Crea tu cuenta de cliente" />} />
-        <Route path="products" element={<PlaceholderPage title="Productos" description="Catálogo de productos" />} />
-        <Route path="products/:id" element={<PlaceholderPage title="Detalle del Producto" description="Información del producto" />} />
+        <Route path="login" element={<CustomerLoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
+        <Route path="products" element={<ProductListPage />} />
+        <Route path="products/:id" element={<ProductDetailPage />} />
       </Route>
 
       {/* Protected storefront routes */}
