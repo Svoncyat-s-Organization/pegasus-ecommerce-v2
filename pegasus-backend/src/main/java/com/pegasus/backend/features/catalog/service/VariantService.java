@@ -1,0 +1,163 @@
+package com.pegasus.backend.features.catalog.service;
+
+import com.pegasus.backend.exception.ResourceNotFoundException;
+import com.pegasus.backend.features.catalog.dto.CreateVariantRequest;
+import com.pegasus.backend.features.catalog.dto.UpdateVariantRequest;
+import com.pegasus.backend.features.catalog.dto.VariantResponse;
+import com.pegasus.backend.features.catalog.entity.Variant;
+import com.pegasus.backend.features.catalog.mapper.VariantMapper;
+import com.pegasus.backend.features.catalog.repository.ProductRepository;
+import com.pegasus.backend.features.catalog.repository.VariantRepository;
+import com.pegasus.backend.shared.dto.PageResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * Service para gestión de variantes de productos
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional(readOnly = true)
+public class VariantService {
+
+    private final VariantRepository variantRepository;
+    private final ProductRepository productRepository;
+    private final VariantMapper variantMapper;
+
+    /**
+     * Obtener todas las variantes con paginación y búsqueda opcional
+     */
+    public PageResponse<VariantResponse> getAllVariants(String search, Pageable pageable) {
+        log.debug("Getting variants with search: {}, page: {}", search, pageable.getPageNumber());
+
+        Page<Variant> page = (search != null && !search.isBlank())
+                ? variantRepository.searchVariants(search.trim(), pageable)
+                : variantRepository.findAll(pageable);
+
+        List<VariantResponse> content = variantMapper.toResponseList(page.getContent());
+
+        return new PageResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast()
+        );
+    }
+
+    /**
+     * Obtener variante por ID
+     */
+    public VariantResponse getVariantById(Long id) {
+        log.debug("Getting variant by id: {}", id);
+        Variant variant = findVariantById(id);
+        return variantMapper.toResponse(variant);
+    }
+
+    /**
+     * Obtener variantes de un producto
+     */
+    public List<VariantResponse> getVariantsByProductId(Long productId) {
+        log.debug("Getting variants by product id: {}", productId);
+        List<Variant> variants = variantRepository.findByProductId(productId);
+        return variantMapper.toResponseList(variants);
+    }
+
+    /**
+     * Obtener variantes activas de un producto
+     */
+    public List<VariantResponse> getActiveVariantsByProductId(Long productId) {
+        log.debug("Getting active variants by product id: {}", productId);
+        List<Variant> variants = variantRepository.findActiveByProductId(productId);
+        return variantMapper.toResponseList(variants);
+    }
+
+    /**
+     * Crear nueva variante
+     */
+    @Transactional
+    public VariantResponse createVariant(CreateVariantRequest request) {
+        log.info("Creating variant with SKU: {}", request.sku());
+
+        // Validar que el producto existe
+        if (!productRepository.existsById(request.productId())) {
+            throw new ResourceNotFoundException("Producto no encontrado con ID: " + request.productId());
+        }
+
+        // Validar unicidad del SKU
+        if (variantRepository.existsBySku(request.sku())) {
+            throw new IllegalArgumentException("Ya existe una variante con ese SKU");
+        }
+
+        Variant variant = variantMapper.toEntity(request);
+        Variant saved = variantRepository.save(variant);
+
+        log.info("Variant created successfully: {}", saved.getSku());
+        return variantMapper.toResponse(saved);
+    }
+
+    /**
+     * Actualizar variante existente
+     */
+    @Transactional
+    public VariantResponse updateVariant(Long id, UpdateVariantRequest request) {
+        log.info("Updating variant: {}", id);
+
+        Variant variant = findVariantById(id);
+
+        // Validar unicidad si se cambia el SKU
+        if (request.sku() != null && !request.sku().equals(variant.getSku())) {
+            if (variantRepository.existsBySku(request.sku())) {
+                throw new IllegalArgumentException("Ya existe una variante con ese SKU");
+            }
+        }
+
+        variantMapper.updateEntityFromDto(request, variant);
+        Variant updated = variantRepository.save(variant);
+
+        log.info("Variant updated successfully: {}", updated.getSku());
+        return variantMapper.toResponse(updated);
+    }
+
+    /**
+     * Eliminar variante (soft delete)
+     */
+    @Transactional
+    public void deleteVariant(Long id) {
+        log.info("Deleting variant: {}", id);
+        Variant variant = findVariantById(id);
+        variant.setIsActive(false);
+        variantRepository.save(variant);
+        log.info("Variant deleted successfully: {}", id);
+    }
+
+    /**
+     * Alternar estado activo/inactivo
+     */
+    @Transactional
+    public VariantResponse toggleVariantStatus(Long id) {
+        log.info("Toggling variant status: {}", id);
+        Variant variant = findVariantById(id);
+        variant.setIsActive(!variant.getIsActive());
+        Variant updated = variantRepository.save(variant);
+        log.info("Variant status toggled: {} -> {}", id, updated.getIsActive());
+        return variantMapper.toResponse(updated);
+    }
+
+    /**
+     * Método auxiliar para buscar variante por ID
+     */
+    private Variant findVariantById(Long id) {
+        return variantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Variante no encontrada con ID: " + id));
+    }
+}
