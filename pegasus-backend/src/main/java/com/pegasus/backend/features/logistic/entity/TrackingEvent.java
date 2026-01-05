@@ -1,6 +1,7 @@
 package com.pegasus.backend.features.logistic.entity;
 
 import com.pegasus.backend.features.user.entity.User;
+import com.pegasus.backend.shared.enums.ShipmentStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,8 +20,9 @@ public class TrackingEvent {
     @JoinColumn(name = "shipment_id", nullable = false)
     private Shipment shipment;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private String status;
+    private ShipmentStatus status;
 
     @Column(name = "location", length = 200)
     private String location;

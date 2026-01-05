@@ -1,6 +1,8 @@
 package com.pegasus.backend.features.logistic.entity;
 
 import com.pegasus.backend.shared.entity.BaseEntity;
+import com.pegasus.backend.shared.enums.ShipmentStatus;
+import com.pegasus.backend.shared.enums.ShipmentType;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,8 +23,9 @@ public class Shipment extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "shipment_type", nullable = false, length = 10)
-    private String shipmentType;
+    private ShipmentType shipmentType;
 
     @Column(name = "order_id", nullable = false)
     private Long orderId;
@@ -43,8 +46,9 @@ public class Shipment extends BaseEntity {
     @Column(name = "weight_kg", nullable = false, precision = 8, scale = 2)
     private BigDecimal weightKg;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private String status = "PENDING";
+    private ShipmentStatus status = ShipmentStatus.PENDING;
 
     @Column(name = "estimated_delivery_date", nullable = false)
     private OffsetDateTime estimatedDeliveryDate;

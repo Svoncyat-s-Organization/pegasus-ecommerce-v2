@@ -1,5 +1,6 @@
 package com.pegasus.backend.features.logistic.service;
 
+import com.pegasus.backend.exception.BadRequestException;
 import com.pegasus.backend.exception.ResourceNotFoundException;
 import com.pegasus.backend.features.logistic.dto.CreateShipmentRequest;
 import com.pegasus.backend.features.logistic.dto.ShipmentResponse;
@@ -9,7 +10,13 @@ import com.pegasus.backend.features.logistic.entity.ShippingMethod;
 import com.pegasus.backend.features.logistic.mapper.ShipmentMapper;
 import com.pegasus.backend.features.logistic.repository.ShipmentRepository;
 import com.pegasus.backend.features.logistic.repository.ShippingMethodRepository;
+import com.pegasus.backend.features.order.entity.Order;
+import com.pegasus.backend.features.order.repository.OrderRepository;
+import com.pegasus.backend.features.inventory.service.StockService;
 import com.pegasus.backend.shared.dto.PageResponse;
+import com.pegasus.backend.shared.enums.OrderStatus;
+import com.pegasus.backend.shared.enums.ShipmentStatus;
+import com.pegasus.backend.shared.enums.ShipmentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,8 +35,10 @@ public class ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final ShipmentMapper shipmentMapper;
     private final ShippingMethodRepository shippingMethodRepository;
+    private final OrderRepository orderRepository;
+    private final StockService stockService;
 
-    public PageResponse<ShipmentResponse> getAllShipments(String search, String status, String shipmentType,
+    public PageResponse<ShipmentResponse> getAllShipments(String search, ShipmentStatus status, ShipmentType shipmentType,
             Pageable pageable) {
         log.debug("Getting all shipments with search: {}, status: {}, shipmentType: {}", search, status, shipmentType);
 
@@ -37,9 +46,9 @@ public class ShipmentService {
 
         if (search != null && !search.isBlank()) {
             page = shipmentRepository.searchShipments(search.trim(), pageable);
-        } else if (status != null && !status.isBlank()) {
+        } else if (status != null) {
             page = shipmentRepository.findByStatus(status, pageable);
-        } else if (shipmentType != null && !shipmentType.isBlank()) {
+        } else if (shipmentType != null) {
             page = shipmentRepository.findByShipmentType(shipmentType, pageable);
         } else {
             page = shipmentRepository.findAll(pageable);
@@ -101,6 +110,16 @@ public class ShipmentService {
     public ShipmentResponse createShipment(CreateShipmentRequest request) {
         log.info("Creating shipment for order: {}", request.getOrderId());
 
+        // Validar que la orden existe
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + request.getOrderId()));
+
+        // Validar que la orden está en un estado válido para envío
+        if (!canShipOrder(order.getStatus())) {
+            throw new BadRequestException(
+                    "La orden no está en un estado válido para envío. Estado actual: " + order.getStatus());
+        }
+
         ShippingMethod shippingMethod = shippingMethodRepository.findById(request.getShippingMethodId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Método de envío no encontrado con ID: " + request.getShippingMethodId()));
@@ -108,6 +127,7 @@ public class ShipmentService {
         Shipment shipment = shipmentMapper.toEntity(request);
         shipment.setOrderId(request.getOrderId());
         shipment.setShippingMethod(shippingMethod);
+        shipment.setStatus(ShipmentStatus.PENDING);
 
         Shipment saved = shipmentRepository.save(shipment);
 
@@ -115,14 +135,59 @@ public class ShipmentService {
         return shipmentMapper.toResponse(saved);
     }
 
+    /**
+     * Validar que la orden puede ser enviada
+     */
+    private boolean canShipOrder(OrderStatus orderStatus) {
+        return orderStatus == OrderStatus.PAID ||
+               orderStatus == OrderStatus.PROCESSING ||
+               orderStatus == OrderStatus.AWAIT_PAYMENT; // Permitir envío si está esperando pago (pago contra entrega)
+    }
+
     @Transactional
-    public ShipmentResponse updateShipment(Long id, UpdateShipmentRequest request) {
+    public ShipmentResponse updateShipment(Long id, UpdateShipmentRequest request, Long updatedByUserId) {
         log.info("Updating shipment with id: {}", id);
 
         Shipment shipment = shipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
 
+        ShipmentStatus previousStatus = shipment.getStatus();
+        
         shipmentMapper.updateEntityFromRequest(request, shipment);
+        
+        // Si el estado cambió a IN_TRANSIT, decrementar stock físico
+        if (previousStatus != ShipmentStatus.IN_TRANSIT && 
+            shipment.getStatus() == ShipmentStatus.IN_TRANSIT &&
+            shipment.getShipmentType() == ShipmentType.OUTBOUND) {
+            
+            log.info("Shipment {} is now in transit, decreasing stock for order {}", id, shipment.getOrderId());
+            
+            // Obtener la orden para decrementar stock de cada item
+            Order order = orderRepository.findById(shipment.getOrderId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + shipment.getOrderId()));
+            
+            Long defaultWarehouseId = 1L; // TODO: Configurar almacén principal
+            
+            // Decrementar stock físico para cada item de la orden
+            order.getItems().forEach(item -> {
+                stockService.decreaseStock(
+                        defaultWarehouseId,
+                        item.getVariantId(),
+                        item.getQuantity(),
+                        order.getId(),
+                        updatedByUserId
+                );
+            });
+            
+            shipment.setShippedAt(java.time.OffsetDateTime.now());
+        }
+        
+        // Si el estado cambió a DELIVERED, marcar fecha de entrega
+        if (previousStatus != ShipmentStatus.DELIVERED && 
+            shipment.getStatus() == ShipmentStatus.DELIVERED) {
+            shipment.setDeliveredAt(java.time.OffsetDateTime.now());
+        }
+        
         Shipment updated = shipmentRepository.save(shipment);
 
         log.info("Shipment updated successfully: {}", updated.getTrackingNumber());

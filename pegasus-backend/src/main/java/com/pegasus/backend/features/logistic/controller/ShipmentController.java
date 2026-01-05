@@ -5,6 +5,8 @@ import com.pegasus.backend.features.logistic.dto.ShipmentResponse;
 import com.pegasus.backend.features.logistic.dto.UpdateShipmentRequest;
 import com.pegasus.backend.features.logistic.service.ShipmentService;
 import com.pegasus.backend.shared.dto.PageResponse;
+import com.pegasus.backend.shared.enums.ShipmentStatus;
+import com.pegasus.backend.shared.enums.ShipmentType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,8 +32,8 @@ public class ShipmentController {
     @Operation(summary = "Obtener todos los envíos")
     public ResponseEntity<PageResponse<ShipmentResponse>> getAllShipments(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String shipmentType,
+            @RequestParam(required = false) ShipmentStatus status,
+            @RequestParam(required = false) ShipmentType shipmentType,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(shipmentService.getAllShipments(search, status, shipmentType, pageable));
     }
@@ -66,8 +69,10 @@ public class ShipmentController {
     @Operation(summary = "Actualizar envío")
     public ResponseEntity<ShipmentResponse> updateShipment(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateShipmentRequest request) {
-        return ResponseEntity.ok(shipmentService.updateShipment(id, request));
+            @Valid @RequestBody UpdateShipmentRequest request,
+            Authentication authentication) {
+        Long userId = extractUserId(authentication);
+        return ResponseEntity.ok(shipmentService.updateShipment(id, request, userId));
     }
 
     @DeleteMapping("/{id}")
@@ -75,5 +80,10 @@ public class ShipmentController {
     public ResponseEntity<Void> deleteShipment(@PathVariable Long id) {
         shipmentService.deleteShipment(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long extractUserId(Authentication authentication) {
+        // TODO: Implementación real según sistema de autenticación
+        return 1L;
     }
 }

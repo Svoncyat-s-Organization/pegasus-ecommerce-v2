@@ -1,5 +1,6 @@
 package com.pegasus.backend.features.logistic.dto;
 
+import com.pegasus.backend.shared.enums.ShipmentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -12,8 +13,8 @@ import java.util.Map;
 @Data
 public class CreateShipmentRequest {
 
-    @NotBlank(message = "El tipo de envío es requerido")
-    private String shipmentType;
+    @NotNull(message = "El tipo de envío es requerido")
+    private ShipmentType shipmentType;
 
     @NotNull(message = "El ID de orden es requerido")
     private Long orderId;

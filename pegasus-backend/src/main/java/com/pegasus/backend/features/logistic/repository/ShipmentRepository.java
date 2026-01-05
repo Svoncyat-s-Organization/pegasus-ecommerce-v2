@@ -1,6 +1,8 @@
 package com.pegasus.backend.features.logistic.repository;
 
 import com.pegasus.backend.features.logistic.entity.Shipment;
+import com.pegasus.backend.shared.enums.ShipmentStatus;
+import com.pegasus.backend.shared.enums.ShipmentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,9 +24,9 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     Page<Shipment> findByOrderId(Long orderId, Pageable pageable);
 
-    Page<Shipment> findByStatus(String status, Pageable pageable);
+    Page<Shipment> findByStatus(ShipmentStatus status, Pageable pageable);
 
-    Page<Shipment> findByShipmentType(String shipmentType, Pageable pageable);
+    Page<Shipment> findByShipmentType(ShipmentType shipmentType, Pageable pageable);
 
     List<Shipment> findByTrackingNumber(String trackingNumber);
 }

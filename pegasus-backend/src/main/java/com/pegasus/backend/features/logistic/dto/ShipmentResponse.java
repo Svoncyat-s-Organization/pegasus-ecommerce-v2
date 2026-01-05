@@ -1,12 +1,15 @@
 package com.pegasus.backend.features.logistic.dto;
 
+import com.pegasus.backend.shared.enums.ShipmentStatus;
+import com.pegasus.backend.shared.enums.ShipmentType;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
 public record ShipmentResponse(
         Long id,
-        String shipmentType,
+        ShipmentType shipmentType,
         Long orderId,
         Long rmaId,
         Long shippingMethodId,
@@ -14,7 +17,7 @@ public record ShipmentResponse(
         String trackingNumber,
         BigDecimal shippingCost,
         BigDecimal weightKg,
-        String status,
+        ShipmentStatus status,
         OffsetDateTime estimatedDeliveryDate,
         Map<String, Object> shippingAddress,
         String recipientName,
