@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 public record InvoiceSummaryResponse(
         Long id,
         Long orderId,
+        Long seriesId,
         InvoiceType invoiceType,
         String series,
         String number,

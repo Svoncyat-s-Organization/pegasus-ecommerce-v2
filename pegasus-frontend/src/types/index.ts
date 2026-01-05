@@ -160,6 +160,151 @@ export interface PurchaseResponse {
 }
 
 // ============================================
+// Billing Module Types (Invoices & Payments)
+// ============================================
+export type InvoiceType = 'BILL' | 'INVOICE';
+
+export type InvoiceStatus = 'ISSUED' | 'CANCELLED' | 'REJECTED';
+
+export type DocumentSeriesType = 'BILL' | 'INVOICE' | 'CREDIT_NOTE';
+
+export interface DocumentSeriesResponse {
+  id: number;
+  documentType: DocumentSeriesType;
+  series: string;
+  currentNumber: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDocumentSeriesRequest {
+  documentType: DocumentSeriesType;
+  series: string;
+  currentNumber?: number;
+}
+
+export interface UpdateDocumentSeriesRequest {
+  series: string;
+  currentNumber?: number;
+}
+
+// ============================================
+// Orders Module Types (Backoffice select)
+// ============================================
+export type OrderStatus =
+  | 'PENDING'
+  | 'AWAIT_PAYMENT'
+  | 'PAID'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'REFUNDED';
+
+export interface OrderSummaryResponse {
+  id: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  customerDocType?: DocumentType;
+  customerDocNumber?: string;
+  status: OrderStatus;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceSummaryResponse {
+  id: number;
+  orderId: number;
+  seriesId?: number | null;
+  invoiceType: InvoiceType;
+  series: string;
+  number: string;
+  totalAmount: number;
+  status: InvoiceStatus;
+  issuedAt?: string;
+}
+
+export interface InvoiceResponse {
+  id: number;
+  orderId: number;
+  seriesId?: number | null;
+  invoiceType: InvoiceType;
+  series: string;
+  number: string;
+  receiverTaxId: string;
+  receiverName: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: InvoiceStatus;
+  issuedAt?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInvoiceRequest {
+  orderId: number;
+  invoiceType: InvoiceType;
+  series?: string;
+  number?: string;
+  receiverTaxId: string;
+  receiverName: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  issuedAt?: string;
+  seriesId?: number;
+}
+
+export interface UpdateInvoiceStatusRequest {
+  status: InvoiceStatus;
+}
+
+export interface PaymentMethodResponse {
+  id: number;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentMethodRequest {
+  name: string;
+}
+
+export interface UpdatePaymentMethodRequest {
+  name: string;
+}
+
+export interface PaymentResponse {
+  id: number;
+  orderId: number;
+  paymentMethodId: number;
+  paymentMethodName?: string;
+  amount: number;
+  transactionId?: string;
+  paymentDate?: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentRequest {
+  orderId: number;
+  paymentMethodId: number;
+  amount: number;
+  transactionId?: string;
+  paymentDate?: string;
+  notes?: string;
+}
+
+// ============================================
 // Navigation Types
 // ============================================
 export interface MenuItem {

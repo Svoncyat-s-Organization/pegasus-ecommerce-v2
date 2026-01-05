@@ -1,6 +1,7 @@
 package com.pegasus.backend.features.invoice.entity;
 
 import com.pegasus.backend.features.order.entity.Order;
+import com.pegasus.backend.features.invoice.entity.series.DocumentSeries;
 import com.pegasus.backend.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,6 +27,9 @@ public class Invoice extends BaseEntity {
 
     @Column(name = "order_id", nullable = false)
     private Long orderId;
+
+    @Column(name = "series_id")
+    private Long seriesId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "invoice_type", nullable = false, length = 20)
@@ -58,6 +62,10 @@ public class Invoice extends BaseEntity {
 
     @Column(name = "issued_at", nullable = false)
     private OffsetDateTime issuedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "series_id", insertable = false, updatable = false)
+    private DocumentSeries documentSeries;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", insertable = false, updatable = false)

@@ -1451,6 +1451,7 @@ CREATE TABLE public.invoices (
 	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
 	order_id bigint NOT NULL,
 	invoice_type varchar(20) NOT NULL,
+	series_id bigint,
 	series varchar(4) NOT NULL,
 	number varchar(8) NOT NULL,
 	receiver_tax_id varchar(20) NOT NULL,
@@ -1515,4 +1516,31 @@ CREATE INDEX idx_payments_order_id ON public.payments USING btree (order_id);
 
 -- object: idx_payments_payment_method_id | type: INDEX --
 CREATE INDEX idx_payments_payment_method_id ON public.payments USING btree (payment_method_id);
+-- ddl-end --
+
+-- ==================== DOCUMENT SERIES (V5) ====================
+
+-- object: public.document_series | type: TABLE --
+-- DROP TABLE IF EXISTS public.document_series CASCADE;
+CREATE TABLE public.document_series (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	document_type varchar(20) NOT NULL,
+	series varchar(4) NOT NULL,
+	current_number integer NOT NULL DEFAULT 0,
+	is_active boolean NOT NULL DEFAULT true,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT document_series_pk PRIMARY KEY (id),
+	CONSTRAINT document_series_uq UNIQUE (document_type,series),
+	CONSTRAINT document_series_type_check CHECK (document_type IN ('BILL', 'INVOICE', 'CREDIT_NOTE'))
+);
+-- ddl-end --
+ALTER TABLE public.document_series OWNER TO postgres;
+-- ddl-end --
+
+-- object: invoices_series_fk | type: CONSTRAINT --
+ALTER TABLE public.invoices ADD CONSTRAINT invoices_series_fk 
+FOREIGN KEY (series_id)
+REFERENCES public.document_series (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
 -- ddl-end --
