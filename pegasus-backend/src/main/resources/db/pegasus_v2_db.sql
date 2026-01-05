@@ -9,15 +9,20 @@
 
 -- object: pegasus_v2_db | type: DATABASE --
 -- DROP DATABASE IF EXISTS pegasus_v2_db;
-CREATE DATABASE pegasus_v2_db;
+-- CREATE DATABASE pegasus_v2_db;
 -- ddl-end --
 
 
 SET search_path TO pg_catalog,public;
 -- ddl-end --
 
--- NOTE: document_type_enum was replaced by VARCHAR + CHECK constraint in V2 migration
--- See V2__fix_doc_type_enum.sql for details
+-- object: public.document_type_enum | type: TYPE --
+-- DROP TYPE IF EXISTS public.document_type_enum CASCADE;
+CREATE TYPE public.document_type_enum AS
+ENUM ('DNI','CE');
+-- ddl-end --
+ALTER TYPE public.document_type_enum OWNER TO postgres;
+-- ddl-end --
 
 -- object: public.users | type: TABLE --
 -- DROP TABLE IF EXISTS public.users CASCADE;
@@ -26,7 +31,7 @@ CREATE TABLE public.users (
 	username varchar(50) NOT NULL,
 	email varchar(255) NOT NULL,
 	password_hash varchar(255) NOT NULL,
-	doc_type varchar(3) NOT NULL,
+	doc_type public.document_type_enum NOT NULL,
 	doc_number varchar(20) NOT NULL,
 	first_name varchar(100) NOT NULL,
 	last_name varchar(100) NOT NULL,
@@ -37,8 +42,7 @@ CREATE TABLE public.users (
 	CONSTRAINT users_pk PRIMARY KEY (id),
 	CONSTRAINT users_email_uq UNIQUE (email),
 	CONSTRAINT users_username_uq UNIQUE (username),
-	CONSTRAINT "users_docNumber_uq" UNIQUE (doc_number),
-	CONSTRAINT users_doc_type_check CHECK (doc_type IN ('DNI', 'CE'))
+	CONSTRAINT "users_docNumber_uq" UNIQUE (doc_number)
 );
 -- ddl-end --
 ALTER TABLE public.users OWNER TO postgres;
@@ -379,7 +383,7 @@ CREATE TABLE public.customers (
 	username varchar(50) NOT NULL,
 	email varchar(255) NOT NULL,
 	password_hash varchar(255) NOT NULL,
-	doc_type varchar(3) NOT NULL,
+	doc_type public.document_type_enum NOT NULL,
 	doc_number varchar(20) NOT NULL,
 	first_name varchar(100) NOT NULL,
 	last_name varchar(100) NOT NULL,
@@ -390,8 +394,7 @@ CREATE TABLE public.customers (
 	CONSTRAINT customers_pk PRIMARY KEY (id),
 	CONSTRAINT customers_email_uq UNIQUE (email),
 	CONSTRAINT customers_username_uq UNIQUE (username),
-	CONSTRAINT "customers_docNumber_uq" UNIQUE (doc_number),
-	CONSTRAINT customers_doc_type_check CHECK (doc_type IN ('DNI', 'CE'))
+	CONSTRAINT "customers_docNumber_uq" UNIQUE (doc_number)
 );
 -- ddl-end --
 ALTER TABLE public.customers OWNER TO postgres;
@@ -533,6 +536,331 @@ USING btree
 );
 -- ddl-end --
 
+-- object: public.business_info | type: TABLE --
+-- DROP TABLE IF EXISTS public.business_info CASCADE;
+CREATE TABLE public.business_info (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	business_name varchar(255) NOT NULL,
+	ruc varchar(11) NOT NULL,
+	legal_address text NOT NULL,
+	ubigeo_id varchar(6) NOT NULL,
+	phone varchar(20) NOT NULL,
+	email varchar(255) NOT NULL,
+	website varchar(255),
+	logo_url text,
+	business_description text,
+	facebook_url varchar(255),
+	instagram_url varchar(255),
+	twitter_url varchar(255),
+	tiktok_url varchar(255),
+	is_active boolean NOT NULL DEFAULT true,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT business_info_pk PRIMARY KEY (id),
+	CONSTRAINT business_info_single_row_check CHECK (id = 1)
+);
+-- ddl-end --
+ALTER TABLE public.business_info OWNER TO postgres;
+-- ddl-end --
+
+-- object: idx_business_info_ubigeo | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_business_info_ubigeo CASCADE;
+CREATE INDEX idx_business_info_ubigeo ON public.business_info
+USING btree
+(
+	ubigeo_id
+);
+-- ddl-end --
+
+-- object: public.storefront_settings | type: TABLE --
+-- DROP TABLE IF EXISTS public.storefront_settings CASCADE;
+CREATE TABLE public.storefront_settings (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	storefront_name varchar(255) NOT NULL,
+	logo_url text,
+	favicon_url text,
+	primary_color varchar(7) NOT NULL DEFAULT '#04213bff',
+	secondary_color varchar(7) NOT NULL DEFAULT '#f2f2f2ff',
+	terms_and_conditions text,
+	privacy_policy text,
+	return_policy text,
+	shipping_policy text,
+	support_email varchar(255),
+	support_phone varchar(20),
+	whatsapp_number varchar(20),
+	is_active boolean NOT NULL DEFAULT true,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT storefront_settings_single_row_check CHECK (id = 1),
+	CONSTRAINT storefront_settings_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+ALTER TABLE public.storefront_settings OWNER TO postgres;
+-- ddl-end --
+
+-- object: public.purchase_status_enum | type: TYPE --
+-- DROP TYPE IF EXISTS public.purchase_status_enum CASCADE;
+CREATE TYPE public.purchase_status_enum AS
+ENUM ('PENDING','RECEIVED','CANCELLED');
+-- ddl-end --
+ALTER TYPE public.purchase_status_enum OWNER TO postgres;
+-- ddl-end --
+
+-- object: public.suppliers | type: TABLE --
+-- DROP TABLE IF EXISTS public.suppliers CASCADE;
+CREATE TABLE public.suppliers (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	doc_type varchar(3) NOT NULL,
+	doc_number varchar(20) NOT NULL,
+	company_name varchar(150) NOT NULL,
+	contact_name varchar(100),
+	phone varchar(20),
+	email varchar(255),
+	address text,
+	ubigeo_id varchar(6),
+	is_active boolean NOT NULL DEFAULT true,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT suppliers_doc_number_uq UNIQUE (doc_number),
+	CONSTRAINT suppliers_doc_type_check CHECK (doc_type IN ('DNI', 'RUC')),
+	CONSTRAINT suppliers_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+ALTER TABLE public.suppliers OWNER TO postgres;
+-- ddl-end --
+
+-- object: public.purchases | type: TABLE --
+-- DROP TABLE IF EXISTS public.purchases CASCADE;
+CREATE TABLE public.purchases (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	supplier_id bigint NOT NULL,
+	warehouse_id bigint NOT NULL,
+	user_id bigint NOT NULL,
+	status public.purchase_status_enum NOT NULL DEFAULT 'PENDING',
+	invoice_type varchar(20) NOT NULL,
+	invoice_number varchar(50) NOT NULL,
+	total_amount numeric(12,2) NOT NULL DEFAULT 0,
+	purchase_date date NOT NULL DEFAULT CURRENT_DATE,
+	notes text,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT purchases_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+ALTER TABLE public.purchases OWNER TO postgres;
+-- ddl-end --
+
+-- object: public.purchase_items | type: TABLE --
+-- DROP TABLE IF EXISTS public.purchase_items CASCADE;
+CREATE TABLE public.purchase_items (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	purchase_id bigint NOT NULL,
+	variant_id bigint NOT NULL,
+	quantity integer NOT NULL,
+	unit_cost numeric(12,2) NOT NULL,
+	subtotal numeric(12,2) NOT NULL,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT purchase_items_quantity_check CHECK (quantity > 0),
+	CONSTRAINT purchase_items_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+ALTER TABLE public.purchase_items OWNER TO postgres;
+-- ddl-end --
+
+-- object: idx_purchases_supplier_id | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_purchases_supplier_id CASCADE;
+CREATE INDEX idx_purchases_supplier_id ON public.purchases
+USING btree
+(
+	supplier_id
+);
+-- ddl-end --
+
+-- object: idx_purchases_warehouse_id | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_purchases_warehouse_id CASCADE;
+CREATE INDEX idx_purchases_warehouse_id ON public.purchases
+USING btree
+(
+	warehouse_id
+);
+-- ddl-end --
+
+-- object: idx_purchase_items_variant_id | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_purchase_items_variant_id CASCADE;
+CREATE INDEX idx_purchase_items_variant_id ON public.purchase_items
+USING btree
+(
+	variant_id
+);
+-- ddl-end --
+
+-- object: public.shipping_methods | type: TABLE --
+-- DROP TABLE IF EXISTS public.shipping_methods CASCADE;
+CREATE TABLE public.shipping_methods (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	name varchar(100) NOT NULL,
+	description text NOT NULL,
+	carrier varchar(100) NOT NULL,
+	estimated_days_min integer NOT NULL,
+	estimated_days_max integer NOT NULL,
+	base_cost numeric(12,2) NOT NULL,
+	cost_per_kg numeric(12,2) NOT NULL,
+	is_active boolean NOT NULL DEFAULT true,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT shipping_methods_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+ALTER TABLE public.shipping_methods OWNER TO postgres;
+-- ddl-end --
+
+-- object: public.shipments | type: TABLE --
+-- DROP TABLE IF EXISTS public.shipments CASCADE;
+CREATE TABLE public.shipments (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	shipment_type varchar(10) NOT NULL,
+	order_id bigint NOT NULL,
+	rma_id bigint NOT NULL,
+	shipping_method_id bigint NOT NULL,
+	tracking_number varchar(100) NOT NULL,
+	shipping_cost numeric(12,2) NOT NULL,
+	weight_kg numeric(8,2) NOT NULL,
+	status varchar(20) NOT NULL DEFAULT PENDING,
+	estimated_delivery_date timestamptz NOT NULL,
+	shipping_address jsonb NOT NULL,
+	recipient_name varchar(200) NOT NULL,
+	recipient_phone varchar(20) NOT NULL,
+	require_signature boolean NOT NULL DEFAULT false,
+	package_quantity integer NOT NULL DEFAULT 1,
+	notes text NOT NULL,
+	shipped_at timestamptz NOT NULL,
+	delivered_at timestamptz NOT NULL,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT shipments_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+ALTER TABLE public.shipments OWNER TO postgres;
+-- ddl-end --
+
+-- object: public.tracking_events | type: TABLE --
+-- DROP TABLE IF EXISTS public.tracking_events CASCADE;
+CREATE TABLE public.tracking_events (
+	id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ,
+	shipment_id bigint NOT NULL,
+	status varchar(20) NOT NULL,
+	location varchar(200),
+	description text NOT NULL,
+	is_public boolean NOT NULL DEFAULT true,
+	event_date timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	created_by bigint NOT NULL,
+	created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT tracking_events_pk PRIMARY KEY (id)
+);
+-- ddl-end --
+ALTER TABLE public.tracking_events OWNER TO postgres;
+-- ddl-end --
+
+-- object: idx_shipments_order | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_shipments_order CASCADE;
+CREATE INDEX idx_shipments_order ON public.shipments
+USING btree
+(
+	order_id
+);
+-- ddl-end --
+
+-- object: idx_shipments_rma | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_shipments_rma CASCADE;
+CREATE INDEX idx_shipments_rma ON public.shipments
+USING btree
+(
+	rma_id
+);
+-- ddl-end --
+
+-- object: idx_shipments_shipping_method | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_shipments_shipping_method CASCADE;
+CREATE INDEX idx_shipments_shipping_method ON public.shipments
+USING btree
+(
+	shipping_method_id
+);
+-- ddl-end --
+
+-- object: idx_shipments_shipment_type | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_shipments_shipment_type CASCADE;
+CREATE INDEX idx_shipments_shipment_type ON public.shipments
+USING btree
+(
+	shipment_type
+);
+-- ddl-end --
+
+-- object: idx_shipments_status | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_shipments_status CASCADE;
+CREATE INDEX idx_shipments_status ON public.shipments
+USING btree
+(
+	status
+);
+-- ddl-end --
+
+-- object: idx_shipments_tracking_number | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_shipments_tracking_number CASCADE;
+CREATE INDEX idx_shipments_tracking_number ON public.shipments
+USING btree
+(
+	tracking_number
+);
+-- ddl-end --
+
+-- object: idx_shipments_type_order | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_shipments_type_order CASCADE;
+CREATE INDEX idx_shipments_type_order ON public.shipments
+USING btree
+(
+	shipment_type,
+	order_id
+);
+-- ddl-end --
+
+-- object: idx_tracking_events_shipment | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_tracking_events_shipment CASCADE;
+CREATE INDEX idx_tracking_events_shipment ON public.tracking_events
+USING btree
+(
+	shipment_id
+);
+-- ddl-end --
+
+-- object: idx_tracking_events_created_b | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_tracking_events_created_b CASCADE;
+CREATE INDEX idx_tracking_events_created_b ON public.tracking_events
+USING btree
+(
+	created_by
+);
+-- ddl-end --
+
+-- object: idx_tracking_events_event_date | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_tracking_events_event_date CASCADE;
+CREATE INDEX idx_tracking_events_event_date ON public.tracking_events
+USING btree
+(
+	event_date DESC NULLS LAST
+);
+-- ddl-end --
+
+-- object: idx_tracking_events_is_public | type: INDEX --
+-- DROP INDEX IF EXISTS public.idx_tracking_events_is_public CASCADE;
+CREATE INDEX idx_tracking_events_is_public ON public.tracking_events
+USING btree
+(
+	is_public
+);
+-- ddl-end --
+
 -- object: "categories_parentId_fk" | type: CONSTRAINT --
 -- ALTER TABLE public.categories DROP CONSTRAINT IF EXISTS "categories_parentId_fk" CASCADE;
 ALTER TABLE public.categories ADD CONSTRAINT "categories_parentId_fk" FOREIGN KEY (parent_id)
@@ -671,6 +999,83 @@ ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE public.order_status_histories ADD CONSTRAINT orders_user_fk FOREIGN KEY (created_by)
 REFERENCES public.users (id) MATCH SIMPLE
 ON DELETE NO ACTION ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: business_info_ubigeo_fk | type: CONSTRAINT --
+-- ALTER TABLE public.business_info DROP CONSTRAINT IF EXISTS business_info_ubigeo_fk CASCADE;
+ALTER TABLE public.business_info ADD CONSTRAINT business_info_ubigeo_fk FOREIGN KEY (ubigeo_id)
+REFERENCES public.ubigeos (id) MATCH SIMPLE
+ON DELETE NO ACTION ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: suppliers_ubigeo_fk | type: CONSTRAINT --
+-- ALTER TABLE public.suppliers DROP CONSTRAINT IF EXISTS suppliers_ubigeo_fk CASCADE;
+ALTER TABLE public.suppliers ADD CONSTRAINT suppliers_ubigeo_fk FOREIGN KEY (ubigeo_id)
+REFERENCES public.ubigeos (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: purchases_supplier_fk | type: CONSTRAINT --
+-- ALTER TABLE public.purchases DROP CONSTRAINT IF EXISTS purchases_supplier_fk CASCADE;
+ALTER TABLE public.purchases ADD CONSTRAINT purchases_supplier_fk FOREIGN KEY (supplier_id)
+REFERENCES public.suppliers (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: purchases_warehouse_fk | type: CONSTRAINT --
+-- ALTER TABLE public.purchases DROP CONSTRAINT IF EXISTS purchases_warehouse_fk CASCADE;
+ALTER TABLE public.purchases ADD CONSTRAINT purchases_warehouse_fk FOREIGN KEY (warehouse_id)
+REFERENCES public.warehouses (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: purchases_user_fk | type: CONSTRAINT --
+-- ALTER TABLE public.purchases DROP CONSTRAINT IF EXISTS purchases_user_fk CASCADE;
+ALTER TABLE public.purchases ADD CONSTRAINT purchases_user_fk FOREIGN KEY (user_id)
+REFERENCES public.users (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: purchase_items_purchase_fk | type: CONSTRAINT --
+-- ALTER TABLE public.purchase_items DROP CONSTRAINT IF EXISTS purchase_items_purchase_fk CASCADE;
+ALTER TABLE public.purchase_items ADD CONSTRAINT purchase_items_purchase_fk FOREIGN KEY (purchase_id)
+REFERENCES public.purchases (id) MATCH SIMPLE
+ON DELETE CASCADE ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: purchase_items_variant_fk | type: CONSTRAINT --
+-- ALTER TABLE public.purchase_items DROP CONSTRAINT IF EXISTS purchase_items_variant_fk CASCADE;
+ALTER TABLE public.purchase_items ADD CONSTRAINT purchase_items_variant_fk FOREIGN KEY (variant_id)
+REFERENCES public.variants (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: shipments_order_fk | type: CONSTRAINT --
+-- ALTER TABLE public.shipments DROP CONSTRAINT IF EXISTS shipments_order_fk CASCADE;
+ALTER TABLE public.shipments ADD CONSTRAINT shipments_order_fk FOREIGN KEY (order_id)
+REFERENCES public.orders (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: shipments_shipping_method_fk | type: CONSTRAINT --
+-- ALTER TABLE public.shipments DROP CONSTRAINT IF EXISTS shipments_shipping_method_fk CASCADE;
+ALTER TABLE public.shipments ADD CONSTRAINT shipments_shipping_method_fk FOREIGN KEY (shipping_method_id)
+REFERENCES public.shipping_methods (id) MATCH SIMPLE
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: tracking_events_shipment_fk | type: CONSTRAINT --
+-- ALTER TABLE public.tracking_events DROP CONSTRAINT IF EXISTS tracking_events_shipment_fk CASCADE;
+ALTER TABLE public.tracking_events ADD CONSTRAINT tracking_events_shipment_fk FOREIGN KEY (shipment_id)
+REFERENCES public.shipments (id) MATCH SIMPLE
+ON DELETE CASCADE ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: tracking_events_created_by_fk | type: CONSTRAINT --
+-- ALTER TABLE public.tracking_events DROP CONSTRAINT IF EXISTS tracking_events_created_by_fk CASCADE;
+ALTER TABLE public.tracking_events ADD CONSTRAINT tracking_events_created_by_fk FOREIGN KEY (created_by)
+REFERENCES public.users (id) MATCH SIMPLE
+ON DELETE SET NULL ON UPDATE CASCADE;
 -- ddl-end --
 
 
