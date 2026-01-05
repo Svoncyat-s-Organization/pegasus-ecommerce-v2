@@ -358,16 +358,53 @@ const { data } = useUsers(page, 10, debouncedSearch || undefined);
 
 ### E. Action Buttons (MAX 3 icons)
 
+**CRITICAL RULE:** Actions column MUST use ONLY icons (NO text labels).
+
 ```tsx
-// ✅ CORRECT: Self-descriptive, no text
+// ✅ CORRECT: Icons only with title for accessibility
 <Space size="small">
-  <Button type="link" size="small" icon={<IconEye size={16} />} />
-  <Button type="link" size="small" icon={<IconEdit size={16} />} />
+  <Button
+    type="link"
+    size="small"
+    icon={<IconEye size={16} />}
+    title="Ver detalles"
+  />
+  <Button
+    type="link"
+    size="small"
+    icon={<IconEdit size={16} />}
+    title="Editar"
+  />
+  <Button
+    type="link"
+    size="small"
+    icon={<IconPower size={16} />}
+    title="Activar/Desactivar"
+  />
   <Popconfirm title="¿Eliminar?" onConfirm={handleDelete}>
-    <Button type="link" danger size="small" icon={<IconTrash size={16} />} />
+    <Button
+      type="link"
+      danger
+      size="small"
+      icon={<IconTrash size={16} />}
+      title="Eliminar"
+    />
   </Popconfirm>
 </Space>
+
+// ❌ WRONG: Text labels cause column overflow
+<Button onClick={handleToggle}>
+  {record.isActive ? 'Desactivar' : 'Activar'}  // NO TEXT
+</Button>
 ```
+
+**Common Action Icons:**
+- **View details:** `IconEye`
+- **Edit:** `IconEdit`
+- **Delete:** `IconTrash`
+- **Toggle status (Activate/Deactivate):** `IconPower`
+- **Add/Create:** `IconPlus`
+- **Download:** `IconDownload`
 
 ### F. Modal vs Full Page
 
