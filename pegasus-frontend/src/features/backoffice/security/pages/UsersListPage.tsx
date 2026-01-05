@@ -85,7 +85,7 @@ export const UsersListPage = () => {
       title: 'Teléfono',
       dataIndex: 'phone',
       key: 'phone',
-      width: 160,
+      width: 150,
       render: (phone: string | null) => phone ? formatPhone(phone) : '-',
     },
     {
