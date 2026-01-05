@@ -31,9 +31,12 @@ public class CustomerAuthService {
 
     /**
      * Login de clientes (Storefront)
+     * Acepta username o email
      */
     public AuthResponse login(LoginRequest request) {
-        Customer customer = customerRepository.findByEmail(request.email())
+        // Intentar buscar por email primero, luego por username
+        Customer customer = customerRepository.findByEmail(request.usernameOrEmail())
+                .or(() -> customerRepository.findByUsername(request.usernameOrEmail()))
                 .orElseThrow(() -> new UsernameNotFoundException("Cliente no encontrado"));
 
         if (!customer.getIsActive()) {
