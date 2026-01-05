@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Table, Button, Space, Tag, Card, Typography, Popconfirm } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconEye } from '@tabler/icons-react';
+import { Table, Button, Space, Tag, Card, Typography, Popconfirm, Input } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconEye, IconSearch } from '@tabler/icons-react';
 import type { ColumnsType } from 'antd/es/table';
 import { useCustomers } from '../hooks/useCustomers';
 import { useDeleteCustomer } from '../hooks/useCustomerMutations';
@@ -8,6 +8,7 @@ import { CustomerFormModal } from '../components/CustomerFormModal';
 import { CustomerDetailModal } from '../components/CustomerDetailModal';
 import { CUSTOMER_STATUS } from '../constants/customerConstants';
 import { formatPhone } from '@shared/utils/formatters';
+import { useDebounce } from '@shared/hooks/useDebounce';
 import type { CustomerResponse } from '@types';
 
 const { Title, Text } = Typography;
@@ -15,12 +16,14 @@ const { Title, Text } = Typography;
 export const CustomersListPage = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const [formModalVisible, setFormModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
 
-  const { data, isLoading } = useCustomers(page, pageSize);
+  const { data, isLoading } = useCustomers(page, pageSize, debouncedSearch || undefined);
   const deleteCustomer = useDeleteCustomer();
 
   const handleView = (id: number) => {
@@ -133,8 +136,19 @@ export const CustomersListPage = () => {
         </Text>
       </div>
 
-      {/* Actions Bar */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+      {/* Search and Actions Bar */}
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <Input
+          placeholder="Buscar por usuario, email o nombre..."
+          prefix={<IconSearch size={16} />}
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setPage(0);
+          }}
+          allowClear
+          style={{ maxWidth: 400 }}
+        />
         <Button type="primary" icon={<IconPlus size={18} />} onClick={handleCreate}>
           Nuevo Cliente
         </Button>

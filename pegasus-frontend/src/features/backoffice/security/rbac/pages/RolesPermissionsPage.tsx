@@ -1,16 +1,23 @@
 import { useState } from 'react';
-import { Card, Table, Button, Space, Popconfirm, Typography } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconKey } from '@tabler/icons-react';
+import { Card, Table, Button, Space, Popconfirm, Typography, Input } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconKey, IconSearch } from '@tabler/icons-react';
 import type { ColumnsType } from 'antd/es/table';
 import { useRoles } from '../hooks/useRoles';
 import { useDeleteRole } from '../hooks/useRoleMutations';
 import { RoleFormModal } from '../components/roles/RoleFormModal';
 import { AssignModulesToRoleModal } from '../components/roles/AssignModulesToRoleModal';
+import { useDebounce } from '@shared/hooks/useDebounce';
 import type { RoleResponse } from '@types';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export const RolesPermissionsPage = () => {
+  // Pagination and search
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500);
+  
   // Role modals
   const [roleFormVisible, setRoleFormVisible] = useState(false);
   const [roleFormMode, setRoleFormMode] = useState<'create' | 'edit'>('create');
@@ -20,6 +27,15 @@ export const RolesPermissionsPage = () => {
 
   const { data: roles, isLoading: isLoadingRoles } = useRoles();
   const deleteRole = useDeleteRole();
+
+  // Filter roles by search term
+  const filteredRoles = roles?.filter(role => 
+    role.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    role.description?.toLowerCase().includes(debouncedSearch.toLowerCase())
+  ) || [];
+
+  // Paginate filtered roles
+  const paginatedRoles = filteredRoles.slice(page * pageSize, (page + 1) * pageSize);
 
   // ===== Role Handlers =====
   const handleCreateRole = () => {
@@ -51,7 +67,7 @@ export const RolesPermissionsPage = () => {
       key: 'index',
       width: 60,
       align: 'center',
-      render: (_, __, index) => index + 1,
+      render: (_, __, index) => page * pageSize + index + 1,
     },
     {
       title: 'Nombre',
@@ -109,9 +125,29 @@ export const RolesPermissionsPage = () => {
 
   return (
     <Card>
-      <Title level={2}>Roles y Permisos</Title>
-      
-      <div style={{ marginBottom: 16 }}>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <Title level={2} style={{ marginBottom: 8 }}>
+          Roles y Permisos
+        </Title>
+        <Text type="secondary">
+          Gestión de roles y permisos del sistema. Define roles y asigna módulos con permisos específicos.
+        </Text>
+      </div>
+
+      {/* Search and Actions Bar */}
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <Input
+          placeholder="Buscar por nombre o descripción..."
+          prefix={<IconSearch size={16} />}
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setPage(0);
+          }}
+          allowClear
+          style={{ maxWidth: 400 }}
+        />
         <Button
           type="primary"
           icon={<IconPlus size={18} />}
@@ -121,13 +157,24 @@ export const RolesPermissionsPage = () => {
         </Button>
       </div>
       
+      {/* Table */}
       <Table
         columns={roleColumns}
-        dataSource={roles}
+        dataSource={paginatedRoles}
         rowKey="id"
         loading={isLoadingRoles}
-        pagination={false}
-        scroll={{ x: 800 }}
+        bordered
+        pagination={{
+          current: page + 1,
+          pageSize,
+          total: filteredRoles.length,
+          showSizeChanger: true,
+          showTotal: (total) => `Total: ${total} roles`,
+          onChange: (newPage, newPageSize) => {
+            setPage(newPage - 1);
+            setPageSize(newPageSize);
+          },
+        }}
       />
 
       {/* Role Modals */}

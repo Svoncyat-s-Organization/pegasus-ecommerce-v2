@@ -5,10 +5,10 @@ import type { CustomerResponse } from '@types';
 /**
  * Hook para obtener lista de clientes con paginación
  */
-export const useCustomers = (page = 0, size = 20) => {
+export const useCustomers = (page = 0, size = 20, search?: string) => {
   return useQuery({
-    queryKey: ['customers', page, size],
-    queryFn: () => customersApi.getCustomers(page, size),
+    queryKey: ['customers', page, size, search],
+    queryFn: () => customersApi.getCustomers(page, size, search),
   });
 };
 

@@ -15,9 +15,9 @@ export const customersApi = {
   // ==================== CUSTOMERS ====================
   
   // Get paginated customers
-  getCustomers: async (page = 0, size = 20): Promise<PageResponse<CustomerResponse>> => {
+  getCustomers: async (page = 0, size = 20, search?: string): Promise<PageResponse<CustomerResponse>> => {
     const { data } = await api.get<PageResponse<CustomerResponse>>(BASE_URL, {
-      params: { page, size },
+      params: { page, size, search },
     });
     return data;
   },

@@ -215,7 +215,89 @@ export const UsersListPage = () => (
 </Content>
 ```
 
-### C. Table Columns (MAX 5-7)
+### C. CRUD Module Structure (MANDATORY)
+
+**ALL CRUD modules MUST include these components (minimum viable structure):**
+
+```tsx
+// ✅ CORRECT: Complete CRUD module structure
+export const UsersListPage = () => {
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  const { data, isLoading } = useUsers(page, pageSize, debouncedSearch || undefined);
+
+  return (
+    <Card>
+      {/* 1. HEADER: Title + Description */}
+      <div style={{ marginBottom: 24 }}>
+        <Title level={2} style={{ marginBottom: 8 }}>Usuarios</Title>
+        <Text type="secondary">
+          Gestión de usuarios del backoffice. Crea, edita y administra cuentas de staff.
+        </Text>
+      </div>
+
+      {/* 2. SEARCH BAR + CREATE BUTTON */}
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <Input
+          placeholder="Buscar por usuario, email o nombre..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+          allowClear
+          style={{ maxWidth: 400 }}
+        />
+        <Button type="primary" icon={<IconPlus />} onClick={handleCreate}>
+          Nuevo Usuario
+        </Button>
+      </div>
+
+      {/* 3. TABLE with pagination and size selector */}
+      <Table
+        columns={columns}
+        dataSource={data?.content || []}
+        rowKey="id"
+        loading={isLoading}
+        bordered
+        pagination={{
+          current: page + 1,
+          pageSize,
+          total: data?.totalElements || 0,
+          showSizeChanger: true,
+          showTotal: (total) => \`Total: \${total} usuarios\`,
+          onChange: (newPage, newPageSize) => {
+            setPage(newPage - 1);
+            setPageSize(newPageSize);
+          },
+        }}
+      />
+    </Card>
+  );
+};
+```
+
+**CRUD Components Checklist:**
+- ✅ **Card container** (single Card wrapping all content)
+- ✅ **Header section:** Title (h2) + Description (secondary text)
+- ✅ **Search bar:** Input with debounce (500ms), `allowClear`, resets page to 0
+- ✅ **Create button:** Primary button with icon (IconPlus) aligned right
+- ✅ **Table:** Bordered, with loading state, rowKey="id"
+- ✅ **Pagination:** `current: page + 1` (backend 0-based, UI 1-based)
+- ✅ **Size selector:** `showSizeChanger: true`
+- ✅ **Total counter:** `showTotal` with Spanish text
+
+**CRUD Actions in Table (Actions column, fixed right, width 120-150):**
+- **CREATE:** Top-right button "Nuevo {Entity}"
+- **READ:** Entire table + optional view icon (IconEye) for details
+- **UPDATE:** IconEdit in Actions column
+- **DELETE:** IconTrash with Popconfirm in Actions column
+
+**Exceptions (NO search/pagination/create button):**
+- **Read-only modules:** Dashboard (graphs/KPIs), Reports, Kardex (movement history)
+- **Non-CRUD modules:** Settings, Profile
+
+### D. Table Columns (MAX 5-7)
 
 **MANDATORY First Column:** `#` (row number)
 
