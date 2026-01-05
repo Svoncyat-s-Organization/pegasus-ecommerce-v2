@@ -1,6 +1,6 @@
 -- ============================================
 -- Migración: Agregar columna is_active a orders
--- Archivo: V4__add_is_active_to_orders.sql
+-- Archivo: V8__add_is_active_to_orders.sql
 -- Descripción: Agrega la columna is_active a la tabla orders para cumplir con BaseEntity
 -- ============================================
 
