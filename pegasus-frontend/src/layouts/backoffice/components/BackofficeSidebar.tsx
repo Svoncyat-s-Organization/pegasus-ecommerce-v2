@@ -65,19 +65,19 @@ const menuItems: MenuItem[] = [
     icon: <IconPackage size={18} />,
     children: [
       {
+        key: '/admin/inventory/warehouses',
+        label: 'Almacenes',
+        path: '/admin/inventory/warehouses',
+      },
+      {
         key: '/admin/inventory/stock',
-        label: 'Stock',
+        label: 'Existencias',
         path: '/admin/inventory/stock',
       },
       {
         key: '/admin/inventory/movements',
         label: 'Movimientos',
         path: '/admin/inventory/movements',
-      },
-      {
-        key: '/admin/inventory/warehouses',
-        label: 'Almacenes',
-        path: '/admin/inventory/warehouses',
       },
     ],
   },

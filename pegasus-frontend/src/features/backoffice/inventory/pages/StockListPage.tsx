@@ -63,7 +63,7 @@ export const StockListPage = () => {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Title level={2} style={{ marginBottom: 8 }}>
-          Stock por Almacén
+          Existencias
         </Title>
         <Text type="secondary">
           Consulta de inventario disponible, reservado y total por almacén.
