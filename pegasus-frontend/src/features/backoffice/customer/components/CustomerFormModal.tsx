@@ -54,12 +54,12 @@ export const CustomerFormModal = ({ mode, customerId, visible, onClose }: Custom
       }
       
       onClose();
-    } catch (error) {
+    } catch {
       // Validation errors handled by form
     }
   };
 
-  const validateDocNumber = (_: any, value: string) => {
+  const validateDocNumber = (_rule: unknown, value: string) => {
     const docType = form.getFieldValue('docType') as DocumentType;
     
     if (!value) {

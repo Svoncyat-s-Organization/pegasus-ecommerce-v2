@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Modal, Form, Input, Switch, Button, Row, Col, Select } from 'antd';
 import { useCustomerAddresses } from '../hooks/useCustomers';
 import { useCreateAddress, useUpdateAddress } from '../hooks/useCustomerMutations';
@@ -20,8 +20,8 @@ export const AddressFormModal = ({ mode, customerId, addressId, visible, onClose
   const createMutation = useCreateAddress();
   const updateMutation = useUpdateAddress();
 
-  const [selectedDepartment, setSelectedDepartment] = useState<string | undefined>();
-  const [selectedProvince, setSelectedProvince] = useState<string | undefined>();
+  const selectedDepartment = Form.useWatch('department', form) as string | undefined;
+  const selectedProvince = Form.useWatch('province', form) as string | undefined;
 
   const { data: departments, isLoading: loadingDepartments } = useDepartments();
   const { data: provinces, isLoading: loadingProvinces } = useProvinces(selectedDepartment);
@@ -36,9 +36,6 @@ export const AddressFormModal = ({ mode, customerId, addressId, visible, onClose
       const departmentId = ubigeoId.substring(0, 2);
       const provinceId = ubigeoId.substring(0, 4);
       
-      setSelectedDepartment(departmentId);
-      setSelectedProvince(provinceId);
-      
       form.setFieldsValue({
         department: departmentId,
         province: provinceId,
@@ -51,8 +48,6 @@ export const AddressFormModal = ({ mode, customerId, addressId, visible, onClose
       });
     } else if (visible && mode === 'create') {
       form.resetFields();
-      setSelectedDepartment(undefined);
-      setSelectedProvince(undefined);
       form.setFieldsValue({
         isDefaultShipping: false,
         isDefaultBilling: false,
@@ -85,20 +80,17 @@ export const AddressFormModal = ({ mode, customerId, addressId, visible, onClose
       }
 
       onClose();
-    } catch (error) {
+    } catch {
       // Validation errors handled by form
     }
   };
 
   const handleDepartmentChange = (value: string) => {
-    setSelectedDepartment(value);
-    setSelectedProvince(undefined);
-    form.setFieldsValue({ province: undefined, district: undefined });
+    form.setFieldsValue({ department: value, province: undefined, district: undefined });
   };
 
   const handleProvinceChange = (value: string) => {
-    setSelectedProvince(value);
-    form.setFieldsValue({ district: undefined });
+    form.setFieldsValue({ province: value, district: undefined });
   };
 
   return (

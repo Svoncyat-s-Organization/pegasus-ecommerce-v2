@@ -11,6 +11,17 @@ import {
   deleteShipment,
 } from '../api/shipmentsApi';
 
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown): string | undefined =>
+  (error as ApiErrorShape).response?.data?.message;
+
 export const useShipments = (
   page: number,
   size: number,
@@ -57,8 +68,8 @@ export const useCreateShipment = () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       message.success('Envío creado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al crear el envío');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al crear el envío');
     },
   });
 };
@@ -74,8 +85,8 @@ export const useUpdateShipment = () => {
       queryClient.invalidateQueries({ queryKey: ['shipment', variables.id] });
       message.success('Envío actualizado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al actualizar el envío');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al actualizar el envío');
     },
   });
 };
@@ -89,8 +100,8 @@ export const useDeleteShipment = () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       message.success('Envío eliminado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al eliminar el envío');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al eliminar el envío');
     },
   });
 };

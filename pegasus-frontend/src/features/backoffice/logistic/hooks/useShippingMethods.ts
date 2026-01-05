@@ -12,6 +12,17 @@ import {
   deleteShippingMethod,
 } from '../api/shippingMethodsApi';
 
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown): string | undefined =>
+  (error as ApiErrorShape).response?.data?.message;
+
 export const useShippingMethods = (
   page: number,
   size: number,
@@ -41,8 +52,8 @@ export const useCreateShippingMethod = () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-methods'] });
       message.success('Método de envío creado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al crear el método de envío');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al crear el método de envío');
     },
   });
 };
@@ -58,8 +69,8 @@ export const useUpdateShippingMethod = () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-method', variables.id] });
       message.success('Método de envío actualizado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al actualizar el método de envío');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al actualizar el método de envío');
     },
   });
 };
@@ -73,8 +84,8 @@ export const useDeleteShippingMethod = () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-methods'] });
       message.success('Método de envío eliminado exitosamente');
     },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al eliminar el método de envío');
+    onError: (error: unknown) => {
+      message.error(getApiErrorMessage(error) || 'Error al eliminar el método de envío');
     },
   });
 };

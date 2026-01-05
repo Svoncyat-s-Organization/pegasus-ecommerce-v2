@@ -56,6 +56,110 @@ export interface BaseEntity {
 }
 
 // ============================================
+// Inventory Module Types
+// ============================================
+export interface WarehouseResponse {
+  id: number;
+  code: string;
+  name: string;
+  ubigeoId: string;
+  address: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// Purchase Module Types
+// ============================================
+export type SupplierDocumentType = 'DNI' | 'RUC';
+
+export interface SupplierResponse {
+  id: number;
+  docType: SupplierDocumentType;
+  docNumber: string;
+  companyName: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  ubigeoId?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSupplierRequest {
+  docType: SupplierDocumentType;
+  docNumber: string;
+  companyName: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  ubigeoId?: string;
+}
+
+export interface UpdateSupplierRequest {
+  docType: SupplierDocumentType;
+  docNumber: string;
+  companyName: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  ubigeoId?: string;
+}
+
+export type PurchaseStatus = 'PENDING' | 'RECEIVED' | 'CANCELLED';
+
+export interface PurchaseItemResponse {
+  id: number;
+  variantId: number;
+  quantity: number;
+  unitCost: number;
+  subtotal: number;
+  createdAt: string;
+}
+
+export interface CreatePurchaseItemRequest {
+  variantId: number;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface CreatePurchaseRequest {
+  supplierId: number;
+  warehouseId: number;
+  userId: number;
+  invoiceType: string;
+  invoiceNumber: string;
+  purchaseDate?: string;
+  notes?: string;
+  items: CreatePurchaseItemRequest[];
+}
+
+export interface UpdatePurchaseStatusRequest {
+  status: PurchaseStatus;
+}
+
+export interface PurchaseResponse {
+  id: number;
+  supplier: SupplierResponse;
+  warehouseId: number;
+  userId: number;
+  status: PurchaseStatus;
+  invoiceType: string;
+  invoiceNumber: string;
+  totalAmount: number;
+  purchaseDate?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: PurchaseItemResponse[];
+}
+
+// ============================================
 // Navigation Types
 // ============================================
 export interface MenuItem {
@@ -425,7 +529,7 @@ export interface Shipment {
   weightKg: number;
   status: string;
   estimatedDeliveryDate: string;
-  shippingAddress: Record<string, any>;
+  shippingAddress: Record<string, unknown>;
   recipientName: string;
   recipientPhone: string;
   requireSignature: boolean;
@@ -446,7 +550,7 @@ export interface CreateShipmentRequest {
   shippingCost: number;
   weightKg: number;
   estimatedDeliveryDate: string;
-  shippingAddress: Record<string, any>;
+  shippingAddress: Record<string, unknown>;
   recipientName: string;
   recipientPhone: string;
   requireSignature?: boolean;

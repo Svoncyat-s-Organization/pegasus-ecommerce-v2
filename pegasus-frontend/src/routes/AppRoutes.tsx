@@ -11,6 +11,7 @@ import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
 import { CustomersListPage } from '@features/backoffice/customer';
 import { BrandsListPage, CategoriesListPage, ProductsListPage, ProductFormPage } from '@features/backoffice/catalog';
 import { ShippingMethodsListPage, ShipmentsListPage } from '@features/backoffice/logistic';
+import { PurchasesListPage, SuppliersListPage } from '@features/backoffice/purchase';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -69,8 +70,8 @@ export const AppRoutes = () => {
         <Route path="inventory/warehouses" element={<PlaceholderPage title="Almacenes" description="Gestión de almacenes y bodegas" />} />
 
         {/* Purchases */}
-        <Route path="purchases/suppliers" element={<PlaceholderPage title="Proveedores" description="Gestión de proveedores" />} />
-        <Route path="purchases/orders" element={<PlaceholderPage title="Órdenes de Compra" description="Gestión de órdenes de compra" />} />
+        <Route path="purchases/suppliers" element={<SuppliersListPage />} />
+        <Route path="purchases/orders" element={<PurchasesListPage />} />
 
         {/* Logistics */}
         <Route path="logistics/shipping-methods" element={<ShippingMethodsListPage />} />
