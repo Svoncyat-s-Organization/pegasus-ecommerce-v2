@@ -11,6 +11,8 @@ import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
 import { CustomersListPage } from '@features/backoffice/customer';
 import { BrandsListPage, CategoriesListPage, ProductsListPage, ProductFormPage } from '@features/backoffice/catalog';
 import { ShippingMethodsListPage, ShipmentsListPage } from '@features/backoffice/logistic';
+import { OrderListPage } from '@features/backoffice/order';
+import { RmaListPage } from '@features/backoffice/rma';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -61,7 +63,7 @@ export const AppRoutes = () => {
         <Route path="catalog/brands" element={<BrandsListPage />} />
 
         {/* Orders */}
-        <Route path="orders" element={<PlaceholderPage title="Pedidos" description="Gestión de pedidos y órdenes" />} />
+        <Route path="orders" element={<OrderListPage />} />
 
         {/* Inventory */}
         <Route path="inventory/stock" element={<PlaceholderPage title="Stock" description="Gestión de stock e inventario" />} />
@@ -81,7 +83,7 @@ export const AppRoutes = () => {
         <Route path="invoices" element={<PlaceholderPage title="Facturación" description="Gestión de facturas y comprobantes" />} />
 
         {/* RMA / Returns */}
-        <Route path="rma" element={<PlaceholderPage title="Devoluciones" description="Gestión de devoluciones y RMA" />} />
+        <Route path="rma" element={<RmaListPage />} />
 
         {/* Customers */}
         <Route path="customers" element={<CustomersListPage />} />

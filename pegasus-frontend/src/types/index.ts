@@ -482,3 +482,229 @@ export interface CreateTrackingEventRequest {
   isPublic?: boolean;
   eventDate?: string;
 }
+
+// ============================================
+// Order Module Types
+// ============================================
+export type OrderStatus = 
+  | 'PENDING' 
+  | 'AWAIT_PAYMENT' 
+  | 'PAID' 
+  | 'PROCESSING' 
+  | 'SHIPPED' 
+  | 'DELIVERED' 
+  | 'CANCELLED' 
+  | 'REFUNDED';
+
+export interface AddressDTO {
+  ubigeoId: string;
+  address: string;
+  reference?: string;
+  recipientName: string;
+  recipientPhone: string;
+}
+
+export interface OrderItemResponse {
+  id: number;
+  productId: number;
+  variantId: number;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface OrderStatusHistoryResponse {
+  id: number;
+  status: OrderStatus;
+  notes?: string;
+  changedAt: string;
+  changedByUserId: number;
+  changedByUsername: string;
+}
+
+export interface OrderSummaryResponse {
+  id: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  status: OrderStatus;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderResponse {
+  id: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  status: OrderStatus;
+  total: number;
+  shippingAddress: Record<string, any>;
+  billingAddress: Record<string, any>;
+  items: OrderItemResponse[];
+  statusHistories: OrderStatusHistoryResponse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItemRequest {
+  variantId: number;
+  quantity: number;
+}
+
+export interface CreateOrderRequest {
+  customerId: number;
+  items: OrderItemRequest[];
+  shippingAddress: AddressDTO;
+  billingAddress?: AddressDTO;
+}
+
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus;
+  notes?: string;
+}
+
+// ============================================
+// RMA Module Types (Return Merchandise Authorization)
+// ============================================
+export type RmaStatus = 
+  | 'PENDING' 
+  | 'APPROVED' 
+  | 'REJECTED' 
+  | 'IN_TRANSIT' 
+  | 'RECEIVED' 
+  | 'INSPECTING' 
+  | 'REFUNDED' 
+  | 'CLOSED' 
+  | 'CANCELLED';
+
+export type RmaReason = 
+  | 'DEFECTIVE' 
+  | 'WRONG_ITEM' 
+  | 'NOT_AS_DESCRIBED' 
+  | 'DAMAGED_SHIPPING' 
+  | 'CHANGED_MIND' 
+  | 'SIZE_COLOR' 
+  | 'LATE_DELIVERY' 
+  | 'OTHER';
+
+export type ItemCondition = 
+  | 'UNOPENED' 
+  | 'OPENED_UNUSED' 
+  | 'USED_LIKE_NEW' 
+  | 'USED_GOOD' 
+  | 'DAMAGED' 
+  | 'DEFECTIVE';
+
+export type RefundMethod = 
+  | 'ORIGINAL_PAYMENT' 
+  | 'BANK_TRANSFER' 
+  | 'STORE_CREDIT' 
+  | 'EXCHANGE';
+
+export interface RmaItemResponse {
+  id: number;
+  rmaId: number;
+  orderItemId: number;
+  variantId: number;
+  variantSku: string;
+  productName: string;
+  quantity: number;
+  itemCondition?: ItemCondition;
+  inspectionNotes?: string;
+  refundAmount: number;
+  restockApproved?: boolean;
+  inspectedBy?: number;
+  inspectorName?: string;
+  inspectedAt?: string;
+  createdAt: string;
+}
+
+export interface RmaStatusHistoryResponse {
+  id: number;
+  status: RmaStatus;
+  comments?: string;
+  changedAt: string;
+  changedByUserId: number;
+  changedByUsername: string;
+}
+
+export interface RmaSummaryResponse {
+  id: number;
+  rmaNumber: string;
+  orderId: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  status: RmaStatus;
+  reason: RmaReason;
+  refundMethod?: RefundMethod;
+  refundAmount: number;
+  itemsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RmaResponse {
+  id: number;
+  rmaNumber: string;
+  orderId: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  status: RmaStatus;
+  reason: RmaReason;
+  customerComments?: string;
+  staffNotes?: string;
+  refundMethod?: RefundMethod;
+  refundAmount: number;
+  restockingFee: number;
+  shippingCostRefund: number;
+  approvedBy?: number;
+  approverName?: string;
+  approvedAt?: string;
+  receivedAt?: string;
+  refundedAt?: string;
+  closedAt?: string;
+  items: RmaItemResponse[];
+  statusHistories: RmaStatusHistoryResponse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RmaItemRequest {
+  orderItemId: number;
+  variantId: number;
+  quantity: number;
+}
+
+export interface CreateRmaRequest {
+  orderId: number;
+  reason: RmaReason;
+  customerComments?: string;
+  items: RmaItemRequest[];
+}
+
+export interface UpdateRmaRequest {
+  status?: RmaStatus;
+  staffNotes?: string;
+  refundMethod?: RefundMethod;
+}
+
+export interface ApproveRmaRequest {
+  approved: boolean;
+  comments?: string;
+}
+
+export interface InspectItemRequest {
+  rmaItemId: number;
+  itemCondition: ItemCondition;
+  inspectionNotes?: string;
+  restockApproved: boolean;
+}
