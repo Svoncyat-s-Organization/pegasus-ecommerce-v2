@@ -33,6 +33,11 @@ applyTo: "pegasus-frontend/**/*.ts, pegasus-frontend/**/*.tsx, pegasus-frontend/
 - Run `pnpm run build` before submitting
 - NO unused imports
 
+**Page Titles (Browser Tab):**
+- Maintain `PageTitle` component (`src/shared/components/PageTitle.tsx`) with mapping of routes to titles
+- Format: Backoffice = `{Page} - Backoffice | Pegasus`, Storefront = `{Page} | Pegasus E-commerce`
+- Update `pageTitles` object when adding new routes
+
 ---
 
 ## 1. Tech Stack

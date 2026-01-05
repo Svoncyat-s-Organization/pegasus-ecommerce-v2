@@ -17,6 +17,7 @@ import {
 import { useSidebarStore } from '@stores/backoffice/sidebarStore';
 import { useUserPermissions } from '@shared/hooks/useUserPermissions';
 import type { MenuItem } from '@types';
+import logoSvg from '@assets/logo/default.svg';
 
 const { Sider } = Layout;
 
@@ -206,9 +207,30 @@ export const BackofficeSidebar = () => {
   }, [allowedPaths, isLoading]);
 
   // Find selected key based on current path
-  const selectedKey = filteredMenuItems.find((item) =>
-    location.pathname.startsWith(item.key)
-  )?.key || location.pathname;
+  // Buscar primero en los hijos (submódulos), luego en los padres
+  const findSelectedKey = (): string => {
+    // Primero buscar coincidencia exacta en todos los niveles
+    for (const item of filteredMenuItems) {
+      if (item.children) {
+        const child = item.children.find((c) => c.path === location.pathname);
+        if (child) return child.key;
+      }
+      if (item.path === location.pathname) return item.key;
+    }
+    
+    // Si no hay coincidencia exacta, buscar por startsWith (para rutas dinámicas)
+    for (const item of filteredMenuItems) {
+      if (item.children) {
+        const child = item.children.find((c) => location.pathname.startsWith(c.key));
+        if (child) return child.key;
+      }
+      if (location.pathname.startsWith(item.key)) return item.key;
+    }
+    
+    return location.pathname;
+  };
+  
+  const selectedKey = findSelectedKey();
 
   // Find open keys (parent menu items)
   const defaultOpenKeys = filteredMenuItems
@@ -238,6 +260,7 @@ export const BackofficeSidebar = () => {
         collapsed={collapsed}
         onCollapse={toggleCollapsed}
         width={240}
+        theme="light"
         style={{
           overflow: 'auto',
           height: '100vh',
@@ -245,6 +268,7 @@ export const BackofficeSidebar = () => {
           left: 0,
           top: 0,
           bottom: 0,
+          borderRight: '1px solid #f0f0f0',
         }}
       >
         <div
@@ -254,15 +278,22 @@ export const BackofficeSidebar = () => {
             alignItems: 'center',
             justifyContent: 'center',
             padding: '0 16px',
-            color: '#fff',
-            fontSize: collapsed ? 18 : 20,
-            fontWeight: 700,
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-            letterSpacing: '0.5px',
-            background: 'rgba(0, 0, 0, 0.2)',
+            gap: collapsed ? 0 : 8,
+            fontSize: collapsed ? 14 : 16,
+            fontWeight: 600,
+            borderBottom: '1px solid #f0f0f0',
+            color: '#1f1f1f',
           }}
         >
-          {collapsed ? 'P' : 'PEGASUS'}
+          {collapsed ? (
+            <img src={logoSvg} alt="Pegasus" style={{ width: 28, height: 28 }} />
+          ) : (
+            <>
+              <span>PEGASUS</span>
+              <img src={logoSvg} alt="Pegasus" style={{ width: 24, height: 24 }} />
+              <span style={{ color: '#2f54eb' }}>ADMIN</span>
+            </>
+          )}
         </div>
       </Sider>
     );
@@ -274,6 +305,7 @@ export const BackofficeSidebar = () => {
       collapsed={collapsed}
       onCollapse={toggleCollapsed}
       width={240}
+      theme="light"
       style={{
         overflow: 'auto',
         height: '100vh',
@@ -281,6 +313,7 @@ export const BackofficeSidebar = () => {
         left: 0,
         top: 0,
         bottom: 0,
+        borderRight: '1px solid #f0f0f0',
       }}
     >
       <div
@@ -290,18 +323,26 @@ export const BackofficeSidebar = () => {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '0 16px',
-          color: '#fff',
-          fontSize: collapsed ? 18 : 20,
-          fontWeight: 700,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          letterSpacing: '0.5px',
-          background: 'rgba(0, 0, 0, 0.2)',
+          gap: collapsed ? 0 : 8,
+          fontSize: collapsed ? 14 : 16,
+          fontWeight: 600,
+          borderBottom: '1px solid #f0f0f0',
+          color: '#1f1f1f',
         }}
       >
-        {collapsed ? 'P' : 'PEGASUS'}
+        {collapsed ? (
+          <img src={logoSvg} alt="Pegasus" style={{ width: 28, height: 28 }} />
+        ) : (
+          <>
+            <span>PEGASUS</span>
+            <img src={logoSvg} alt="Pegasus" style={{ width: 24, height: 24 }} />
+            <span style={{ color: '#2f54eb' }}>ADMIN</span>
+          </>
+        )}
       </div>
       <Menu
-        theme="dark"
+        className="custom-sidebar-menu"
+        theme="light"
         mode="inline"
         selectedKeys={[selectedKey]}
         defaultOpenKeys={defaultOpenKeys}

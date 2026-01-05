@@ -41,21 +41,31 @@ export const BackofficeHeader = () => {
         padding: '0 24px',
         background: '#fff',
         display: 'flex',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         alignItems: 'center',
         borderBottom: '1px solid #f0f0f0',
       }}
     >
+      <Space direction="vertical" size={0} style={{ lineHeight: 'normal' }}>
+        <Text strong style={{ fontSize: 16, display: 'block' }}>
+          Panel administrativo
+        </Text>
+        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+          Pegasus E-commerce
+        </Text>
+      </Space>
+      
       <Dropdown menu={{ items }} trigger={['click']}>
-        <Space style={{ cursor: 'pointer' }}>
-          <Avatar
-            style={{ backgroundColor: '#1677ff' }}
-            icon={<IconUser size={16} />}
-          />
-          <Text strong>{user?.email || 'Admin'}</Text>
-          <IconChevronDown size={14} />
-        </Space>
-      </Dropdown>
+          <Space style={{ cursor: 'pointer' }}>
+            <Avatar
+              style={{ backgroundColor: '#2f54eb', color: '#ffffff' }}
+            >
+              {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
+            </Avatar>
+            <Text strong>{user?.username || 'Admin'}</Text>
+            <IconChevronDown size={14} />
+          </Space>
+        </Dropdown>
     </Header>
   );
 };

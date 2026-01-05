@@ -1,0 +1,84 @@
+/* ==========================================================================
+   BACKOFFICE SIDEBAR CUSTOM STYLES
+   Colores:
+   - Primario (Fuerte): #2f54eb
+   - Primario (Claro/Fondo): #e6f0ff (Equivalente visual al azul transparente)
+   - Texto Contraste: #ffffff
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. NIVEL RAÍZ (Módulos sin hijos)
+   -------------------------------------------------------------------------- */
+
+/* Cuando un item raíz está SELECCIONADO: Fondo Azul Fuerte + Texto Blanco */
+.custom-sidebar-menu.ant-menu-root > .ant-menu-item-selected {
+  background-color: #2f54eb !important;
+  color: #ffffff !important;
+}
+
+/* El icono del item raíz seleccionado también blanco */
+.custom-sidebar-menu.ant-menu-root > .ant-menu-item-selected .anticon {
+  color: #ffffff !important;
+}
+
+/* El borde derecho azul que pone AntD por defecto, lo quitamos o pintamos igual */
+.custom-sidebar-menu.ant-menu-root > .ant-menu-item-selected::after {
+  border-right: none !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. NIVEL PADRE (Módulos con hijos)
+   -------------------------------------------------------------------------- */
+
+/* CASO A: Padre ABIERTO pero SIN hijos seleccionados -> Fondo Claro + Texto Azul */
+.custom-sidebar-menu .ant-menu-submenu-open:not(.ant-menu-submenu-selected) > .ant-menu-submenu-title {
+  background-color: #e6f0ff !important;
+  color: #2f54eb !important;
+}
+.custom-sidebar-menu .ant-menu-submenu-open:not(.ant-menu-submenu-selected) > .ant-menu-submenu-title .anticon,
+.custom-sidebar-menu .ant-menu-submenu-open:not(.ant-menu-submenu-selected) > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  color: #2f54eb !important;
+}
+
+
+/* CASO B: Padre con un HIJO ACTIVO -> Fondo Azul Fuerte + Texto Blanco */
+/* Nota: AntD le pone la clase .ant-menu-submenu-selected al padre cuando un hijo está activo */
+.custom-sidebar-menu .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  background-color: #2f54eb !important;
+  color: #ffffff !important;
+}
+
+/* Iconos y flechitas del padre en blanco cuando está activo */
+.custom-sidebar-menu .ant-menu-submenu-selected > .ant-menu-submenu-title .anticon,
+.custom-sidebar-menu .ant-menu-submenu-selected > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  color: #ffffff !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. NIVEL HIJO (Submódulos)
+   -------------------------------------------------------------------------- */
+
+/* Submódulo SELECCIONADO -> Fondo Claro + Texto Azul Fuerte (Lo que te fallaba) */
+/* Usamos .ant-menu-sub para asegurar que solo aplique a los hijos */
+.custom-sidebar-menu .ant-menu-sub .ant-menu-item-selected {
+  background-color: #e6f0ff !important;
+  color: #2f54eb !important;
+}
+
+/* Aseguramos que el titulo del link interno tenga el color correcto */
+.custom-sidebar-menu .ant-menu-sub .ant-menu-item-selected .ant-menu-title-content {
+    color: #2f54eb !important;
+}
+
+/* Si el submódulo tiene icono, también azul */
+.custom-sidebar-menu .ant-menu-sub .ant-menu-item-selected .anticon {
+  color: #2f54eb !important;
+}
+
+/* Hover en los hijos no seleccionados (para que se sienta reactivo) */
+.custom-sidebar-menu .ant-menu-sub .ant-menu-item:not(.ant-menu-item-selected):hover {
+  background-color: transparent !important; /* O un gris muy sutil #fafafa */
+  color: #2f54eb !important;
+}
