@@ -2,17 +2,10 @@ import { Container, Title, Text, Button, Stack, Group } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { useFeaturedProducts } from '@features/storefront/catalog';
 import { ProductGrid } from '@features/storefront/catalog/components/ProductGrid';
-import { message } from 'antd';
 
 export const HomePage = () => {
   const navigate = useNavigate();
   const { data: featuredProducts, isLoading } = useFeaturedProducts(0, 8);
-
-  const handleAddToCart = (productId: number) => {
-    // TODO: Implement add to cart
-    message.success('Producto agregado al carrito');
-    console.log('Add to cart:', productId);
-  };
 
   return (
     <Container size="xl" py={60}>
@@ -47,7 +40,6 @@ export const HomePage = () => {
           <ProductGrid
             products={featuredProducts?.content || []}
             isLoading={isLoading}
-            onAddToCart={handleAddToCart}
           />
         </Stack>
       </Stack>

@@ -1,5 +1,6 @@
 import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
 import { ConfigProvider, theme } from 'antd';
 import { AppRoutes } from '@routes/AppRoutes';
 import { PageTitle } from '@shared/components/PageTitle';
@@ -23,10 +24,12 @@ function App() {
       }}
     >
       <MantineProvider>
-        <BrowserRouter>
-          <PageTitle />
-          <AppRoutes />
-        </BrowserRouter>
+        <ModalsProvider>
+          <BrowserRouter>
+            <PageTitle />
+            <AppRoutes />
+          </BrowserRouter>
+        </ModalsProvider>
       </MantineProvider>
     </ConfigProvider>
   );

@@ -8,10 +8,11 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  // Check if this is a backoffice or storefront request
-  const isBackofficeRequest = config.url?.startsWith('/admin') || window.location.pathname.startsWith('/admin');
+  // Determine context based on current location (where the user is)
+  // NOT based on the API endpoint being called
+  const isBackofficeContext = window.location.pathname.startsWith('/admin');
 
-  if (isBackofficeRequest) {
+  if (isBackofficeContext) {
     // Backoffice token (Zustand persist)
     const authStorage = localStorage.getItem('auth-storage');
     if (authStorage) {

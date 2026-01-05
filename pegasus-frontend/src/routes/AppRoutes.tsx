@@ -19,6 +19,8 @@ import { WarehouseListPage, StockListPage, MovementListPage } from '@features/ba
 import { HomePage } from '@features/storefront/home/pages/HomePage';
 import { LoginPage as CustomerLoginPage, RegisterPage } from '@features/storefront/auth';
 import { ProductListPage, ProductDetailPage } from '@features/storefront/catalog';
+import { CartPage } from '@features/storefront/cart';
+import { CheckoutPage, OrderConfirmationPage } from '@features/storefront/checkout';
 
 // Temporary placeholder pages
 const DashboardPage = () => (
@@ -38,9 +40,6 @@ const PlaceholderPage = ({ title, description }: { title: string; description: s
 export const AppRoutes = () => {
   return (
     <Routes>
-      {/* Root redirect */}
-      <Route path="/" element={<Navigate to="/home" replace />} />
-
       {/* ==================== BACKOFFICE ROUTES ==================== */}
       {/* Public backoffice routes */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -105,26 +104,39 @@ export const AppRoutes = () => {
       {/* ==================== STOREFRONT ROUTES ==================== */}
       {/* Public storefront routes */}
       <Route path="/" element={<StorefrontLayout />}>
+        <Route index element={<HomePage />} />
         <Route path="home" element={<HomePage />} />
         <Route path="login" element={<CustomerLoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="products" element={<ProductListPage />} />
         <Route path="products/:id" element={<ProductDetailPage />} />
-      </Route>
-
-      {/* Protected storefront routes */}
-      <Route
-        path="/"
-        element={
+        
+        {/* Protected storefront routes (nested within same layout) */}
+        <Route path="cart" element={
           <StorefrontProtectedRoute>
-            <StorefrontLayout />
+            <CartPage />
           </StorefrontProtectedRoute>
-        }
-      >
-        <Route path="cart" element={<PlaceholderPage title="Carrito" description="Tu carrito de compras" />} />
-        <Route path="checkout" element={<PlaceholderPage title="Checkout" description="Finalizar compra" />} />
-        <Route path="profile" element={<PlaceholderPage title="Mi Perfil" description="Perfil del usuario" />} />
-        <Route path="orders" element={<PlaceholderPage title="Mis Pedidos" description="Historial de pedidos" />} />
+        } />
+        <Route path="checkout" element={
+          <StorefrontProtectedRoute>
+            <CheckoutPage />
+          </StorefrontProtectedRoute>
+        } />
+        <Route path="orders/confirmation/:orderId" element={
+          <StorefrontProtectedRoute>
+            <OrderConfirmationPage />
+          </StorefrontProtectedRoute>
+        } />
+        <Route path="profile" element={
+          <StorefrontProtectedRoute>
+            <PlaceholderPage title="Mi Perfil" description="Perfil del usuario" />
+          </StorefrontProtectedRoute>
+        } />
+        <Route path="orders" element={
+          <StorefrontProtectedRoute>
+            <PlaceholderPage title="Mis Pedidos" description="Historial de pedidos" />
+          </StorefrontProtectedRoute>
+        } />
       </Route>
 
       {/* 404 Not Found */}

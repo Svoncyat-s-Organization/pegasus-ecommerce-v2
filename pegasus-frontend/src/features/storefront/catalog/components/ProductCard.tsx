@@ -1,15 +1,19 @@
 import { Card, Image, Text, Badge, Group, Stack, Button } from '@mantine/core';
 import { IconShoppingCart } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
 import type { ProductResponse } from '@types';
+import { useProductVariants } from '../hooks/useProductVariants';
+import { useCartStore } from '@features/storefront/cart';
 
 interface ProductCardProps {
   product: ProductResponse;
-  onAddToCart?: (productId: number) => void;
 }
 
-export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
+export const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
+  const { data: variants } = useProductVariants(product.id);
+  const addItem = useCartStore((state) => state.addItem);
 
   const handleCardClick = () => {
     navigate(`/products/${product.id}`);
@@ -17,10 +21,35 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onAddToCart) {
-      onAddToCart(product.id);
+    
+    // Obtener primera variante disponible
+    const firstVariant = variants?.[0];
+    
+    if (!firstVariant) {
+      message.warning('No hay variantes disponibles para este producto');
+      navigate(`/products/${product.id}`);
+      return;
     }
+
+    addItem({
+      productId: product.id,
+      variantId: firstVariant.id,
+      sku: firstVariant.sku,
+      productName: product.name,
+      brandName: product.brandName,
+      price: firstVariant.price,
+      quantity: 1,
+      imageUrl: undefined, // TODO: Get from images API
+      attributes: firstVariant.attributes as Record<string, string>,
+    });
+
+    message.success('Producto agregado al carrito');
   };
+
+  // Obtener precio mínimo de las variantes
+  const minPrice = variants && variants.length > 0
+    ? Math.min(...variants.map((v) => v.price))
+    : null;
 
   // TODO: Get image from variants/images API
   const mainImage = '/placeholder-product.jpg';
@@ -60,10 +89,18 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
 
         <Group justify="space-between" mt="auto">
           <div>
-            <Text size="lg" fw={700}>
-              {/* TODO: Get price from variants */}
-              Consultar precio
-            </Text>
+            {minPrice !== null ? (
+              <>
+                <Text size="xs" c="dimmed">Desde</Text>
+                <Text size="lg" fw={700} c="blue">
+                  S/ {minPrice.toFixed(2)}
+                </Text>
+              </>
+            ) : (
+              <Text size="sm" c="dimmed">
+                Consultar precio
+              </Text>
+            )}
           </div>
 
           <Button
@@ -71,6 +108,7 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
             size="sm"
             leftSection={<IconShoppingCart size={16} />}
             onClick={handleAddToCart}
+            disabled={!variants || variants.length === 0}
           >
             Agregar
           </Button>

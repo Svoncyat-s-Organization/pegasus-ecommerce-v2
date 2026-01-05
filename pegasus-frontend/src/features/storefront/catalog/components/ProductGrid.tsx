@@ -5,10 +5,9 @@ import type { ProductResponse } from '@types';
 interface ProductGridProps {
   products: ProductResponse[];
   isLoading?: boolean;
-  onAddToCart?: (productId: number) => void;
 }
 
-export const ProductGrid = ({ products, isLoading, onAddToCart }: ProductGridProps) => {
+export const ProductGrid = ({ products, isLoading }: ProductGridProps) => {
   if (isLoading) {
     return (
       <Center py={60}>
@@ -31,7 +30,7 @@ export const ProductGrid = ({ products, isLoading, onAddToCart }: ProductGridPro
       spacing="lg"
     >
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
+        <ProductCard key={product.id} product={product} />
       ))}
     </SimpleGrid>
   );

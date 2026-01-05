@@ -10,6 +10,7 @@ import {
   Container,
   Box,
   Image,
+  Indicator,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -21,6 +22,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';
+import { useCartStore } from '@features/storefront/cart';
 import logoSvg from '@assets/logo/default.svg';
 
 interface StorefrontHeaderProps {
@@ -33,7 +35,10 @@ export const StorefrontHeader = ({
   toggleMobile,
 }: StorefrontHeaderProps) => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useStorefrontAuthStore();
+  const user = useStorefrontAuthStore((state) => state.user);
+  const isAuthenticated = useStorefrontAuthStore((state) => state.isAuthenticated());
+  const logout = useStorefrontAuthStore((state) => state.logout);
+  const totalItems = useCartStore((state) => state.getTotalItems());
 
   const handleLogout = () => {
     logout();
@@ -91,13 +96,15 @@ export const StorefrontHeader = ({
               <IconHeart size={20} />
             </ActionIcon>
 
-            <ActionIcon
-              variant="subtle"
-              size="lg"
-              onClick={() => navigate('/cart')}
-            >
-              <IconShoppingCart size={20} />
-            </ActionIcon>
+            <Indicator label={totalItems} size={18} disabled={totalItems === 0}>
+              <ActionIcon
+                variant="subtle"
+                size="lg"
+                onClick={() => navigate('/cart')}
+              >
+                <IconShoppingCart size={20} />
+              </ActionIcon>
+            </Indicator>
 
             {isAuthenticated ? (
               <Menu shadow="md" width={200}>

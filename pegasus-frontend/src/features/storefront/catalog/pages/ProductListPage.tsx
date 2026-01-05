@@ -5,7 +5,6 @@ import { useProducts } from '../hooks/useProducts';
 import { ProductGrid } from '../components/ProductGrid';
 import { ProductFilters } from '../components/ProductFilters';
 import { useDebounce } from '@shared/hooks/useDebounce';
-import { message } from 'antd';
 
 export const ProductListPage = () => {
   const [page, setPage] = useState(0);
@@ -18,12 +17,6 @@ export const ProductListPage = () => {
   const debouncedSearch = useDebounce(searchTerm, 500);
 
   const { data, isLoading } = useProducts(page, pageSize, debouncedSearch || undefined);
-
-  const handleAddToCart = (productId: number) => {
-    // TODO: Implement add to cart functionality
-    message.success('Producto agregado al carrito');
-    console.log('Add to cart:', productId);
-  };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage - 1); // Mantine uses 1-based, backend uses 0-based
@@ -95,7 +88,6 @@ export const ProductListPage = () => {
               <ProductGrid
                 products={data?.content || []}
                 isLoading={isLoading}
-                onAddToCart={handleAddToCart}
               />
 
               {/* Pagination */}

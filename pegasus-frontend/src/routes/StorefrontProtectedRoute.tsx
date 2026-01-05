@@ -9,7 +9,7 @@ export const StorefrontProtectedRoute = ({
   children,
 }: ProtectedRouteProps) => {
   const isAuthenticated = useStorefrontAuthStore(
-    (state) => state.isAuthenticated
+    (state) => state.isAuthenticated()
   );
 
   if (!isAuthenticated) {

@@ -1,19 +1,45 @@
-import { Container, Grid, Image, Text, Stack, Group, Badge, Button, Divider, NumberInput, Loader, Center } from '@mantine/core';
+import { Container, Grid, Image, Text, Stack, Group, Badge, Button, Divider, NumberInput, Loader, Center, Select } from '@mantine/core';
 import { IconShoppingCart, IconHeart } from '@tabler/icons-react';
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useProductDetail } from '../hooks/useProductDetail';
+import { useProductVariants } from '../hooks/useProductVariants';
+import { useCartStore } from '@features/storefront/cart';
 import { message } from 'antd';
 
 export const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const productId = Number(id);
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
 
-  const { data: product, isLoading } = useProductDetail(productId);
+  const { data: product, isLoading: isLoadingProduct } = useProductDetail(productId);
+  const { data: variants, isLoading: isLoadingVariants } = useProductVariants(productId);
+  const addItem = useCartStore((state) => state.addItem);
+
+  const isLoading = isLoadingProduct || isLoadingVariants;
+
+  // Obtener variante seleccionada
+  const selectedVariant = variants?.find((v) => v.id === selectedVariantId);
 
   const handleAddToCart = () => {
-    // TODO: Implement add to cart
+    if (!product || !selectedVariant) {
+      message.warning('Por favor selecciona una variante');
+      return;
+    }
+
+    addItem({
+      productId: product.id,
+      variantId: selectedVariant.id,
+      sku: selectedVariant.sku,
+      productName: product.name,
+      brandName: product.brandName,
+      price: selectedVariant.price,
+      quantity,
+      imageUrl: undefined, // TODO: Get from images API
+      attributes: selectedVariant.attributes as Record<string, string>,
+    });
+
     message.success(`${quantity} unidad(es) agregadas al carrito`);
   };
 
@@ -75,13 +101,37 @@ export const ProductDetailPage = () => {
 
             <Divider />
 
+            {/* Variant Selector */}
+            {variants && variants.length > 0 && (
+              <div>
+                <Select
+                  label="Selecciona una variante"
+                  placeholder="Elige una opción"
+                  data={variants.map((v) => ({
+                    value: String(v.id),
+                    label: `${Object.entries(v.attributes as Record<string, string>)
+                      .map(([key, value]) => `${key}: ${value}`)
+                      .join(', ')} - S/ ${v.price.toFixed(2)}`,
+                  }))}
+                  value={selectedVariantId ? String(selectedVariantId) : null}
+                  onChange={(value) => setSelectedVariantId(value ? Number(value) : null)}
+                  required
+                />
+              </div>
+            )}
+
             {/* Price */}
             <div>
               <Group align="baseline" gap="xs">
-                <Text size="2rem" fw={700}>
-                  {/* TODO: Get price from variants */}
-                  Consultar precio
-                </Text>
+                {selectedVariant ? (
+                  <Text size="2rem" fw={700} c="blue">
+                    S/ {selectedVariant.price.toFixed(2)}
+                  </Text>
+                ) : (
+                  <Text size="lg" c="dimmed">
+                    Selecciona una variante para ver el precio
+                  </Text>
+                )}
               </Group>
             </div>
 
@@ -127,6 +177,7 @@ export const ProductDetailPage = () => {
                   leftSection={<IconShoppingCart size={20} />}
                   onClick={handleAddToCart}
                   style={{ flex: 1 }}
+                  disabled={!selectedVariant}
                 >
                   Agregar al Carrito
                 </Button>

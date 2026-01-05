@@ -3,7 +3,7 @@ import type { PageResponse, ProductResponse, CategoryResponse, BrandResponse } f
 
 /**
  * Get all products with pagination and search
- * GET /api/admin/products
+ * GET /api/public/catalog/products
  */
 export const getProducts = async (
   page = 0,
@@ -15,13 +15,13 @@ export const getProducts = async (
     size: size.toString(),
     ...(search && { search }),
   });
-  const { data } = await api.get<PageResponse<ProductResponse>>(`/admin/products?${params}`);
+  const { data } = await api.get<PageResponse<ProductResponse>>(`/public/catalog/products?${params}`);
   return data;
 };
 
 /**
  * Get featured products
- * GET /api/admin/products/featured
+ * GET /api/public/catalog/products/featured
  */
 export const getFeaturedProducts = async (
   page = 0,
@@ -32,14 +32,14 @@ export const getFeaturedProducts = async (
     size: size.toString(),
   });
   const { data } = await api.get<PageResponse<ProductResponse>>(
-    `/admin/products/featured?${params}`
+    `/public/catalog/products/featured?${params}`
   );
   return data;
 };
 
 /**
  * Get products by category
- * GET /api/admin/products/by-category/{categoryId}
+ * GET /api/public/catalog/products/by-category/{categoryId}
  */
 export const getProductsByCategory = async (
   categoryId: number,
@@ -51,7 +51,7 @@ export const getProductsByCategory = async (
     size: size.toString(),
   });
   const { data } = await api.get<PageResponse<ProductResponse>>(
-    `/admin/products/by-category/${categoryId}?${params}`
+    `/public/catalog/products/by-category/${categoryId}?${params}`
   );
   return data;
 };
@@ -77,47 +77,47 @@ export const getProductsByBrand = async (
 
 /**
  * Get product by ID
- * GET /api/admin/products/{id}
+ * GET /api/public/catalog/products/{id}
  */
 export const getProductById = async (id: number): Promise<ProductResponse> => {
-  const { data } = await api.get<ProductResponse>(`/admin/products/${id}`);
+  const { data } = await api.get<ProductResponse>(`/public/catalog/products/${id}`);
   return data;
 };
 
 /**
  * Get all categories (root categories for navigation)
- * GET /api/admin/categories/root
+ * GET /api/public/catalog/categories/root
  */
 export const getRootCategories = async (): Promise<CategoryResponse[]> => {
-  const { data } = await api.get<CategoryResponse[]>('/admin/categories/root');
+  const { data } = await api.get<CategoryResponse[]>('/public/catalog/categories/root');
   return data;
 };
 
 /**
  * Get subcategories by parent category ID
- * GET /api/admin/categories/{id}/subcategories
+ * GET /api/public/catalog/categories/{id}/subcategories
  */
 export const getSubcategories = async (categoryId: number): Promise<CategoryResponse[]> => {
   const { data } = await api.get<CategoryResponse[]>(
-    `/admin/categories/${categoryId}/subcategories`
+    `/public/catalog/categories/${categoryId}/subcategories`
   );
   return data;
 };
 
 /**
  * Get category by ID
- * GET /api/admin/categories/{id}
+ * GET /api/public/catalog/categories/{id}
  */
 export const getCategoryById = async (id: number): Promise<CategoryResponse> => {
-  const { data } = await api.get<CategoryResponse>(`/admin/categories/${id}`);
+  const { data } = await api.get<CategoryResponse>(`/public/catalog/categories/${id}`);
   return data;
 };
 
 /**
  * Get all brands
- * GET /api/admin/brands
+ * GET /api/public/catalog/brands
  */
 export const getAllBrands = async (): Promise<BrandResponse[]> => {
-  const { data } = await api.get<PageResponse<BrandResponse>>('/admin/brands?size=100');
+  const { data } = await api.get<PageResponse<BrandResponse>>('/public/catalog/brands?size=100');
   return data.content;
 };

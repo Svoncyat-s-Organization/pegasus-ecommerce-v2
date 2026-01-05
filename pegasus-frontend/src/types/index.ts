@@ -133,6 +133,26 @@ export interface UserResponse {
 }
 
 // ============================================
+// Location Types (Ubigeo - Peru)
+// ============================================
+export interface Department {
+  id: string;
+  name: string;
+}
+
+export interface Province {
+  id: string;
+  name: string;
+  departmentId: string;
+}
+
+export interface District {
+  id: string;
+  name: string;
+  provinceId: string;
+}
+
+// ============================================
 // RBAC Types (Roles, Modules, Permissions, Assignments)
 // ============================================
 export interface RoleResponse {
@@ -259,6 +279,21 @@ export interface UpdateCustomerAddressRequest {
   address?: string;
   reference?: string;
   postalCode?: string;
+}
+
+// ============================================
+// Logistics Types (Shipping Methods)
+// ============================================
+export interface ShippingMethodResponse {
+  id: number;
+  name: string;
+  description: string;
+  carrier: string;
+  estimatedDaysMin: number;
+  estimatedDaysMax: number;
+  baseCost: number;
+  costPerKg: number;
+  isActive: boolean;
 }
 
 // ============================================
