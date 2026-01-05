@@ -73,7 +73,7 @@ export const UserDetailModal = ({ userId, visible, onClose }: UserDetailModalPro
                 {user.docNumber}
               </Descriptions.Item>
               <Descriptions.Item label="Teléfono" span={2}>
-                {user.phone ? `+51 ${formatPhone(user.phone)}` : '-'}
+                {user.phone ? formatPhone(user.phone) : '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Estado" span={2}>
                 <Tag color={user.isActive ? USER_STATUS.ACTIVE.color : USER_STATUS.INACTIVE.color}>

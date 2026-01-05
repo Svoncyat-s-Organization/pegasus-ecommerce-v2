@@ -86,7 +86,7 @@ export const UsersListPage = () => {
       dataIndex: 'phone',
       key: 'phone',
       width: 160,
-      render: (phone: string | null) => phone ? `+51 ${formatPhone(phone)}` : '-',
+      render: (phone: string | null) => phone ? formatPhone(phone) : '-',
     },
     {
       title: 'Estado',
