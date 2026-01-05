@@ -12,7 +12,6 @@ export const useLogin = () => {
       const user = {
         userId: data.userId,
         email: data.email,
-        username: data.username,
         userType: data.userType,
       };
       setAuth(user, data.token);

@@ -58,7 +58,7 @@ export const LoginPage = () => {
           title="Credenciales de Prueba"
           description={
             <div style={{ fontSize: '13px' }}>
-              <div>Correo: admin@pegasus.com</div>
+              <div>Usuario o Email: admin@pegasus.com (o admin)</div>
               <div>Contraseña: clave123</div>
             </div>
           }
@@ -75,16 +75,15 @@ export const LoginPage = () => {
           requiredMark={false}
         >
           <Form.Item
-            label="Correo Electrónico"
-            name="email"
+            label="Usuario o Email"
+            name="usernameOrEmail"
             rules={[
-              { required: true, message: 'Por favor ingresa tu correo' },
-              { type: 'email', message: 'Por favor ingresa un correo válido' },
+              { required: true, message: 'Por favor ingresa tu usuario o email' },
             ]}
           >
             <Input
               prefix={<IconMail size={18} style={{ color: '#bfbfbf' }} />}
-              placeholder="Ingresa tu correo"
+              placeholder="usuario o correo@ejemplo.com"
               size="large"
             />
           </Form.Item>

@@ -8,22 +8,43 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const authStorage = localStorage.getItem('auth-storage');
-  if (authStorage) {
-    const { state } = JSON.parse(authStorage);
-    if (state?.token) {
-      config.headers.Authorization = `Bearer ${state.token}`;
+  // Check if this is a backoffice or storefront request
+  const isBackofficeRequest = config.url?.startsWith('/admin') || window.location.pathname.startsWith('/admin');
+
+  if (isBackofficeRequest) {
+    // Backoffice token (Zustand persist)
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const { state } = JSON.parse(authStorage);
+      if (state?.token) {
+        config.headers.Authorization = `Bearer ${state.token}`;
+      }
+    }
+  } else {
+    // Storefront token (direct localStorage)
+    const storefrontToken = localStorage.getItem('storefront-token');
+    if (storefrontToken) {
+      config.headers.Authorization = `Bearer ${storefrontToken}`;
     }
   }
+
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && window.location.pathname !== '/login') {
-      localStorage.removeItem('auth-storage');
-      window.location.href = '/login';
+    if (error.response?.status === 401) {
+      const isBackoffice = window.location.pathname.startsWith('/admin');
+      
+      if (isBackoffice && window.location.pathname !== '/admin/login') {
+        localStorage.removeItem('auth-storage');
+        window.location.href = '/admin/login';
+      } else if (!isBackoffice && window.location.pathname !== '/login') {
+        localStorage.removeItem('storefront-token');
+        localStorage.removeItem('storefront-auth-storage');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
