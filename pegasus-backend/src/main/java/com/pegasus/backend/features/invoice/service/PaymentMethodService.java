@@ -40,8 +40,7 @@ public class PaymentMethodService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     public PaymentMethodResponse getById(Long id) {

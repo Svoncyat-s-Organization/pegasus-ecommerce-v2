@@ -14,5 +14,5 @@ public record PaymentResponse(
         String notes,
         Boolean isActive,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {}
+        OffsetDateTime updatedAt) {
+}

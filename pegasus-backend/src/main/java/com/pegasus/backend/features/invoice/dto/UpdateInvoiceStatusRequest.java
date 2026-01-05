@@ -4,6 +4,5 @@ import com.pegasus.backend.features.invoice.entity.InvoiceStatus;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateInvoiceStatusRequest(
-        @NotNull(message = "El estado es requerido")
-        InvoiceStatus status
-) {}
+        @NotNull(message = "El estado es requerido") InvoiceStatus status) {
+}

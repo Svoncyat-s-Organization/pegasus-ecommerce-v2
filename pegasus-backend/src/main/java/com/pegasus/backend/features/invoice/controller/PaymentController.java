@@ -32,8 +32,7 @@ public class PaymentController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long orderId,
             @RequestParam(required = false) Long paymentMethodId,
-            @PageableDefault(size = 20, sort = "paymentDate") Pageable pageable
-    ) {
+            @PageableDefault(size = 20, sort = "paymentDate") Pageable pageable) {
         return ResponseEntity.ok(paymentService.getAll(search, orderId, paymentMethodId, pageable));
     }
 

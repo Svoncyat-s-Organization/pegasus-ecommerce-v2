@@ -7,5 +7,5 @@ public record PaymentMethodResponse(
         String name,
         Boolean isActive,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {}
+        OffsetDateTime updatedAt) {
+}

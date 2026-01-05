@@ -21,5 +21,5 @@ public record InvoiceResponse(
         OffsetDateTime issuedAt,
         Boolean isActive,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {}
+        OffsetDateTime updatedAt) {
+}

@@ -29,8 +29,7 @@ public class PaymentMapper {
                 payment.getNotes(),
                 payment.getIsActive(),
                 payment.getCreatedAt(),
-                payment.getUpdatedAt()
-        );
+                payment.getUpdatedAt());
     }
 
     public List<PaymentResponse> toResponseList(List<Payment> payments) {

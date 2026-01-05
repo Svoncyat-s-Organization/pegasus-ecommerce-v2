@@ -55,8 +55,7 @@ public class PaymentService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     public PaymentResponse getById(Long id) {
@@ -84,7 +83,8 @@ public class PaymentService {
                 .build();
 
         Payment saved = paymentRepository.save(payment);
-        log.info("Payment created (orderId={}, methodId={}, amount={})", saved.getOrderId(), saved.getPaymentMethodId(), saved.getAmount());
+        log.info("Payment created (orderId={}, methodId={}, amount={})", saved.getOrderId(), saved.getPaymentMethodId(),
+                saved.getAmount());
         return paymentMapper.toResponse(saved);
     }
 }

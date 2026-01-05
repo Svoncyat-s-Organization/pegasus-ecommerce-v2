@@ -21,8 +21,7 @@ public class PaymentMethodMapper {
                 paymentMethod.getName(),
                 paymentMethod.getIsActive(),
                 paymentMethod.getCreatedAt(),
-                paymentMethod.getUpdatedAt()
-        );
+                paymentMethod.getUpdatedAt());
     }
 
     public List<PaymentMethodResponse> toResponseList(List<PaymentMethod> paymentMethods) {

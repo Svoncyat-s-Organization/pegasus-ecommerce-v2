@@ -34,5 +34,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             "LOWER(i.number) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(i.receiverName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(i.receiverTaxId) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<Invoice> searchByStatus(@Param("search") String search, @Param("status") InvoiceStatus status, Pageable pageable);
+    Page<Invoice> searchByStatus(@Param("search") String search, @Param("status") InvoiceStatus status,
+            Pageable pageable);
 }

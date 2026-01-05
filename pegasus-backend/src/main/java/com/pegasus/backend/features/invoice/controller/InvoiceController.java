@@ -31,8 +31,7 @@ public class InvoiceController {
     public ResponseEntity<PageResponse<InvoiceSummaryResponse>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) InvoiceStatus status,
-            @PageableDefault(size = 20, sort = "issuedAt") Pageable pageable
-    ) {
+            @PageableDefault(size = 20, sort = "issuedAt") Pageable pageable) {
         return ResponseEntity.ok(invoiceService.getAll(search, status, pageable));
     }
 
@@ -52,8 +51,7 @@ public class InvoiceController {
     @Operation(summary = "Obtener por serie y número", description = "Buscar comprobante por serie y número")
     public ResponseEntity<InvoiceResponse> getBySeriesAndNumber(
             @RequestParam String series,
-            @RequestParam String number
-    ) {
+            @RequestParam String number) {
         return ResponseEntity.ok(invoiceService.getBySeriesAndNumber(series.trim(), number.trim()));
     }
 
@@ -67,8 +65,7 @@ public class InvoiceController {
     @Operation(summary = "Actualizar estado", description = "Actualizar estado del comprobante")
     public ResponseEntity<InvoiceResponse> updateStatus(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateInvoiceStatusRequest request
-    ) {
+            @Valid @RequestBody UpdateInvoiceStatusRequest request) {
         return ResponseEntity.ok(invoiceService.updateStatus(id, request));
     }
 }

@@ -55,8 +55,7 @@ public class InvoiceService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     public InvoiceResponse getById(Long id) {
@@ -72,7 +71,8 @@ public class InvoiceService {
 
     public InvoiceResponse getBySeriesAndNumber(String series, String number) {
         Invoice invoice = invoiceRepository.findBySeriesAndNumber(series, number)
-                .orElseThrow(() -> new ResourceNotFoundException("Comprobante no encontrado con serie/número: " + series + "-" + number));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Comprobante no encontrado con serie/número: " + series + "-" + number));
         return invoiceMapper.toResponse(invoice);
     }
 

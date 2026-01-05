@@ -31,8 +31,7 @@ public class PaymentMethodController {
     @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
     public ResponseEntity<PageResponse<PaymentMethodResponse>> getAll(
             @RequestParam(required = false) String search,
-            @PageableDefault(size = 20) Pageable pageable
-    ) {
+            @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(paymentMethodService.getAll(search, pageable));
     }
 
@@ -52,8 +51,7 @@ public class PaymentMethodController {
     @Operation(summary = "Actualizar método de pago", description = "Actualizar el nombre del método de pago")
     public ResponseEntity<PaymentMethodResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody UpdatePaymentMethodRequest request
-    ) {
+            @Valid @RequestBody UpdatePaymentMethodRequest request) {
         return ResponseEntity.ok(paymentMethodService.update(id, request));
     }
 

@@ -14,5 +14,5 @@ public record InvoiceSummaryResponse(
         String number,
         BigDecimal totalAmount,
         InvoiceStatus status,
-        OffsetDateTime issuedAt
-) {}
+        OffsetDateTime issuedAt) {
+}
