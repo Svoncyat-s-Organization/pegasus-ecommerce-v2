@@ -61,9 +61,9 @@ export const BackofficeHeader = () => {
             <Avatar
               style={{ backgroundColor: '#2f54eb', color: '#ffffff' }}
             >
-              {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
+              {user?.email?.substring(0, 2).toUpperCase() || 'AD'}
             </Avatar>
-            <Text strong>{user?.username || 'Admin'}</Text>
+            <Text strong>{user?.email || 'Admin'}</Text>
             <IconChevronDown size={14} />
           </Space>
         </Dropdown>

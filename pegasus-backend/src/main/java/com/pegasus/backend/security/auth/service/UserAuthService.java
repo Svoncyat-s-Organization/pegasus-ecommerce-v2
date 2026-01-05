@@ -28,9 +28,12 @@ public class UserAuthService {
 
     /**
      * Login de usuarios backoffice (Admin)
+     * Acepta username o email
      */
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        // Intentar buscar por email primero, luego por username
+        User user = userRepository.findByEmail(request.usernameOrEmail())
+                .or(() -> userRepository.findByUsername(request.usernameOrEmail()))
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         if (!user.getIsActive()) {

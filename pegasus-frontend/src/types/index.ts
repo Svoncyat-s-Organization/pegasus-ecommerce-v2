@@ -2,8 +2,19 @@
 // Authentication Types
 // ============================================
 export interface LoginRequest {
-  email: string;
+  usernameOrEmail: string;
   password: string;
+}
+
+export interface RegisterCustomerRequest {
+  email: string;
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  docType: 'DNI' | 'CE';
+  docNumber: string;
+  phone?: string;
 }
 
 export interface AuthResponse {
@@ -11,14 +22,12 @@ export interface AuthResponse {
   userType: 'ADMIN' | 'CUSTOMER';
   userId: number;
   email: string;
-  username: string;
   expiresIn: number;
 }
 
 export interface User {
   userId: number;
   email: string;
-  username: string;
   userType: 'ADMIN' | 'CUSTOMER';
 }
 
@@ -373,6 +382,26 @@ export interface UserResponse {
 }
 
 // ============================================
+// Location Types (Ubigeo - Peru)
+// ============================================
+export interface Department {
+  id: string;
+  name: string;
+}
+
+export interface Province {
+  id: string;
+  name: string;
+  departmentId: string;
+}
+
+export interface District {
+  id: string;
+  name: string;
+  provinceId: string;
+}
+
+// ============================================
 // RBAC Types (Roles, Modules, Permissions, Assignments)
 // ============================================
 export interface RoleResponse {
@@ -499,6 +528,21 @@ export interface UpdateCustomerAddressRequest {
   address?: string;
   reference?: string;
   postalCode?: string;
+}
+
+// ============================================
+// Logistics Types (Shipping Methods)
+// ============================================
+export interface ShippingMethodResponse {
+  id: number;
+  name: string;
+  description: string;
+  carrier: string;
+  estimatedDaysMin: number;
+  estimatedDaysMax: number;
+  baseCost: number;
+  costPerKg: number;
+  isActive: boolean;
 }
 
 // ============================================
@@ -730,4 +774,338 @@ export interface CreateTrackingEventRequest {
   description: string;
   isPublic?: boolean;
   eventDate?: string;
+}
+
+// ============================================
+// Order Module Types
+// ============================================
+export type OrderStatus = 
+  | 'PENDING' 
+  | 'AWAIT_PAYMENT' 
+  | 'PAID' 
+  | 'PROCESSING' 
+  | 'SHIPPED' 
+  | 'DELIVERED' 
+  | 'CANCELLED' 
+  | 'REFUNDED';
+
+export interface AddressDTO {
+  ubigeoId: string;
+  address: string;
+  reference?: string;
+  recipientName: string;
+  recipientPhone: string;
+}
+
+export interface OrderItemResponse {
+  id: number;
+  productId: number;
+  variantId: number;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface OrderStatusHistoryResponse {
+  id: number;
+  status: OrderStatus;
+  notes?: string;
+  changedAt: string;
+  changedByUserId: number;
+  changedByUsername: string;
+}
+
+export interface OrderSummaryResponse {
+  id: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  status: OrderStatus;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderResponse {
+  id: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  status: OrderStatus;
+  total: number;
+  shippingAddress: Record<string, any>;
+  billingAddress: Record<string, any>;
+  items: OrderItemResponse[];
+  statusHistories: OrderStatusHistoryResponse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItemRequest {
+  variantId: number;
+  quantity: number;
+}
+
+export interface CreateOrderRequest {
+  customerId: number;
+  items: OrderItemRequest[];
+  shippingAddress: AddressDTO;
+  billingAddress?: AddressDTO;
+}
+
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus;
+  notes?: string;
+}
+
+// ============================================
+// RMA Module Types (Return Merchandise Authorization)
+// ============================================
+export type RmaStatus = 
+  | 'PENDING' 
+  | 'APPROVED' 
+  | 'REJECTED' 
+  | 'IN_TRANSIT' 
+  | 'RECEIVED' 
+  | 'INSPECTING' 
+  | 'REFUNDED' 
+  | 'CLOSED' 
+  | 'CANCELLED';
+
+export type RmaReason = 
+  | 'DEFECTIVE' 
+  | 'WRONG_ITEM' 
+  | 'NOT_AS_DESCRIBED' 
+  | 'DAMAGED_SHIPPING' 
+  | 'CHANGED_MIND' 
+  | 'SIZE_COLOR' 
+  | 'LATE_DELIVERY' 
+  | 'OTHER';
+
+export type ItemCondition = 
+  | 'UNOPENED' 
+  | 'OPENED_UNUSED' 
+  | 'USED_LIKE_NEW' 
+  | 'USED_GOOD' 
+  | 'DAMAGED' 
+  | 'DEFECTIVE';
+
+export type RefundMethod = 
+  | 'ORIGINAL_PAYMENT' 
+  | 'BANK_TRANSFER' 
+  | 'STORE_CREDIT' 
+  | 'EXCHANGE';
+
+export interface RmaItemResponse {
+  id: number;
+  rmaId: number;
+  orderItemId: number;
+  variantId: number;
+  variantSku: string;
+  productName: string;
+  quantity: number;
+  itemCondition?: ItemCondition;
+  inspectionNotes?: string;
+  refundAmount: number;
+  restockApproved?: boolean;
+  inspectedBy?: number;
+  inspectorName?: string;
+  inspectedAt?: string;
+  createdAt: string;
+}
+
+export interface RmaStatusHistoryResponse {
+  id: number;
+  status: RmaStatus;
+  comments?: string;
+  changedAt: string;
+  changedByUserId: number;
+  changedByUsername: string;
+}
+
+export interface RmaSummaryResponse {
+  id: number;
+  rmaNumber: string;
+  orderId: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  status: RmaStatus;
+  reason: RmaReason;
+  refundMethod?: RefundMethod;
+  refundAmount: number;
+  itemsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RmaResponse {
+  id: number;
+  rmaNumber: string;
+  orderId: number;
+  orderNumber: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  status: RmaStatus;
+  reason: RmaReason;
+  customerComments?: string;
+  staffNotes?: string;
+  refundMethod?: RefundMethod;
+  refundAmount: number;
+  restockingFee: number;
+  shippingCostRefund: number;
+  approvedBy?: number;
+  approverName?: string;
+  approvedAt?: string;
+  receivedAt?: string;
+  refundedAt?: string;
+  closedAt?: string;
+  items: RmaItemResponse[];
+  statusHistories: RmaStatusHistoryResponse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RmaItemRequest {
+  orderItemId: number;
+  variantId: number;
+  quantity: number;
+}
+
+export interface CreateRmaRequest {
+  orderId: number;
+  reason: RmaReason;
+  customerComments?: string;
+  items: RmaItemRequest[];
+}
+
+export interface UpdateRmaRequest {
+  status?: RmaStatus;
+  staffNotes?: string;
+  refundMethod?: RefundMethod;
+}
+
+export interface ApproveRmaRequest {
+  approved: boolean;
+  comments?: string;
+}
+
+export interface InspectItemRequest {
+  rmaItemId: number;
+  itemCondition: ItemCondition;
+  inspectionNotes?: string;
+  restockApproved: boolean;
+}
+
+// ============================================
+// Inventory Module Types
+// ============================================
+
+export type OperationType =
+  | 'INVENTORY_ADJUSTMENT'
+  | 'PURCHASE'
+  | 'SALE'
+  | 'RETURN'
+  | 'CANCELLATION'
+  | 'TRANSFER_IN'
+  | 'TRANSFER_OUT';
+
+// Warehouse
+export interface WarehouseResponse {
+  id: number;
+  code: string;
+  name: string;
+  ubigeoId: string;
+  address: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWarehouseRequest {
+  code: string;
+  name: string;
+  ubigeoId: string;
+  address: string;
+}
+
+export interface UpdateWarehouseRequest {
+  code?: string;
+  name?: string;
+  ubigeoId?: string;
+  address?: string;
+}
+
+// Stock
+export interface StockResponse {
+  id: number;
+  warehouseId: number;
+  warehouseCode: string;
+  warehouseName: string;
+  variantId: number;
+  variantSku: string;
+  productName: string;
+  quantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  updatedAt: string;
+}
+
+export interface StockSummaryResponse {
+  warehouseId: number;
+  warehouseCode: string;
+  variantId: number;
+  variantSku: string;
+  quantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+}
+
+export interface StockAvailabilityResponse {
+  available: boolean;
+  currentStock: number;
+  reservedStock: number;
+  availableStock: number;
+  requestedQuantity: number;
+}
+
+export interface AdjustStockRequest {
+  variantId: number;
+  warehouseId: number;
+  quantityChange: number; // Puede ser negativo
+  reason: string;
+}
+
+export interface TransferStockRequest {
+  variantId: number;
+  fromWarehouseId: number;
+  toWarehouseId: number;
+  quantity: number;
+  reason?: string;
+}
+
+// Movement (Kardex)
+export interface MovementResponse {
+  id: number;
+  variantId: number;
+  variantSku: string;
+  productName: string;
+  warehouseId: number;
+  warehouseCode: string;
+  warehouseName: string;
+  quantity: number;
+  balance: number;
+  unitCost: number;
+  operationType: OperationType;
+  description: string;
+  referenceId: number | null;
+  referenceTable: string | null;
+  userId: number;
+  username: string;
+  createdAt: string;
 }

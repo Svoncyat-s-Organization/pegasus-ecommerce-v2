@@ -27,9 +27,6 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_id", nullable = false)
-    private Long orderId;
-
     @Column(name = "product_id", nullable = false)
     private Long productId;
 
@@ -53,7 +50,7 @@ public class OrderItem {
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", insertable = false, updatable = false)
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -63,4 +60,11 @@ public class OrderItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", insertable = false, updatable = false)
     private Variant variant;
+
+    /**
+     * Helper method to get orderId for convenience
+     */
+    public Long getOrderId() {
+        return order != null ? order.getId() : null;
+    }
 }

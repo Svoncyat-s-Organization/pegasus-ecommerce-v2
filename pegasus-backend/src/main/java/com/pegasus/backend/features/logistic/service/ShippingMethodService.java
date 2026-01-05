@@ -100,4 +100,17 @@ public class ShippingMethodService {
 
         log.info("Shipping method deleted successfully: {}", shippingMethod.getName());
     }
+
+    /**
+     * Obtiene todos los métodos de envío activos (para storefront)
+     */
+    public List<ShippingMethodResponse> getActiveShippingMethods() {
+        log.debug("Getting all active shipping methods for storefront");
+        
+        List<ShippingMethod> activeMethods = shippingMethodRepository.findByIsActiveTrue();
+        
+        return activeMethods.stream()
+                .map(shippingMethodMapper::toResponse)
+                .toList();
+    }
 }

@@ -9,6 +9,8 @@ import {
   Burger,
   Container,
   Box,
+  Image,
+  Indicator,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -20,6 +22,8 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';
+import { useCartStore } from '@features/storefront/cart';
+import logoSvg from '@assets/logo/default.svg';
 
 interface StorefrontHeaderProps {
   mobileOpened: boolean;
@@ -31,7 +35,10 @@ export const StorefrontHeader = ({
   toggleMobile,
 }: StorefrontHeaderProps) => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useStorefrontAuthStore();
+  const user = useStorefrontAuthStore((state) => state.user);
+  const isAuthenticated = useStorefrontAuthStore((state) => state.isAuthenticated());
+  const logout = useStorefrontAuthStore((state) => state.logout);
+  const totalItems = useCartStore((state) => state.getTotalItems());
 
   const handleLogout = () => {
     logout();
@@ -49,21 +56,26 @@ export const StorefrontHeader = ({
       <Container size="xl" style={{ height: '100%' }}>
         <Group justify="space-between" h="100%">
           {/* Logo */}
-          <Group>
+          <Group gap="xs">
             <Burger
               opened={mobileOpened}
               onClick={toggleMobile}
               hiddenFrom="sm"
               size="sm"
             />
-            <Text
-              size="xl"
-              fw={700}
+            <Group
+              gap={8}
               style={{ cursor: 'pointer' }}
               onClick={() => navigate('/')}
             >
-              🦄 Pegasus
-            </Text>
+              <Text size="xl" fw={700} c="dark">
+                PEGASUS
+              </Text>
+              <Image src={logoSvg} alt="Pegasus Logo" h={28} w="auto" />
+              <Text size="xl" fw={700} c="dark">
+                E-COMMERCE
+              </Text>
+            </Group>
           </Group>
 
           {/* Search */}
@@ -84,13 +96,15 @@ export const StorefrontHeader = ({
               <IconHeart size={20} />
             </ActionIcon>
 
-            <ActionIcon
-              variant="subtle"
-              size="lg"
-              onClick={() => navigate('/cart')}
-            >
-              <IconShoppingCart size={20} />
-            </ActionIcon>
+            <Indicator label={totalItems} size={18} disabled={totalItems === 0}>
+              <ActionIcon
+                variant="subtle"
+                size="lg"
+                onClick={() => navigate('/cart')}
+              >
+                <IconShoppingCart size={20} />
+              </ActionIcon>
+            </Indicator>
 
             {isAuthenticated ? (
               <Menu shadow="md" width={200}>
