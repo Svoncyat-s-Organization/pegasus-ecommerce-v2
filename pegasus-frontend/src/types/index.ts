@@ -377,3 +377,108 @@ export interface UpdateImageRequest {
   isPrimary?: boolean;
   displayOrder?: number;
 }
+
+// ============================================
+// Logistic Module Types
+// ============================================
+export interface ShippingMethod {
+  id: number;
+  name: string;
+  description: string;
+  carrier: string;
+  estimatedDaysMin: number;
+  estimatedDaysMax: number;
+  baseCost: number;
+  costPerKg: number;
+  isActive: boolean;
+}
+
+export interface CreateShippingMethodRequest {
+  name: string;
+  description: string;
+  carrier: string;
+  estimatedDaysMin: number;
+  estimatedDaysMax: number;
+  baseCost: number;
+  costPerKg: number;
+}
+
+export interface UpdateShippingMethodRequest {
+  name?: string;
+  description?: string;
+  carrier?: string;
+  estimatedDaysMin?: number;
+  estimatedDaysMax?: number;
+  baseCost?: number;
+  costPerKg?: number;
+}
+
+export interface Shipment {
+  id: number;
+  shipmentType: string;
+  orderId: number;
+  rmaId?: number;
+  shippingMethodId: number;
+  shippingMethodName: string;
+  trackingNumber: string;
+  shippingCost: number;
+  weightKg: number;
+  status: string;
+  estimatedDeliveryDate: string;
+  shippingAddress: Record<string, any>;
+  recipientName: string;
+  recipientPhone: string;
+  requireSignature: boolean;
+  packageQuantity: number;
+  notes?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateShipmentRequest {
+  shipmentType: string;
+  orderId: number;
+  rmaId?: number;
+  shippingMethodId: number;
+  trackingNumber: string;
+  shippingCost: number;
+  weightKg: number;
+  estimatedDeliveryDate: string;
+  shippingAddress: Record<string, any>;
+  recipientName: string;
+  recipientPhone: string;
+  requireSignature?: boolean;
+  packageQuantity?: number;
+  notes?: string;
+}
+
+export interface UpdateShipmentRequest {
+  status?: string;
+  notes?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+}
+
+export interface TrackingEvent {
+  id: number;
+  shipmentId: number;
+  status: string;
+  location?: string;
+  description: string;
+  isPublic: boolean;
+  eventDate: string;
+  createdById: number;
+  createdByUsername: string;
+  createdAt: string;
+}
+
+export interface CreateTrackingEventRequest {
+  shipmentId: number;
+  status: string;
+  location?: string;
+  description: string;
+  isPublic?: boolean;
+  eventDate?: string;
+}
