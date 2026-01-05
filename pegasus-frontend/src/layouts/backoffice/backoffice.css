@@ -79,6 +79,58 @@
 
 /* Hover en los hijos no seleccionados (para que se sienta reactivo) */
 .custom-sidebar-menu .ant-menu-sub .ant-menu-item:not(.ant-menu-item-selected):hover {
-  background-color: transparent !important; /* O un gris muy sutil #fafafa */
+  background-color: transparent !important;
   color: #2f54eb !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. MODO OSCURO - Ajustes de colores
+   -------------------------------------------------------------------------- */
+
+/* Fondo del menú en modo oscuro - cambiar azul oscuro por gris oscuro */
+.ant-menu-dark.custom-sidebar-menu,
+.ant-menu-dark.custom-sidebar-menu .ant-menu-sub {
+  background: #141414 !important;
+}
+
+/* Items del menú sin seleccionar en modo oscuro */
+.ant-menu-dark.custom-sidebar-menu .ant-menu-item:not(.ant-menu-item-selected),
+.ant-menu-dark.custom-sidebar-menu .ant-menu-submenu-title {
+  background-color: transparent !important;
+}
+
+/* Sobrescribir el azul transparente en modo oscuro para mejor contraste */
+.ant-menu-dark.custom-sidebar-menu .ant-menu-submenu-open:not(.ant-menu-submenu-selected) > .ant-menu-submenu-title {
+  background-color: rgba(47, 84, 235, 0.2) !important;
+}
+
+.ant-menu-dark.custom-sidebar-menu .ant-menu-sub .ant-menu-item-selected {
+  background-color: rgba(47, 84, 235, 0.2) !important;
+}
+
+/* Fondo azul primario sólido en modo oscuro debe mantenerse igual */
+.ant-menu-dark.custom-sidebar-menu.ant-menu-root > .ant-menu-item-selected {
+  background-color: #2f54eb !important;
+  color: #ffffff !important;
+}
+
+.ant-menu-dark.custom-sidebar-menu .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  background-color: #2f54eb !important;
+  color: #ffffff !important;
+}
+
+/* Asegurar que el texto del submódulo seleccionado en dark mode sea azul primario */
+.ant-menu-dark.custom-sidebar-menu .ant-menu-sub .ant-menu-item-selected .ant-menu-title-content {
+  color: #69b1ff !important; /* Un azul más claro para mejor contraste en dark mode */
+}
+
+/* Iconos en modo oscuro */
+.ant-menu-dark.custom-sidebar-menu .ant-menu-sub .ant-menu-item-selected .anticon {
+  color: #69b1ff !important;
+}
+
+/* Botón de colapsar sidebar en modo oscuro */
+.ant-layout-sider-dark .ant-layout-sider-trigger {
+  background: #141414 !important;
+  border-right: 1px solid #303030 !important;
 }

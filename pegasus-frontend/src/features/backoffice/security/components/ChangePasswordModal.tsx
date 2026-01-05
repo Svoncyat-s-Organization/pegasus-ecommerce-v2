@@ -56,7 +56,6 @@ export const ChangePasswordModal = ({ userId, visible, onClose }: ChangePassword
               message: 'Debe contener mayúsculas, minúsculas, números y símbolos',
             },
           ]}
-          extra={PASSWORD_RULES.hint}
         >
           <Input.Password placeholder="********" />
         </Form.Item>

@@ -121,7 +121,6 @@ export const UserFormModal = ({ mode, userId, visible, onClose }: UserFormModalP
                     message: 'Debe contener mayúsculas, minúsculas, números y símbolos',
                   },
                 ]}
-                extra={PASSWORD_RULES.hint}
               >
                 <Input.Password placeholder="********" />
               </Form.Item>

@@ -1,4 +1,4 @@
-import { Layout, Avatar, Dropdown, Space, Typography } from 'antd';
+import { Layout, Avatar, Dropdown, Space, Typography, theme } from 'antd';
 import { IconUser, IconLogout, IconChevronDown } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@stores/backoffice/authStore';
@@ -10,6 +10,7 @@ const { Text } = Typography;
 export const BackofficeHeader = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { token } = theme.useToken();
 
   const handleLogout = () => {
     logout();
@@ -39,11 +40,11 @@ export const BackofficeHeader = () => {
     <Header
       style={{
         padding: '0 24px',
-        background: '#fff',
+        background: token.colorBgContainer,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
       }}
     >
       <Space direction="vertical" size={0} style={{ lineHeight: 'normal' }}>

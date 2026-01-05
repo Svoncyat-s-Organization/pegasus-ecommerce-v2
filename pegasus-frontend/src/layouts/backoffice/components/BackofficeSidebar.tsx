@@ -15,9 +15,11 @@ import {
   IconRotate,
 } from '@tabler/icons-react';
 import { useSidebarStore } from '@stores/backoffice/sidebarStore';
+import { useThemeStore } from '@stores/backoffice/themeStore';
 import { useUserPermissions } from '@shared/hooks/useUserPermissions';
 import type { MenuItem } from '@types';
 import logoSvg from '@assets/logo/default.svg';
+import logoInvertedSvg from '@assets/logo/inverted.svg';
 
 const { Sider } = Layout;
 
@@ -165,7 +167,58 @@ export const BackofficeSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { collapsed, toggleCollapsed } = useSidebarStore();
+  const { isDark, toggleTheme } = useThemeStore();
   const { data: allowedPaths, isLoading } = useUserPermissions();
+
+  // Logo actual según el tema
+  const currentLogo = isDark ? logoInvertedSvg : logoSvg;
+
+  // Estilos reutilizables para el Sider
+  const siderStyle = {
+    overflow: 'auto' as const,
+    height: '100vh',
+    position: 'sticky' as const,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRight: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
+    ...(isDark && { background: '#141414' }), // Fondo gris oscuro en dark mode
+  };
+
+  // Estilos reutilizables para el logo header
+  const logoHeaderStyle = {
+    height: 64,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 16px',
+    gap: collapsed ? 0 : 8,
+    fontSize: collapsed ? 14 : 16,
+    fontWeight: 600,
+    borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
+    color: isDark ? '#ffffff' : '#1f1f1f',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+    transition: 'opacity 0.2s',
+  };
+
+  // Componente reutilizable del logo
+  const LogoHeader = () => (
+    <div
+      onClick={toggleTheme}
+      style={logoHeaderStyle}
+    >
+      {collapsed ? (
+        <img src={currentLogo} alt="Pegasus" style={{ width: 28, height: 28 }} />
+      ) : (
+        <>
+          <span>PEGASUS</span>
+          <img src={currentLogo} alt="Pegasus" style={{ width: 24, height: 24 }} />
+          <span style={{ color: '#2f54eb' }}>ADMIN</span>
+        </>
+      )}
+    </div>
+  );
 
   // Filter menu items based on user permissions
   const filteredMenuItems = useMemo(() => {
@@ -260,41 +313,10 @@ export const BackofficeSidebar = () => {
         collapsed={collapsed}
         onCollapse={toggleCollapsed}
         width={240}
-        theme="light"
-        style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'sticky',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          borderRight: '1px solid #f0f0f0',
-        }}
+        theme={isDark ? 'dark' : 'light'}
+        style={siderStyle}
       >
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 16px',
-            gap: collapsed ? 0 : 8,
-            fontSize: collapsed ? 14 : 16,
-            fontWeight: 600,
-            borderBottom: '1px solid #f0f0f0',
-            color: '#1f1f1f',
-          }}
-        >
-          {collapsed ? (
-            <img src={logoSvg} alt="Pegasus" style={{ width: 28, height: 28 }} />
-          ) : (
-            <>
-              <span>PEGASUS</span>
-              <img src={logoSvg} alt="Pegasus" style={{ width: 24, height: 24 }} />
-              <span style={{ color: '#2f54eb' }}>ADMIN</span>
-            </>
-          )}
-        </div>
+        <LogoHeader />
       </Sider>
     );
   }
@@ -305,44 +327,13 @@ export const BackofficeSidebar = () => {
       collapsed={collapsed}
       onCollapse={toggleCollapsed}
       width={240}
-      theme="light"
-      style={{
-        overflow: 'auto',
-        height: '100vh',
-        position: 'sticky',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        borderRight: '1px solid #f0f0f0',
-      }}
+      theme={isDark ? 'dark' : 'light'}
+      style={siderStyle}
     >
-      <div
-        style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '0 16px',
-          gap: collapsed ? 0 : 8,
-          fontSize: collapsed ? 14 : 16,
-          fontWeight: 600,
-          borderBottom: '1px solid #f0f0f0',
-          color: '#1f1f1f',
-        }}
-      >
-        {collapsed ? (
-          <img src={logoSvg} alt="Pegasus" style={{ width: 28, height: 28 }} />
-        ) : (
-          <>
-            <span>PEGASUS</span>
-            <img src={logoSvg} alt="Pegasus" style={{ width: 24, height: 24 }} />
-            <span style={{ color: '#2f54eb' }}>ADMIN</span>
-          </>
-        )}
-      </div>
+      <LogoHeader />
       <Menu
         className="custom-sidebar-menu"
-        theme="light"
+        theme={isDark ? 'dark' : 'light'}
         mode="inline"
         selectedKeys={[selectedKey]}
         defaultOpenKeys={defaultOpenKeys}

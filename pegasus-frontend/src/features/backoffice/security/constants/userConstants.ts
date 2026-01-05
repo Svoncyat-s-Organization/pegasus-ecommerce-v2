@@ -16,5 +16,5 @@ export const PASSWORD_RULES = {
   requireLowercase: true,
   requireNumber: true,
   pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
-  hint: 'Mínimo 8 caracteres, debe incluir: mayúsculas, minúsculas, números y símbolos (@$!%*?&#)',
+  hint: 'Mínimo 8 caracteres, debe incluir mayúscula, minúscula, número y carácter especial',
 };
