@@ -1,8 +1,10 @@
-import { Stack, Radio, Group, Text, Loader, Alert } from '@mantine/core';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { Stack, Radio, Group, Text, Loader, Alert, Card, Badge, Box, ThemeIcon } from '@mantine/core';
+import { IconAlertCircle, IconTruck, IconClock, IconBuilding } from '@tabler/icons-react';
 import type { UseFormReturnType } from '@mantine/form';
 import { useShippingMethods } from '../hooks/useShippingMethods';
 import type { CheckoutFormValues } from '../types/checkout.types';
+import { useStorefrontConfigStore } from '@stores/storefront/configStore';
+import { formatCurrency } from '@shared/utils/formatters';
 
 interface ShippingMethodSelectorProps {
   form: UseFormReturnType<CheckoutFormValues>;
@@ -10,10 +12,12 @@ interface ShippingMethodSelectorProps {
 
 /**
  * ShippingMethodSelector Component
- * Selector de método de envío
+ * Selector de método de envío con mejor UX
  */
 export const ShippingMethodSelector = ({ form }: ShippingMethodSelectorProps) => {
   const { data: shippingMethods, isLoading, error } = useShippingMethods();
+  const { getPrimaryColor } = useStorefrontConfigStore();
+  const primaryColor = getPrimaryColor();
 
   if (isLoading) {
     return (
@@ -40,10 +44,12 @@ export const ShippingMethodSelector = ({ form }: ShippingMethodSelectorProps) =>
     );
   }
 
+  const selectedId = form.values.shippingMethodId;
+
   return (
     <Stack gap="md">
       <Text size="sm" c="dimmed">
-        Selecciona un método de envío para tu pedido
+        Selecciona cómo deseas recibir tu pedido
       </Text>
 
       <Radio.Group
@@ -51,37 +57,76 @@ export const ShippingMethodSelector = ({ form }: ShippingMethodSelectorProps) =>
         onChange={(value) => form.setFieldValue('shippingMethodId', Number(value))}
       >
         <Stack gap="sm">
-          {shippingMethods.map((method) => (
-            <Radio
-              key={method.id}
-              value={String(method.id)}
-              label={
-                <Group justify="space-between" style={{ width: '100%' }}>
-                  <div>
-                    <Text fw={500}>{method.name}</Text>
-                    <Text size="xs" c="dimmed">
-                      {method.description}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {method.estimatedDaysMin === method.estimatedDaysMax
-                        ? `Entrega: ${method.estimatedDaysMin} ${method.estimatedDaysMin === 1 ? 'día' : 'días'}`
-                        : `Entrega: ${method.estimatedDaysMin}-${method.estimatedDaysMax} días`}
-                    </Text>
-                    <Text size="xs" c="dimmed" fw={500}>
-                      {method.carrier}
-                    </Text>
-                  </div>
-                  <Text fw={600} c="blue">
-                    S/ {method.baseCost.toFixed(2)}
+          {shippingMethods.map((method) => {
+            const isSelected = selectedId === method.id;
+            const isFree = method.baseCost === 0;
+
+            return (
+              <Card
+                key={method.id}
+                withBorder
+                radius="md"
+                padding="md"
+                style={{
+                  cursor: 'pointer',
+                  borderColor: isSelected ? primaryColor : undefined,
+                  borderWidth: isSelected ? 2 : 1,
+                  backgroundColor: isSelected ? `${primaryColor}08` : undefined,
+                }}
+                onClick={() => form.setFieldValue('shippingMethodId', method.id)}
+              >
+                <Group justify="space-between" wrap="nowrap">
+                  <Group gap="md" wrap="nowrap">
+                    <Radio value={String(method.id)} />
+                    <ThemeIcon
+                      size="lg"
+                      variant="light"
+                      color={isSelected ? 'blue' : 'gray'}
+                      radius="xl"
+                    >
+                      <IconTruck size={18} />
+                    </ThemeIcon>
+                    <Box>
+                      <Group gap="xs" mb={4}>
+                        <Text fw={600}>{method.name}</Text>
+                        {isFree && (
+                          <Badge color="green" variant="light" size="sm">
+                            Gratis
+                          </Badge>
+                        )}
+                      </Group>
+                      <Text size="sm" c="dimmed" mb={6}>
+                        {method.description}
+                      </Text>
+                      <Group gap="md">
+                        <Group gap={4}>
+                          <IconClock size={14} color="#868e96" />
+                          <Text size="xs" c="dimmed">
+                            {method.estimatedDaysMin === method.estimatedDaysMax
+                              ? `${method.estimatedDaysMin} ${method.estimatedDaysMin === 1 ? 'día' : 'días'}`
+                              : `${method.estimatedDaysMin}-${method.estimatedDaysMax} días`}
+                          </Text>
+                        </Group>
+                        <Group gap={4}>
+                          <IconBuilding size={14} color="#868e96" />
+                          <Text size="xs" c="dimmed">
+                            {method.carrier}
+                          </Text>
+                        </Group>
+                      </Group>
+                    </Box>
+                  </Group>
+                  <Text
+                    size="lg"
+                    fw={700}
+                    style={{ color: isFree ? 'var(--mantine-color-green-6)' : primaryColor }}
+                  >
+                    {isFree ? 'Gratis' : formatCurrency(method.baseCost)}
                   </Text>
                 </Group>
-              }
-              styles={{
-                label: { width: '100%', cursor: 'pointer' },
-                body: { alignItems: 'flex-start' },
-              }}
-            />
-          ))}
+              </Card>
+            );
+          })}
         </Stack>
       </Radio.Group>
     </Stack>

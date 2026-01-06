@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Group,
   Button,
@@ -11,18 +12,29 @@ import {
   Box,
   Image,
   Indicator,
+  Drawer,
+  Stack,
+  Divider,
+  NavLink,
+  UnstyledButton,
 } from '@mantine/core';
 import {
   IconSearch,
   IconShoppingCart,
   IconUser,
-  IconHeart,
   IconLogout,
-  IconSettings,
+  IconPackage,
+  IconChevronDown,
+  IconHome,
+  IconCategory,
+  IconMapPin,
 } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';
+import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { useCartStore } from '@features/storefront/cart';
+import { useCategories } from '@features/storefront/catalog/hooks/useCategories';
+import type { CategoryResponse } from '@types';
 import logoSvg from '@assets/logo/default.svg';
 
 interface StorefrontHeaderProps {
@@ -35,128 +47,382 @@ export const StorefrontHeader = ({
   toggleMobile,
 }: StorefrontHeaderProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchValue, setSearchValue] = useState('');
+  
   const user = useStorefrontAuthStore((state) => state.user);
   const isAuthenticated = useStorefrontAuthStore((state) => state.isAuthenticated());
   const logout = useStorefrontAuthStore((state) => state.logout);
   const totalItems = useCartStore((state) => state.getTotalItems());
+  
+  const { getStoreName, getPrimaryColor, getLogoUrl } = useStorefrontConfigStore();
+  const storeName = getStoreName();
+  const primaryColor = getPrimaryColor();
+  const logoUrl = getLogoUrl();
+  
+  const { data: categories } = useCategories();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchValue.trim())}`);
+    }
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <Box
-      style={{
-        height: '100%',
-        borderBottom: '1px solid #e9ecef',
-        backgroundColor: '#fff',
-      }}
-    >
-      <Container size="xl" style={{ height: '100%' }}>
-        <Group justify="space-between" h="100%">
-          {/* Logo */}
-          <Group gap="xs">
+    <>
+      {/* Main Header */}
+      <Box
+        style={{
+          height: '100%',
+          backgroundColor: '#fff',
+        }}
+      >
+        <Container size="xl" style={{ height: '100%' }}>
+          <Group justify="space-between" h="100%" gap="md">
+            {/* Mobile Burger */}
             <Burger
               opened={mobileOpened}
               onClick={toggleMobile}
-              hiddenFrom="sm"
+              hiddenFrom="md"
               size="sm"
             />
-            <Group
-              gap={8}
-              style={{ cursor: 'pointer' }}
+
+            {/* Logo + Store Name */}
+            <UnstyledButton
               onClick={() => navigate('/')}
+              style={{ display: 'flex', alignItems: 'center', gap: 10 }}
             >
-              <Text size="xl" fw={700} c="dark">
-                PEGASUS
-              </Text>
-              <Image src={logoSvg} alt="Pegasus Logo" h={28} w="auto" />
-              <Text size="xl" fw={700} c="dark">
-                E-COMMERCE
-              </Text>
-            </Group>
-          </Group>
-
-          {/* Search */}
-          <TextInput
-            placeholder="Buscar productos..."
-            leftSection={<IconSearch size={16} />}
-            style={{ flex: 1, maxWidth: 500 }}
-            visibleFrom="sm"
-          />
-
-          {/* Actions */}
-          <Group gap="md">
-            <ActionIcon
-              variant="subtle"
-              size="lg"
-              onClick={() => navigate('/favorites')}
-            >
-              <IconHeart size={20} />
-            </ActionIcon>
-
-            <Indicator label={totalItems} size={18} disabled={totalItems === 0}>
-              <ActionIcon
-                variant="subtle"
+              {logoUrl ? (
+                <Image src={logoUrl} alt={storeName} h={36} w="auto" fit="contain" />
+              ) : (
+                <Image src={logoSvg} alt="Logo" h={36} w="auto" />
+              )}
+              <Text
                 size="lg"
-                onClick={() => navigate('/cart')}
+                fw={700}
+                style={{ color: primaryColor }}
+                visibleFrom="sm"
               >
-                <IconShoppingCart size={20} />
-              </ActionIcon>
-            </Indicator>
+                {storeName}
+              </Text>
+            </UnstyledButton>
 
-            {isAuthenticated ? (
-              <Menu shadow="md" width={200}>
+            {/* Navigation Links (Desktop) */}
+            <Group gap="xs" visibleFrom="md">
+              <Button
+                variant={isActive('/') ? 'light' : 'subtle'}
+                color="dark"
+                leftSection={<IconHome size={16} />}
+                onClick={() => navigate('/')}
+              >
+                Inicio
+              </Button>
+
+              {/* Catalog Menu */}
+              <Menu trigger="hover" openDelay={100} closeDelay={200} position="bottom-start">
                 <Menu.Target>
-                  <ActionIcon variant="subtle" size="lg">
-                    <Avatar size="sm" color="blue">
-                      <IconUser size={16} />
-                    </Avatar>
-                  </ActionIcon>
+                  <Button
+                    variant={location.pathname.startsWith('/products') ? 'light' : 'subtle'}
+                    color="dark"
+                    leftSection={<IconCategory size={16} />}
+                    rightSection={<IconChevronDown size={14} />}
+                  >
+                    Catálogo
+                  </Button>
                 </Menu.Target>
-
-                <Menu.Dropdown>
-                  <Menu.Label>{user?.email}</Menu.Label>
-                  <Menu.Item
-                    leftSection={<IconUser size={16} />}
-                    onClick={() => navigate('/profile')}
-                  >
-                    Mi Perfil
-                  </Menu.Item>
-                  <Menu.Item
-                    leftSection={<IconSettings size={16} />}
-                    onClick={() => navigate('/settings')}
-                  >
-                    Configuración
+                <Menu.Dropdown style={{ minWidth: 220 }}>
+                  <Menu.Item onClick={() => navigate('/products')}>
+                    Todos los productos
                   </Menu.Item>
                   <Menu.Divider />
-                  <Menu.Item
-                    leftSection={<IconLogout size={16} />}
-                    color="red"
-                    onClick={handleLogout}
-                  >
-                    Cerrar Sesión
-                  </Menu.Item>
+                  <Menu.Label>Categorías</Menu.Label>
+                  {categories?.slice(0, 8).map((category: CategoryResponse) => (
+                    <Menu.Item
+                      key={category.id}
+                      onClick={() => navigate(`/products?category=${category.id}`)}
+                    >
+                      {category.name}
+                    </Menu.Item>
+                  ))}
+                  {categories && categories.length > 8 && (
+                    <>
+                      <Menu.Divider />
+                      <Menu.Item onClick={() => navigate('/products')}>
+                        Ver todas las categorías...
+                      </Menu.Item>
+                    </>
+                  )}
                 </Menu.Dropdown>
               </Menu>
-            ) : (
-              <>
-                <Button
+            </Group>
+
+            {/* Search Bar */}
+            <Box
+              component="form"
+              onSubmit={handleSearch}
+              style={{ flex: 1, maxWidth: 400 }}
+              visibleFrom="sm"
+            >
+              <TextInput
+                placeholder="Buscar productos..."
+                leftSection={<IconSearch size={16} />}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                radius="xl"
+                styles={{
+                  input: {
+                    border: '1px solid #e9ecef',
+                    '&:focus': {
+                      borderColor: primaryColor,
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Action Icons */}
+            <Group gap="sm">
+              {/* Cart */}
+              <Indicator
+                label={totalItems}
+                size={18}
+                disabled={totalItems === 0}
+                color="red"
+              >
+                <ActionIcon
                   variant="subtle"
-                  onClick={() => navigate('/login')}
-                  visibleFrom="sm"
+                  size="lg"
+                  color="dark"
+                  onClick={() => navigate('/cart')}
+                  title="Carrito de compras"
                 >
-                  Iniciar Sesión
-                </Button>
-                <Button onClick={() => navigate('/register')} visibleFrom="sm">
-                  Registrarse
-                </Button>
-              </>
-            )}
+                  <IconShoppingCart size={22} />
+                </ActionIcon>
+              </Indicator>
+
+              {/* User Menu / Auth Buttons */}
+              {isAuthenticated ? (
+                <Menu shadow="md" width={220} position="bottom-end">
+                  <Menu.Target>
+                    <UnstyledButton
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        transition: 'background 0.2s',
+                      }}
+                      className="user-menu-button"
+                    >
+                      <Avatar
+                        size="sm"
+                        radius="xl"
+                        color="brand"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        {user?.email?.charAt(0).toUpperCase() || 'U'}
+                      </Avatar>
+                      <Box visibleFrom="md">
+                        <Text size="sm" fw={500} lineClamp={1} style={{ maxWidth: 100 }}>
+                          {user?.email?.split('@')[0] || 'Usuario'}
+                        </Text>
+                      </Box>
+                      <IconChevronDown size={14} />
+                    </UnstyledButton>
+                  </Menu.Target>
+
+                  <Menu.Dropdown>
+                    <Menu.Label>Mi Cuenta</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconUser size={16} />}
+                      onClick={() => navigate('/profile')}
+                    >
+                      Mi Perfil
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconMapPin size={16} />}
+                      onClick={() => navigate('/profile/addresses')}
+                    >
+                      Mis Direcciones
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconPackage size={16} />}
+                      onClick={() => navigate('/orders')}
+                    >
+                      Mis Pedidos
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      leftSection={<IconLogout size={16} />}
+                      color="red"
+                      onClick={handleLogout}
+                    >
+                      Cerrar Sesión
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              ) : (
+                <Group gap="xs" visibleFrom="sm">
+                  <Button
+                    variant="subtle"
+                    color="dark"
+                    onClick={() => navigate('/login')}
+                  >
+                    Iniciar Sesión
+                  </Button>
+                  <Button
+                    variant="filled"
+                    onClick={() => navigate('/register')}
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    Registrarse
+                  </Button>
+                </Group>
+              )}
+            </Group>
           </Group>
-        </Group>
-      </Container>
-    </Box>
+        </Container>
+      </Box>
+
+      {/* Mobile Drawer */}
+      <Drawer
+        opened={mobileOpened}
+        onClose={toggleMobile}
+        size="280px"
+        padding="md"
+        title={
+          <Group gap="xs">
+            {logoUrl ? (
+              <Image src={logoUrl} alt={storeName} h={28} w="auto" />
+            ) : (
+              <Image src={logoSvg} alt="Logo" h={28} w="auto" />
+            )}
+            <Text fw={700} style={{ color: primaryColor }}>{storeName}</Text>
+          </Group>
+        }
+        hiddenFrom="md"
+        zIndex={1000}
+      >
+        <Stack gap="xs">
+          {/* Mobile Search */}
+          <Box component="form" onSubmit={handleSearch}>
+            <TextInput
+              placeholder="Buscar productos..."
+              leftSection={<IconSearch size={16} />}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              radius="md"
+            />
+          </Box>
+
+          <Divider my="sm" />
+
+          {/* Navigation */}
+          <NavLink
+            label="Inicio"
+            leftSection={<IconHome size={18} />}
+            active={isActive('/')}
+            onClick={() => {
+              navigate('/');
+              toggleMobile();
+            }}
+          />
+          <NavLink
+            label="Catálogo"
+            leftSection={<IconCategory size={18} />}
+            active={location.pathname.startsWith('/products')}
+            onClick={() => {
+              navigate('/products');
+              toggleMobile();
+            }}
+          />
+
+          {/* Categories */}
+          {categories && categories.length > 0 && (
+            <>
+              <Text size="xs" c="dimmed" mt="sm" mb="xs" tt="uppercase" fw={600}>
+                Categorías
+              </Text>
+              {categories.slice(0, 6).map((category: CategoryResponse) => (
+                <NavLink
+                  key={category.id}
+                  label={category.name}
+                  pl="md"
+                  onClick={() => {
+                    navigate(`/products?category=${category.id}`);
+                    toggleMobile();
+                  }}
+                />
+              ))}
+            </>
+          )}
+
+          <Divider my="sm" />
+
+          {/* User Section */}
+          {isAuthenticated ? (
+            <>
+              <NavLink
+                label="Mi Perfil"
+                leftSection={<IconUser size={18} />}
+                onClick={() => {
+                  navigate('/profile');
+                  toggleMobile();
+                }}
+              />
+              <NavLink
+                label="Mis Pedidos"
+                leftSection={<IconPackage size={18} />}
+                onClick={() => {
+                  navigate('/orders');
+                  toggleMobile();
+                }}
+              />
+              <NavLink
+                label="Cerrar Sesión"
+                leftSection={<IconLogout size={18} />}
+                color="red"
+                onClick={() => {
+                  handleLogout();
+                  toggleMobile();
+                }}
+              />
+            </>
+          ) : (
+            <Stack gap="xs" mt="sm">
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => {
+                  navigate('/login');
+                  toggleMobile();
+                }}
+              >
+                Iniciar Sesión
+              </Button>
+              <Button
+                fullWidth
+                style={{ backgroundColor: primaryColor }}
+                onClick={() => {
+                  navigate('/register');
+                  toggleMobile();
+                }}
+              >
+                Registrarse
+              </Button>
+            </Stack>
+          )}
+        </Stack>
+      </Drawer>
+    </>
   );
 };

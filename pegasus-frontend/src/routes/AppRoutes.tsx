@@ -31,6 +31,14 @@ import { LoginPage as CustomerLoginPage, RegisterPage } from '@features/storefro
 import { ProductListPage, ProductDetailPage } from '@features/storefront/catalog';
 import { CartPage } from '@features/storefront/cart';
 import { CheckoutPage, OrderConfirmationPage } from '@features/storefront/checkout';
+import { ProfilePage, OrdersPage } from '@features/storefront/profile';
+import {
+  TermsPage,
+  PrivacyPage,
+  ReturnsPage,
+  ShippingPolicyPage,
+  ContactPage,
+} from '@features/storefront/legal';
 
 // Temporary placeholder pages
 const PlaceholderPage = ({ title, description }: { title: string; description: string }) => (
@@ -120,6 +128,13 @@ export const AppRoutes = () => {
         <Route path="products" element={<ProductListPage />} />
         <Route path="products/:id" element={<ProductDetailPage />} />
         
+        {/* Legal Pages (Public) */}
+        <Route path="legal/terms" element={<TermsPage />} />
+        <Route path="legal/privacy" element={<PrivacyPage />} />
+        <Route path="legal/returns" element={<ReturnsPage />} />
+        <Route path="legal/shipping" element={<ShippingPolicyPage />} />
+        <Route path="contact" element={<ContactPage />} />
+        
         {/* Protected storefront routes (nested within same layout) */}
         <Route path="cart" element={
           <StorefrontProtectedRoute>
@@ -138,12 +153,12 @@ export const AppRoutes = () => {
         } />
         <Route path="profile" element={
           <StorefrontProtectedRoute>
-            <PlaceholderPage title="Mi Perfil" description="Perfil del usuario" />
+            <ProfilePage />
           </StorefrontProtectedRoute>
         } />
         <Route path="orders" element={
           <StorefrontProtectedRoute>
-            <PlaceholderPage title="Mis Pedidos" description="Historial de pedidos" />
+            <OrdersPage />
           </StorefrontProtectedRoute>
         } />
       </Route>

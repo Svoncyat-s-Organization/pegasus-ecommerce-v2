@@ -35,3 +35,6 @@ export const useCategoryDetail = (categoryId: number) => {
     staleTime: 1000 * 60 * 10,
   });
 };
+
+// Alias for backward compatibility
+export const useCategories = useRootCategories;
