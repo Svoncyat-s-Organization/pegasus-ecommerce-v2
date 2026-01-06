@@ -17,6 +17,7 @@ import { RmaListPage } from '@features/backoffice/rma';
 import { WarehouseListPage, StockListPage, MovementListPage } from '@features/backoffice/inventory';
 import { PurchasesListPage, SuppliersListPage } from '@features/backoffice/purchase';
 import { BillingPage } from '@features/backoffice/invoice';
+import { ReportsPage } from '@features/backoffice/report';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -91,7 +92,7 @@ export const AppRoutes = () => {
         <Route path="security/roles" element={<RolesPermissionsPage />} />
 
         {/* Reports */}
-        <Route path="reports" element={<PlaceholderPage title="Reportes" description="Generación de reportes y estadísticas" />} />
+        <Route path="reports" element={<ReportsPage />} />
 
         {/* Settings */}
         <Route path="settings" element={<PlaceholderPage title="Configuración" description="Configuración general del sistema" />} />
