@@ -104,3 +104,26 @@ export const createShipmentForOrder = async (
   const { data } = await api.post(`/admin/orders/${orderId}/shipments`, request);
   return data;
 };
+
+/**
+ * Avanzar al siguiente estado del pedido
+ * Avanza automáticamente al siguiente estado lógico en el flujo
+ */
+export const advanceOrderStatus = async (
+  id: number,
+  notes?: string
+): Promise<OrderResponse> => {
+  const { data } = await api.post(`/admin/orders/${id}/advance-status`, null, {
+    params: { notes },
+  });
+  return data;
+};
+
+/**
+ * Obtener los estados siguientes válidos
+ * Retorna los estados a los que puede transicionar el pedido actual
+ */
+export const getNextValidStatuses = async (id: number): Promise<OrderStatus[]> => {
+  const { data } = await api.get(`/admin/orders/${id}/next-statuses`);
+  return data;
+};
