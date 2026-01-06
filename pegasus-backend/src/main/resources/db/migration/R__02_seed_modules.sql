@@ -1,50 +1,53 @@
--- Seed de módulos del sistema (basados en el sidebar)
--- Los módulos son de SOLO LECTURA, representan las secciones del backoffice
+-- ============================================
+-- Seed: Modules (based on frontend sidebar)
+-- Source: BackofficeSidebar.tsx
+-- ============================================
 
--- Limpiar datos existentes para idempotencia
 DELETE FROM modules WHERE path LIKE '/admin/%';
 
--- Insertar módulos del sistema
 INSERT INTO modules (icon, name, path) VALUES
 -- Dashboard
 ('IconDashboard', 'Dashboard', '/admin/dashboard'),
 
--- Catálogo
-('IconShoppingCart', 'Productos', '/admin/catalog/products'),
+-- Catalog
 ('IconShoppingCart', 'Categorías', '/admin/catalog/categories'),
 ('IconShoppingCart', 'Marcas', '/admin/catalog/brands'),
+('IconShoppingCart', 'Productos', '/admin/catalog/products'),
 
--- Pedidos
+-- Orders
 ('IconShoppingBag', 'Pedidos', '/admin/orders'),
 
--- Inventario
-('IconPackage', 'Stock', '/admin/inventory/stock'),
-('IconPackage', 'Movimientos de Inventario', '/admin/inventory/movements'),
+-- Inventory
 ('IconPackage', 'Almacenes', '/admin/inventory/warehouses'),
+('IconPackage', 'Existencias', '/admin/inventory/stock'),
+('IconPackage', 'Movimientos', '/admin/inventory/movements'),
 
--- Compras
+-- Purchases
 ('IconFileInvoice', 'Proveedores', '/admin/purchases/suppliers'),
 ('IconFileInvoice', 'Órdenes de Compra', '/admin/purchases/orders'),
 
--- Logística
+-- Logistics
+('IconTruck', 'Métodos de Envío', '/admin/logistics/shipping-methods'),
 ('IconTruck', 'Envíos', '/admin/logistics/shipments'),
-('IconTruck', 'Transportistas', '/admin/logistics/carriers'),
 
--- Facturación
-('IconFileText', 'Facturación', '/admin/invoices'),
+-- Billing (Invoices)
+('IconFileText', 'Comprobantes', '/admin/invoices/invoices'),
+('IconFileText', 'Pagos', '/admin/invoices/payments'),
+('IconFileText', 'Series', '/admin/invoices/series'),
+('IconFileText', 'Métodos de pago', '/admin/invoices/payment-methods'),
 
--- Devoluciones (RMA)
+-- RMA
 ('IconRotate', 'Devoluciones', '/admin/rma'),
 
--- Clientes
+-- Customers
 ('IconUsers', 'Clientes', '/admin/customers'),
 
--- Seguridad
+-- Security
 ('IconShield', 'Usuarios', '/admin/security/users'),
 ('IconShield', 'Roles y Permisos', '/admin/security/roles'),
 
--- Reportes
+-- Reports
 ('IconFileText', 'Reportes', '/admin/reports'),
 
--- Configuración
+-- Settings
 ('IconSettings', 'Configuración', '/admin/settings');

@@ -1,69 +1,86 @@
--- Seed de roles y asignaciones de permisos
--- Define roles del sistema y asigna módulos (permisos) y usuarios
+-- ============================================
+-- Seed: Roles and Permissions
+-- Note: Admin role has access to all modules
+-- ============================================
 
--- Limpiar datos existentes para idempotencia (orden: hijo → padre)
-DELETE FROM roles_users WHERE id_roles IN (SELECT id FROM roles WHERE name IN ('Administrador', 'Vendedor'));
-DELETE FROM roles_modules WHERE id_roles IN (SELECT id FROM roles WHERE name IN ('Administrador', 'Vendedor'));
-DELETE FROM roles WHERE name IN ('Administrador', 'Vendedor');
+-- Clear existing data
+DELETE FROM roles_users;
+DELETE FROM roles_modules;
+DELETE FROM roles WHERE name IN ('Administrador', 'Vendedor', 'Almacenero', 'Contador');
 
--- =====================================================
--- 1. CREAR ROLES
--- =====================================================
+-- Create roles
 INSERT INTO roles (name, description) VALUES
-('Administrador', 'Acceso completo a todos los módulos del sistema'),
-('Vendedor', 'Acceso a ventas, catálogo, clientes y pedidos');
+('Administrador', 'Acceso total al sistema'),
+('Vendedor', 'Gestión de pedidos y clientes'),
+('Almacenero', 'Gestión de inventario y compras'),
+('Contador', 'Gestión de facturación y reportes');
 
--- =====================================================
--- 2. ASIGNAR MÓDULOS A ROLES (Permisos)
--- =====================================================
-
--- ROL: Administrador (acceso a TODO)
+-- Assign ALL modules to Administrador
 INSERT INTO roles_modules (id_roles, id_modules)
-SELECT 
-    (SELECT id FROM roles WHERE name = 'Administrador'),
-    m.id
-FROM modules m;
+SELECT r.id, m.id
+FROM roles r, modules m
+WHERE r.name = 'Administrador';
 
--- ROL: Vendedor (acceso limitado)
+-- Assign specific modules to Vendedor
 INSERT INTO roles_modules (id_roles, id_modules)
-SELECT 
-    (SELECT id FROM roles WHERE name = 'Vendedor'),
-    m.id
-FROM modules m
-WHERE m.path IN (
-    -- Dashboard
+SELECT r.id, m.id
+FROM roles r, modules m
+WHERE r.name = 'Vendedor'
+AND m.path IN (
     '/admin/dashboard',
-    
-    -- Catálogo (consulta solamente)
     '/admin/catalog/products',
     '/admin/catalog/categories',
     '/admin/catalog/brands',
-    
-    -- Pedidos (gestión completa)
     '/admin/orders',
-    
-    -- Clientes (gestión completa)
     '/admin/customers',
-    
-    -- Inventario (solo consulta de stock)
+    '/admin/rma'
+);
+
+-- Assign specific modules to Almacenero
+INSERT INTO roles_modules (id_roles, id_modules)
+SELECT r.id, m.id
+FROM roles r, modules m
+WHERE r.name = 'Almacenero'
+AND m.path IN (
+    '/admin/dashboard',
+    '/admin/inventory/warehouses',
     '/admin/inventory/stock',
-    
-    -- Reportes (consulta)
+    '/admin/inventory/movements',
+    '/admin/purchases/suppliers',
+    '/admin/purchases/orders',
+    '/admin/logistics/shipments',
+    '/admin/logistics/shipping-methods'
+);
+
+-- Assign specific modules to Contador
+INSERT INTO roles_modules (id_roles, id_modules)
+SELECT r.id, m.id
+FROM roles r, modules m
+WHERE r.name = 'Contador'
+AND m.path IN (
+    '/admin/dashboard',
+    '/admin/invoices/invoices',
+    '/admin/invoices/payments',
+    '/admin/invoices/series',
+    '/admin/invoices/payment-methods',
     '/admin/reports'
 );
 
--- =====================================================
--- 3. ASIGNAR ROLES A USUARIOS
--- =====================================================
-
--- Usuario: admin -> Rol Administrador
+-- Assign roles to users
+-- Admin user gets Administrador role
 INSERT INTO roles_users (id_roles, id_users)
-SELECT 
-    (SELECT id FROM roles WHERE name = 'Administrador'),
-    (SELECT id FROM users WHERE username = 'admin');
+SELECT r.id, u.id
+FROM roles r, users u
+WHERE r.name = 'Administrador' AND u.username = 'admin';
 
--- Usuario: vendedor1 -> Rol Vendedor
+-- Worker1 gets Vendedor role
 INSERT INTO roles_users (id_roles, id_users)
-SELECT 
-    (SELECT id FROM roles WHERE name = 'Vendedor'),
-    (SELECT id FROM users WHERE username = 'vendedor1');
+SELECT r.id, u.id
+FROM roles r, users u
+WHERE r.name = 'Vendedor' AND u.username = 'worker1';
+
+-- Worker2 gets Almacenero role
+INSERT INTO roles_users (id_roles, id_users)
+SELECT r.id, u.id
+FROM roles r, users u
+WHERE r.name = 'Almacenero' AND u.username = 'worker2';

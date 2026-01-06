@@ -22,7 +22,7 @@ function App() {
           fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
           ...(isDark && {
             colorBgContainer: '#1f1f1f',
-            colorBgLayout: '#000000ff',
+            colorBgLayout: '#0f0f0fff',
           }),
         },
       }}
