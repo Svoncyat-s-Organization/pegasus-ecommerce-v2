@@ -7,8 +7,8 @@ export const SHIPMENT_STATUSES = {
 } as const;
 
 export const SHIPMENT_TYPES = {
-  ORDER: 'Pedido',
-  RMA: 'Devolución',
+  OUTBOUND: 'Envío Saliente (Pedido)',
+  INBOUND: 'Envío Entrante (Devolución/RMA)',
 } as const;
 
 export const TRACKING_EVENT_STATUSES = {

@@ -1,26 +1,96 @@
-import { Modal, Form, Input, InputNumber, DatePicker, Select, Switch } from 'antd';
+import { Modal, Form, Input, InputNumber, DatePicker, Select, Switch, Typography, message } from 'antd';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useShippingMethods } from '@features/backoffice/logistic/hooks/useShippingMethods';
 import { useOrderMutations } from '../hooks/useOrderMutations';
-import type { CreateShipmentForOrderRequest } from '@types';
+import { getPaidOrders, getOrderById } from '../api/ordersApi';
+import { customersApi } from '@features/backoffice/customer/api/customersApi';
+import type { CreateShipmentForOrderRequest, OrderResponse, ShippingMethodResponse } from '@types';
 import dayjs from 'dayjs';
 
+const { Text } = Typography;
+
 interface CreateShipmentModalProps {
-  orderId: number | null;
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void; // Callback opcional cuando se crea el envío exitosamente
 }
 
 const SHIPMENT_TYPE_OPTIONS = [
-  { label: 'Orden', value: 'ORDER' },
-  { label: 'RMA (Retorno)', value: 'RMA' },
+  { label: 'Envío Saliente (Pedido)', value: 'OUTBOUND' },
+  { label: 'Envío Entrante (Devolución/RMA)', value: 'INBOUND' },
 ];
 
-export const CreateShipmentModal = ({ orderId, open, onClose }: CreateShipmentModalProps) => {
+export const CreateShipmentModal = ({ open, onClose, onSuccess }: CreateShipmentModalProps) => {
   const [form] = Form.useForm();
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
+  const queryClient = useQueryClient();
   const { createShipment, isCreatingShipment } = useOrderMutations();
-  const { data: shippingMethodsData } = useShippingMethods(0, 100); // Get all active methods
+  const { data: shippingMethodsData } = useShippingMethods(0, 100, undefined, true); // Solo métodos activos
+
+  // Cargar pedidos pagados - se refresca cada vez que se abre el modal
+  const { data: paidOrdersData } = useQuery({
+    queryKey: ['paid-orders'],
+    queryFn: () => getPaidOrders(),
+    enabled: open, // Solo cargar cuando el modal está abierto
+    refetchOnMount: true, // Siempre refrescar al montar
+  });
+
+  // Cargar detalles del pedido seleccionado
+  const { data: orderDetail } = useQuery({
+    queryKey: ['order', selectedOrderId],
+    queryFn: () => getOrderById(selectedOrderId!),
+    enabled: !!selectedOrderId,
+  });
+
+  // Cargar datos del cliente cuando se selecciona un pedido
+  const { data: customerData } = useQuery({
+    queryKey: ['customer', orderDetail?.customerId],
+    queryFn: () => customersApi.getCustomerById(orderDetail!.customerId),
+    enabled: !!orderDetail?.customerId,
+  });
+
+  // Auto-completar datos del pedido cuando se carga el detalle
+  useEffect(() => {
+    if (orderDetail && customerData) {
+      setSelectedOrder(orderDetail);
+      
+      // Limpiar el teléfono (quitar +51 si viene)
+      let phoneNumber = customerData.phone || '';
+      if (phoneNumber.startsWith('+51')) {
+        phoneNumber = phoneNumber.substring(3).trim();
+      }
+      
+      // Auto-completar dirección y datos del destinatario
+      form.setFieldsValue({
+        recipientName: orderDetail.customerName,
+        recipientPhone: phoneNumber,
+      });
+    }
+  }, [orderDetail, customerData, form]);
+
+  // Auto-completar costo y fecha estimada cuando se selecciona método de envío
+  const handleShippingMethodChange = (shippingMethodId: number) => {
+    const method = shippingMethodsData?.content.find((m) => m.id === shippingMethodId);
+    if (!method) return;
+
+    // Calcular peso estimado (simplificado, en producción se calcularía mejor)
+    const weightKg = form.getFieldValue('weightKg') || 1;
+    const estimatedCost = method.baseCost + method.costPerKg * weightKg;
+
+    // Calcular fecha estimada (usando promedio de días)
+    const avgDays = Math.ceil((method.estimatedDaysMin + method.estimatedDaysMax) / 2);
+    const estimatedDate = dayjs().add(avgDays, 'day');
+
+    form.setFieldsValue({
+      shippingCost: estimatedCost,
+      estimatedDeliveryDate: estimatedDate,
+    });
+  };
 
   const handleSubmit = async (values: {
+    orderId: number;
     shipmentType: string;
     shippingMethodId: number;
     trackingNumber: string;
@@ -33,8 +103,6 @@ export const CreateShipmentModal = ({ orderId, open, onClose }: CreateShipmentMo
     packageQuantity?: number;
     notes?: string;
   }) => {
-    if (!orderId) return;
-
     try {
       const request: CreateShipmentForOrderRequest = {
         shipmentType: values.shipmentType,
@@ -50,8 +118,25 @@ export const CreateShipmentModal = ({ orderId, open, onClose }: CreateShipmentMo
         notes: values.notes,
       };
 
-      await createShipment({ orderId, request });
+      await createShipment({ orderId: values.orderId, request });
+      
+      // CRÍTICO: Invalidar queries para refrescar automáticamente (igual que en pagos)
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] }); // Invalida TODAS las queries de order
+      queryClient.invalidateQueries({ queryKey: ['paid-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      
+      message.success('Envío creado exitosamente');
+      
       form.resetFields();
+      setSelectedOrderId(null);
+      setSelectedOrder(null);
+      
+      // Llamar callback de éxito si existe
+      if (onSuccess) {
+        onSuccess();
+      }
+      
       onClose();
     } catch {
       // Error handled in mutation
@@ -60,17 +145,19 @@ export const CreateShipmentModal = ({ orderId, open, onClose }: CreateShipmentMo
 
   const handleCancel = () => {
     form.resetFields();
+    setSelectedOrderId(null);
+    setSelectedOrder(null);
     onClose();
   };
 
   return (
     <Modal
-      title="Crear Envío para Pedido"
+      title="Crear Envío"
       open={open}
       onCancel={handleCancel}
       onOk={() => form.submit()}
       confirmLoading={isCreatingShipment}
-      width={600}
+      width={700}
       okText="Crear Envío"
       cancelText="Cancelar"
     >
@@ -79,11 +166,42 @@ export const CreateShipmentModal = ({ orderId, open, onClose }: CreateShipmentMo
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          shipmentType: 'ORDER',
+          shipmentType: 'OUTBOUND',
           requireSignature: false,
           packageQuantity: 1,
         }}
       >
+        <Form.Item
+          name="orderId"
+          label="Pedido Pagado"
+          rules={[{ required: true, message: 'Seleccione el pedido a enviar' }]}
+        >
+          <Select
+            placeholder="Seleccione pedido pagado"
+            showSearch
+            optionFilterProp="label"
+            onChange={(value) => setSelectedOrderId(value)}
+            loading={!paidOrdersData}
+            options={paidOrdersData?.content.map((order) => ({
+              label: `${order.orderNumber} - ${order.customerName} - S/ ${order.total.toFixed(2)}`,
+              value: order.id,
+            }))}
+          />
+        </Form.Item>
+
+        {selectedOrder && (
+          <div style={{ marginBottom: 16, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+            <Text strong>Cliente: </Text>
+            <Text>{selectedOrder.customerName}</Text>
+            <br />
+            <Text strong>Email: </Text>
+            <Text>{selectedOrder.customerEmail}</Text>
+            <br />
+            <Text strong>Total: </Text>
+            <Text>S/ {selectedOrder.total.toFixed(2)}</Text>
+          </div>
+        )}
+
         <Form.Item
           name="shipmentType"
           label="Tipo de Envío"
@@ -99,8 +217,9 @@ export const CreateShipmentModal = ({ orderId, open, onClose }: CreateShipmentMo
         >
           <Select
             placeholder="Seleccione método de envío"
+            onChange={handleShippingMethodChange}
             options={shippingMethodsData?.content.map((method) => ({
-              label: `${method.name} - ${method.carrier}`,
+              label: `${method.name} - ${method.carrier} (${method.estimatedDaysMin}-${method.estimatedDaysMax} días)`,
               value: method.id,
             }))}
             loading={!shippingMethodsData}

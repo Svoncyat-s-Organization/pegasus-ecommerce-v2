@@ -62,6 +62,19 @@ export const getOrdersByCustomer = async (
 };
 
 /**
+ * Obtener pedidos pagados listos para envío
+ */
+export const getPaidOrders = async (
+  page = 0,
+  size = 100
+): Promise<PageResponse<OrderSummaryResponse>> => {
+  const { data } = await api.get('/admin/orders/paid', {
+    params: { page, size },
+  });
+  return data;
+};
+
+/**
  * Crear un nuevo pedido manualmente desde el backoffice
  */
 export const createOrder = async (request: CreateOrderRequest): Promise<OrderResponse> => {

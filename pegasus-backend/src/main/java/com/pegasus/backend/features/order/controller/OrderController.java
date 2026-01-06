@@ -70,6 +70,16 @@ public class OrderController {
                 return ResponseEntity.ok(response);
         }
 
+        @GetMapping("/paid")
+        @Operation(summary = "Obtener pedidos pagados listos para envío", description = "Listar pedidos con estado PAID que están listos para crear envío")
+        @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
+        public ResponseEntity<PageResponse<OrderSummaryResponse>> getPaidOrders(
+                        @PageableDefault(size = 100, sort = "createdAt") Pageable pageable) {
+                PageResponse<OrderSummaryResponse> response = orderService.getAllOrders(null, OrderStatus.PAID,
+                                pageable);
+                return ResponseEntity.ok(response);
+        }
+
         @PostMapping
         @Operation(summary = "Crear pedido", description = "Crear un nuevo pedido manualmente desde el backoffice")
         @ApiResponse(responseCode = "201", description = "Pedido creado exitosamente")

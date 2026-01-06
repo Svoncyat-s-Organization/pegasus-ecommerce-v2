@@ -198,9 +198,12 @@ export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalPro
 
       {/* Modal para crear envío */}
       <CreateShipmentModal
-        orderId={orderId}
         open={createShipmentOpen}
         onClose={() => setCreateShipmentOpen(false)}
+        onSuccess={() => {
+          // Refrescar el detalle del pedido cuando se crea el envío exitosamente
+          refetch();
+        }}
       />
     </>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Input, Button, Table, Space, Tag, Popconfirm, Select } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconEye } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconEye, IconRefresh } from '@tabler/icons-react';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useShipments } from '../hooks/useShipments';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -8,6 +8,7 @@ import { SHIPMENT_STATUSES, SHIPMENT_TYPES } from '../constants';
 import dayjs from 'dayjs';
 import type { Shipment } from '@types';
 import type { ColumnType } from 'antd/es/table';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { Option } = Select;
 
@@ -25,6 +26,7 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [typeFilter, setTypeFilter] = useState<string | undefined>();
   const debouncedSearch = useDebounce(searchTerm, 500);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useShipments(
     page,
@@ -33,6 +35,10 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
     statusFilter,
     typeFilter
   );
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['shipments'] });
+  };
 
   const handleDelete = (id: number) => {
     onDelete(id);
@@ -198,6 +204,9 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
         </Select>
         <Button type="primary" icon={<IconPlus />} onClick={onCreate} style={{ marginLeft: 'auto' }}>
           Nuevo Envío
+        </Button>
+        <Button icon={<IconRefresh />} onClick={handleRefresh} title="Actualizar lista">
+          Actualizar
         </Button>
       </div>
 
