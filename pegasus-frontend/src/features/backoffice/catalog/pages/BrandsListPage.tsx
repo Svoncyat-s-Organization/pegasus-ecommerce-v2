@@ -104,6 +104,8 @@ export const BrandsListPage = () => {
           <Button
             type="link"
             size="small"
+            danger={record.isActive}
+            style={!record.isActive ? { color: '#8c8c8c' } : undefined}
             icon={<IconPower size={16} />}
             onClick={() => handleToggleStatus(record.id)}
             title={record.isActive ? 'Desactivar' : 'Activar'}
