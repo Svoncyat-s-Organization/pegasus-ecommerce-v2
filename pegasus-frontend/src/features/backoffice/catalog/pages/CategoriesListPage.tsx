@@ -1,22 +1,26 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconPower } from '@tabler/icons-react';
-import { useCategories, useDeleteCategory, useToggleCategoryStatus, useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
+import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch, IconFolder, IconFile } from '@tabler/icons-react';
+import { useDeleteCategory, useToggleCategoryStatus, useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { CategoryFormModal } from '../components/CategoryFormModal';
+import { getCategoriesTree } from '../api/categoriesApi';
+import { useQuery } from '@tanstack/react-query';
 import type { CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest } from '@types';
 
 const { Title, Text } = Typography;
 
 export const CategoriesListPage = () => {
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 500);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryResponse | undefined>();
 
-  const { data, isLoading } = useCategories(page, pageSize, debouncedSearch || undefined);
+  // Usar árbol jerárquico en lugar de paginación
+  const { data: treeData, isLoading } = useQuery({
+    queryKey: ['categories', 'tree'],
+    queryFn: getCategoriesTree,
+  });
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
   const deleteMutation = useDeleteCategory();
@@ -59,22 +63,57 @@ export const CategoriesListPage = () => {
     }
   };
 
+  // Filtrar árbol de categorías basado en búsqueda
+  const filteredData = useMemo(() => {
+    if (!treeData) return [];
+    if (!debouncedSearch) return treeData;
+
+    const searchLower = debouncedSearch.toLowerCase();
+    
+    const filterTree = (categories: CategoryResponse[]): CategoryResponse[] => {
+      return categories.reduce<CategoryResponse[]>((acc, category) => {
+        const matchesSearch = 
+          category.name.toLowerCase().includes(searchLower) ||
+          category.slug.toLowerCase().includes(searchLower);
+        
+        const filteredChildren = category.children ? filterTree(category.children) : [];
+        
+        if (matchesSearch || filteredChildren.length > 0) {
+          acc.push({
+            ...category,
+            children: filteredChildren.length > 0 ? filteredChildren : category.children,
+          });
+        }
+        
+        return acc;
+      }, []);
+    };
+
+    return filterTree(treeData);
+  }, [treeData, debouncedSearch]);
+
   const columns = [
-    {
-      title: '#',
-      key: 'index',
-      width: 60,
-      render: (_: unknown, __: CategoryResponse, index: number) => page * pageSize + index + 1,
-    },
     {
       title: 'Nombre',
       dataIndex: 'name',
       key: 'name',
+      width: 300,
+      render: (name: string, record: CategoryResponse) => (
+        <Space size="small">
+          {record.children && record.children.length > 0 ? (
+            <IconFolder size={20} style={{ color: '#2f54eb' }} />
+          ) : (
+            <IconFile size={20} style={{ color: '#8c8c8c' }} />
+          )}
+          <span>{name}</span>
+        </Space>
+      ),
     },
     {
       title: 'Slug',
       dataIndex: 'slug',
       key: 'slug',
+      width: 200,
     },
     {
       title: 'Descripción',
@@ -82,12 +121,6 @@ export const CategoriesListPage = () => {
       key: 'description',
       ellipsis: true,
       render: (text: string) => text || '-',
-    },
-    {
-      title: 'Categoría Padre',
-      dataIndex: 'parent',
-      key: 'parent',
-      render: (parent: CategoryResponse | null) => parent?.name || 'Raíz',
     },
     {
       title: 'Estado',
@@ -124,11 +157,12 @@ export const CategoriesListPage = () => {
             title={record.isActive ? 'Desactivar' : 'Activar'}
           />
           <Popconfirm
-            title="¿Eliminar categoría?"
-            description="Esta acción no se puede deshacer"
+            title="¿Eliminar categoría permanentemente?"
+            description="Esta acción es irreversible. Solo se puede eliminar si no tiene productos ni subcategorías."
             onConfirm={() => handleDelete(record.id)}
-            okText="Sí"
-            cancelText="No"
+            okText="Sí, eliminar"
+            cancelText="Cancelar"
+            okButtonProps={{ danger: true }}
           >
             <Button
               type="link"
@@ -165,11 +199,9 @@ export const CategoriesListPage = () => {
         <Input
           placeholder="Buscar por nombre o slug..."
           value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(0);
-          }}
+          onChange={(e) => setSearchTerm(e.target.value)}
           allowClear
+          prefix={<IconSearch size={16} />}
           style={{ maxWidth: 400 }}
         />
         <Button type="primary" icon={<IconPlus size={16} />} onClick={() => handleOpenModal()}>
@@ -179,20 +211,15 @@ export const CategoriesListPage = () => {
 
       <Table
         columns={columns}
-        dataSource={data?.content || []}
+        dataSource={filteredData}
         rowKey="id"
         loading={isLoading}
         bordered
-        pagination={{
-          current: page + 1,
-          pageSize,
-          total: data?.totalElements || 0,
-          showSizeChanger: true,
-          showTotal: (total) => `Total: ${total} categorías`,
-          onChange: (newPage, newPageSize) => {
-            setPage(newPage - 1);
-            setPageSize(newPageSize);
-          },
+        pagination={false}
+        expandable={{
+          defaultExpandAllRows: false,
+          childrenColumnName: 'children',
+          indentSize: 24,
         }}
       />
 

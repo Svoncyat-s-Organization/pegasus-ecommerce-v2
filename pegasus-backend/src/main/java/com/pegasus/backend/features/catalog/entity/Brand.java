@@ -25,6 +25,6 @@ public class Brand extends BaseEntity {
     @Column(name = "slug", nullable = false, length = 50, unique = true)
     private String slug;
 
-    @Column(name = "image_url", nullable = false, length = 255)
+    @Column(name = "image_url", length = 255)
     private String imageUrl;
 }

@@ -25,6 +25,14 @@ export const getCategoryById = async (id: number): Promise<CategoryResponse> => 
 };
 
 /**
+ * Obtener categorías en estructura jerárquica (árbol)
+ */
+export const getCategoriesTree = async (): Promise<CategoryResponse[]> => {
+  const { data } = await api.get('/admin/categories/tree');
+  return data;
+};
+
+/**
  * Obtener categorías raíz (sin padre)
  */
 export const getRootCategories = async (): Promise<CategoryResponse[]> => {
@@ -60,7 +68,7 @@ export const updateCategory = async (
 };
 
 /**
- * Eliminar categoría (soft delete)
+ * Eliminar categoría (eliminación física permanente)
  */
 export const deleteCategory = async (id: number): Promise<void> => {
   await api.delete(`/admin/categories/${id}`);
@@ -71,5 +79,15 @@ export const deleteCategory = async (id: number): Promise<void> => {
  */
 export const toggleCategoryStatus = async (id: number): Promise<CategoryResponse> => {
   const { data } = await api.put(`/admin/categories/${id}/toggle-status`);
+  return data;
+};
+
+/**
+ * Generar slug a partir de un nombre
+ */
+export const generateSlug = async (name: string): Promise<string> => {
+  const { data } = await api.get(`/admin/categories/generate-slug`, {
+    params: { name },
+  });
   return data;
 };

@@ -574,6 +574,7 @@ export interface CategoryResponse extends BaseEntity {
   slug: string;
   description?: string;
   parentId?: number;
+  children?: CategoryResponse[]; // Para estructura jerárquica
 }
 
 export interface CreateCategoryRequest {

@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Form, Input, Select } from 'antd';
 import { useRootCategories } from '../hooks/useCategories';
+import { generateSlug } from '../api/categoriesApi';
 import type { CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest } from '@types';
 
 const { TextArea } = Input;
@@ -21,11 +22,13 @@ export const CategoryFormModal = ({
   loading,
 }: CategoryFormModalProps) => {
   const [form] = Form.useForm();
+  const [slugModifiedManually, setSlugModifiedManually] = useState(false);
   const isEdit = !!initialValues;
   const { data: rootCategories, isLoading: loadingCategories } = useRootCategories();
 
   useEffect(() => {
     if (open) {
+      setSlugModifiedManually(false);
       if (initialValues) {
         form.setFieldsValue({
           name: initialValues.name,
@@ -33,6 +36,7 @@ export const CategoryFormModal = ({
           description: initialValues.description,
           parentId: initialValues.parentId,
         });
+        setSlugModifiedManually(true); // En modo edición, no auto-generar
       } else {
         form.resetFields();
       }
@@ -50,7 +54,27 @@ export const CategoryFormModal = ({
 
   const handleCancel = () => {
     form.resetFields();
+    setSlugModifiedManually(false);
     onCancel();
+  };
+
+  const handleNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    
+    // Solo auto-generar si no está editando y el usuario no ha modificado el slug manualmente
+    if (!isEdit && !slugModifiedManually && name.trim()) {
+      try {
+        const slug = await generateSlug(name);
+        form.setFieldsValue({ slug });
+      } catch (error) {
+        console.error('Error generating slug:', error);
+      }
+    }
+  };
+
+  const handleSlugChange = () => {
+    // Marcar que el usuario modificó el slug manualmente
+    setSlugModifiedManually(true);
   };
 
   // Filtrar la categoría actual si estamos editando (no puede ser padre de sí misma)
@@ -83,7 +107,10 @@ export const CategoryFormModal = ({
             { max: 100, message: 'Máximo 100 caracteres' },
           ]}
         >
-          <Input placeholder="Ingrese el nombre de la categoría" />
+          <Input 
+            placeholder="Ingrese el nombre de la categoría" 
+            onChange={handleNameChange}
+          />
         </Form.Item>
 
         <Form.Item
@@ -94,9 +121,12 @@ export const CategoryFormModal = ({
             { max: 100, message: 'Máximo 100 caracteres' },
             { pattern: /^[a-z0-9-]+$/, message: 'Solo letras minúsculas, números y guiones' },
           ]}
-          tooltip="URL amigable (ejemplo: electronica, ropa-hombre)"
+          tooltip="URL amigable (ejemplo: electronica, ropa-hombre). Se genera automáticamente al escribir el nombre"
         >
-          <Input placeholder="Ingrese el slug (ej: electronica)" />
+          <Input 
+            placeholder="Ingrese el slug (ej: electronica)" 
+            onChange={handleSlugChange}
+          />
         </Form.Item>
 
         <Form.Item

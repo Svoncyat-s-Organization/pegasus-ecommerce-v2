@@ -7,7 +7,7 @@ CREATE TABLE public.brands (
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
     name varchar(50) NOT NULL,
     slug varchar(50) NOT NULL,
-    image_url varchar(255) NOT NULL,
+    image_url varchar(255),
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
