@@ -14,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -44,7 +45,15 @@ public class PaymentController {
 
     @PostMapping
     @Operation(summary = "Registrar pago", description = "Registrar un pago para un pedido")
-    public ResponseEntity<PaymentResponse> create(@Valid @RequestBody CreatePaymentRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(request));
+    public ResponseEntity<PaymentResponse> create(
+            @Valid @RequestBody CreatePaymentRequest request,
+            Authentication authentication) {
+        Long userId = extractUserId(authentication);
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(request, userId));
+    }
+
+    private Long extractUserId(Authentication authentication) {
+        // TODO: Implementación real según sistema de autenticación
+        return 1L;
     }
 }

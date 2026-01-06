@@ -47,4 +47,9 @@ export const billingInvoicesApi = {
     const { data } = await api.patch<InvoiceResponse>(`/admin/billing/invoices/${id}/status`, request);
     return data;
   },
+
+  getInvoicedOrderIds: async (orderIds: number[]): Promise<number[]> => {
+    const { data } = await api.post<number[]>('/admin/billing/invoices/invoiced-order-ids', orderIds);
+    return data;
+  },
 };

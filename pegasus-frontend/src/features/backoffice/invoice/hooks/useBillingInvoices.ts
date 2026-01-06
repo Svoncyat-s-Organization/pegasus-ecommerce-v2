@@ -21,3 +21,11 @@ export const useBillingInvoiceDetail = (invoiceId: number | null) => {
     enabled: invoiceId !== null,
   });
 };
+
+export const useInvoicedOrderIds = (orderIds: number[]) => {
+  return useQuery({
+    queryKey: ['billing-invoices', 'invoiced-order-ids', orderIds],
+    queryFn: () => billingInvoicesApi.getInvoicedOrderIds(orderIds),
+    enabled: orderIds.length > 0,
+  });
+};

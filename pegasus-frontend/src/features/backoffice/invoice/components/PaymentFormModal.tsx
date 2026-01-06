@@ -1,5 +1,5 @@
 import { Button, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, message } from 'antd';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CreatePaymentRequest, OrderSummaryResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useBillingPaymentMethods } from '../hooks/useBillingPaymentMethods';
@@ -20,8 +20,29 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
   const debouncedOrderSearch = useDebounce(orderSearchTerm, 500);
   const { data: ordersData, isLoading: isLoadingOrders } = useAdminOrders(0, 20, debouncedOrderSearch || undefined);
 
+  const ordersById = useMemo(() => {
+    return new Map<number, OrderSummaryResponse>((ordersData?.content || []).map((o: OrderSummaryResponse) => [o.id, o]));
+  }, [ordersData]);
+
+  const selectedOrderId = Form.useWatch('orderId', form);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (!selectedOrderId) {
+      form.setFieldsValue({ amount: undefined });
+      return;
+    }
+
+    const selectedOrder = ordersById.get(Number(selectedOrderId));
+    if (!selectedOrder) return;
+
+    form.setFieldsValue({ amount: Number(selectedOrder.total) });
+  }, [selectedOrderId, ordersById, form, open]);
+
   const ordersOptions = useMemo(() => {
-    const orders = (ordersData?.content || []).filter((o: OrderSummaryResponse) => o.status !== 'PAID');
+    const eligibleStatuses = new Set(['PENDING', 'AWAIT_PAYMENT']);
+    const orders = (ordersData?.content || []).filter((o: OrderSummaryResponse) => eligibleStatuses.has(o.status));
     return orders.map((o: OrderSummaryResponse) => ({
       value: o.id,
       label: `${o.orderNumber} - ${o.customerName}`,
@@ -85,6 +106,7 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
                 onSearch={(value) => setOrderSearchTerm(value)}
                 options={ordersOptions}
                 loading={isLoadingOrders}
+                allowClear
                 optionFilterProp="label"
               />
             </Form.Item>
@@ -114,7 +136,13 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="amount" label="Monto" rules={[{ required: true, message: 'Ingresa el monto' }]}>
-              <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} placeholder="0.00" />
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0.01}
+                step={0.01}
+                placeholder="0.00"
+                disabled
+              />
             </Form.Item>
           </Col>
           <Col span={16}>

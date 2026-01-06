@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconEye, IconPlus, IconSearch } from '@tabler/icons-react';
+import { IconEdit, IconEye, IconPlus, IconPrinter, IconSearch } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import type { InvoiceStatus, InvoiceSummaryResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -9,6 +9,7 @@ import { formatCurrency } from '@shared/utils/formatters';
 import { INVOICE_STATUS_META, INVOICE_TYPE_LABEL } from '../constants/billingConstants';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { InvoiceFormModal } from '../components/InvoiceFormModal';
+import { InvoicePrintModal } from '../components/InvoicePrintModal';
 import { InvoiceStatusModal } from '../components/InvoiceStatusModal';
 import { useBillingInvoices } from '../hooks/useBillingInvoices';
 
@@ -21,6 +22,7 @@ export const BillingInvoicesTab = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
   const [selectedInvoiceStatus, setSelectedInvoiceStatus] = useState<InvoiceStatus | null>(null);
@@ -37,6 +39,11 @@ export const BillingInvoicesTab = () => {
     setSelectedInvoiceId(id);
     setSelectedInvoiceStatus(current);
     setStatusOpen(true);
+  };
+
+  const handleOpenPrint = (id: number) => {
+    setSelectedInvoiceId(id);
+    setPrintOpen(true);
   };
 
   const columns: ColumnsType<InvoiceSummaryResponse> = [
@@ -91,7 +98,7 @@ export const BillingInvoicesTab = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 120,
+      width: 160,
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -100,6 +107,14 @@ export const BillingInvoicesTab = () => {
             icon={<IconEye size={16} />}
             onClick={() => handleOpenDetail(record.id)}
             title="Ver detalle"
+          />
+          <Button
+            type="link"
+            size="small"
+            icon={<IconPrinter size={16} />}
+            onClick={() => handleOpenPrint(record.id)}
+            disabled={record.status !== 'ISSUED'}
+            title={record.status === 'ISSUED' ? 'Imprimir' : 'Solo disponible para comprobantes emitidos'}
           />
           <Button
             type="link"
@@ -167,13 +182,29 @@ export const BillingInvoicesTab = () => {
         }}
       />
 
-      <InvoiceFormModal open={createOpen} onCancel={() => setCreateOpen(false)} />
+      <InvoiceFormModal
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        onCreated={(invoiceId) => {
+          setSelectedInvoiceId(invoiceId);
+          setPrintOpen(true);
+        }}
+      />
 
       <InvoiceDetailModal
         open={detailOpen}
         invoiceId={selectedInvoiceId}
         onCancel={() => {
           setDetailOpen(false);
+          setSelectedInvoiceId(null);
+        }}
+      />
+
+      <InvoicePrintModal
+        open={printOpen}
+        invoiceId={selectedInvoiceId}
+        onCancel={() => {
+          setPrintOpen(false);
           setSelectedInvoiceId(null);
         }}
       />

@@ -9,31 +9,38 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
-    boolean existsBySeriesAndNumber(String series, String number);
+        boolean existsBySeriesAndNumber(String series, String number);
 
-    Optional<Invoice> findByOrderId(Long orderId);
+        boolean existsByOrderId(Long orderId);
 
-    Optional<Invoice> findBySeriesAndNumber(String series, String number);
+        Optional<Invoice> findByOrderId(Long orderId);
 
-    Page<Invoice> findByStatus(InvoiceStatus status, Pageable pageable);
+        Optional<Invoice> findBySeriesAndNumber(String series, String number);
 
-    @Query("SELECT i FROM Invoice i WHERE " +
-            "LOWER(i.series) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.number) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.receiverName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.receiverTaxId) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Invoice> search(@Param("search") String search, Pageable pageable);
+        Page<Invoice> findByStatus(InvoiceStatus status, Pageable pageable);
 
-    @Query("SELECT i FROM Invoice i WHERE i.status = :status AND (" +
-            "LOWER(i.series) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.number) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.receiverName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.receiverTaxId) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<Invoice> searchByStatus(@Param("search") String search, @Param("status") InvoiceStatus status,
-            Pageable pageable);
+        @Query("SELECT i FROM Invoice i WHERE " +
+                        "LOWER(i.series) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(i.number) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(i.receiverName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(i.receiverTaxId) LIKE LOWER(CONCAT('%', :search, '%'))")
+        Page<Invoice> search(@Param("search") String search, Pageable pageable);
+
+        @Query("SELECT i FROM Invoice i WHERE i.status = :status AND (" +
+                        "LOWER(i.series) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(i.number) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(i.receiverName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(i.receiverTaxId) LIKE LOWER(CONCAT('%', :search, '%')))")
+        Page<Invoice> searchByStatus(@Param("search") String search, @Param("status") InvoiceStatus status,
+                        Pageable pageable);
+
+        @Query("SELECT DISTINCT i.orderId FROM Invoice i WHERE i.orderId IN :orderIds")
+        List<Long> findInvoicedOrderIds(@Param("orderIds") Collection<Long> orderIds);
 }
