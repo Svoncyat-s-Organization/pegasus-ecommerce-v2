@@ -13,13 +13,16 @@ import java.util.List;
 @Repository
 public interface ShippingMethodRepository extends JpaRepository<ShippingMethod, Long> {
 
-    @Query("SELECT sm FROM ShippingMethod sm WHERE " +
+    @Query("SELECT sm FROM ShippingMethod sm WHERE sm.isActive = true AND (" +
             "LOWER(sm.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(sm.carrier) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(sm.description) LIKE LOWER(CONCAT('%', :search, '%'))")
+            "LOWER(sm.description) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<ShippingMethod> searchShippingMethods(@Param("search") String search, Pageable pageable);
 
     Page<ShippingMethod> findByIsActive(Boolean isActive, Pageable pageable);
+
+    @Query("SELECT sm FROM ShippingMethod sm WHERE sm.isActive = true")
+    Page<ShippingMethod> findAllActive(Pageable pageable);
 
     List<ShippingMethod> findByIsActiveTrue();
 }

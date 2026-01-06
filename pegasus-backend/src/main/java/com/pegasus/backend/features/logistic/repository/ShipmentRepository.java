@@ -15,18 +15,28 @@ import java.util.List;
 @Repository
 public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
-    @Query("SELECT s FROM Shipment s WHERE " +
+    @Query("SELECT s FROM Shipment s WHERE s.isActive = true AND (" +
             "LOWER(s.trackingNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(s.recipientName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(s.recipientPhone) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(s.status) LIKE LOWER(CONCAT('%', :search, '%'))")
+            "LOWER(s.status) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Shipment> searchShipments(@Param("search") String search, Pageable pageable);
 
-    Page<Shipment> findByOrderId(Long orderId, Pageable pageable);
+    @Query("SELECT s FROM Shipment s WHERE s.isActive = true AND s.orderId = :orderId")
+    Page<Shipment> findByOrderId(@Param("orderId") Long orderId, Pageable pageable);
 
-    Page<Shipment> findByStatus(ShipmentStatus status, Pageable pageable);
+    @Query("SELECT s FROM Shipment s WHERE s.isActive = true AND s.status = :status")
+    Page<Shipment> findByStatus(@Param("status") ShipmentStatus status, Pageable pageable);
 
-    Page<Shipment> findByShipmentType(ShipmentType shipmentType, Pageable pageable);
+    @Query("SELECT s FROM Shipment s WHERE s.isActive = true AND s.shipmentType = :shipmentType")
+    Page<Shipment> findByShipmentType(@Param("shipmentType") ShipmentType shipmentType, Pageable pageable);
 
-    List<Shipment> findByTrackingNumber(String trackingNumber);
+    @Query("SELECT s FROM Shipment s WHERE s.isActive = true AND s.trackingNumber = :trackingNumber")
+    List<Shipment> findByTrackingNumber(@Param("trackingNumber") String trackingNumber);
+
+    @Query("SELECT s FROM Shipment s WHERE s.isActive = true")
+    Page<Shipment> findAllActive(Pageable pageable);
+
+    @Query("SELECT COUNT(s) > 0 FROM Shipment s WHERE s.isActive = true AND s.shippingMethod.id = :shippingMethodId AND s.status IN ('PENDING', 'IN_TRANSIT')")
+    boolean existsActiveShipmentsByShippingMethod(@Param("shippingMethodId") Long shippingMethodId);
 }

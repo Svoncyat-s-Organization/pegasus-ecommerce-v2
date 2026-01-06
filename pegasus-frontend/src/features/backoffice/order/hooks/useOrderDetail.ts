@@ -10,7 +10,8 @@ export const useOrderDetail = (orderId: number | null) => {
     queryKey: ['order', orderId],
     queryFn: () => getOrderById(orderId!),
     enabled: !!orderId, // Only run if orderId is provided
-    refetchOnMount: true, // Siempre refrescar al montar
+    refetchOnMount: 'always', // Siempre refrescar al montar
     refetchOnWindowFocus: true, // Refrescar cuando vuelves a la ventana
+    staleTime: 0, // Los datos siempre son considerados obsoletos
   });
 };

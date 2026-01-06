@@ -14,6 +14,7 @@ import com.pegasus.backend.features.order.entity.Order;
 import com.pegasus.backend.features.order.repository.OrderRepository;
 import com.pegasus.backend.features.order.service.OrderService;
 import com.pegasus.backend.features.inventory.service.StockService;
+import com.pegasus.backend.features.invoice.repository.InvoiceRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import com.pegasus.backend.shared.enums.OrderStatus;
 import com.pegasus.backend.shared.enums.ShipmentStatus;
@@ -33,245 +34,280 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ShipmentService {
 
-    private final ShipmentRepository shipmentRepository;
-    private final ShipmentMapper shipmentMapper;
-    private final ShippingMethodRepository shippingMethodRepository;
-    private final OrderRepository orderRepository;
-    private final OrderService orderService;
-    private final StockService stockService;
+        private final ShipmentRepository shipmentRepository;
+        private final ShipmentMapper shipmentMapper;
+        private final ShippingMethodRepository shippingMethodRepository;
+        private final OrderRepository orderRepository;
+        private final OrderService orderService;
+        private final StockService stockService;
+        private final InvoiceRepository invoiceRepository;
 
-    // Constructor manual para inyectar OrderService con @Lazy
-    public ShipmentService(
-            ShipmentRepository shipmentRepository,
-            ShipmentMapper shipmentMapper,
-            ShippingMethodRepository shippingMethodRepository,
-            OrderRepository orderRepository,
-            @Lazy OrderService orderService,
-            StockService stockService) {
-        this.shipmentRepository = shipmentRepository;
-        this.shipmentMapper = shipmentMapper;
-        this.shippingMethodRepository = shippingMethodRepository;
-        this.orderRepository = orderRepository;
-        this.orderService = orderService;
-        this.stockService = stockService;
-    }
-
-    public PageResponse<ShipmentResponse> getAllShipments(String search, ShipmentStatus status,
-            ShipmentType shipmentType,
-            Pageable pageable) {
-        log.debug("Getting all shipments with search: {}, status: {}, shipmentType: {}", search, status, shipmentType);
-
-        Page<Shipment> page;
-
-        if (search != null && !search.isBlank()) {
-            page = shipmentRepository.searchShipments(search.trim(), pageable);
-        } else if (status != null) {
-            page = shipmentRepository.findByStatus(status, pageable);
-        } else if (shipmentType != null) {
-            page = shipmentRepository.findByShipmentType(shipmentType, pageable);
-        } else {
-            page = shipmentRepository.findAll(pageable);
+        // Constructor manual para inyectar OrderService con @Lazy
+        public ShipmentService(
+                        ShipmentRepository shipmentRepository,
+                        ShipmentMapper shipmentMapper,
+                        ShippingMethodRepository shippingMethodRepository,
+                        OrderRepository orderRepository,
+                        @Lazy OrderService orderService,
+                        StockService stockService,
+                        InvoiceRepository invoiceRepository) {
+                this.shipmentRepository = shipmentRepository;
+                this.shipmentMapper = shipmentMapper;
+                this.shippingMethodRepository = shippingMethodRepository;
+                this.orderRepository = orderRepository;
+                this.orderService = orderService;
+                this.stockService = stockService;
+                this.invoiceRepository = invoiceRepository;
         }
 
-        List<ShipmentResponse> content = page.getContent().stream()
-                .map(shipmentMapper::toResponse)
-                .toList();
+        public PageResponse<ShipmentResponse> getAllShipments(String search, ShipmentStatus status,
+                        ShipmentType shipmentType,
+                        Pageable pageable) {
+                log.debug("Getting all shipments with search: {}, status: {}, shipmentType: {}", search, status,
+                                shipmentType);
 
-        return new PageResponse<>(
-                content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isFirst(),
-                page.isLast());
-    }
+                Page<Shipment> page;
 
-    public PageResponse<ShipmentResponse> getShipmentsByOrder(Long orderId, Pageable pageable) {
-        log.debug("Getting shipments for order: {}", orderId);
+                if (search != null && !search.isBlank()) {
+                        page = shipmentRepository.searchShipments(search.trim(), pageable);
+                } else if (status != null) {
+                        page = shipmentRepository.findByStatus(status, pageable);
+                } else if (shipmentType != null) {
+                        page = shipmentRepository.findByShipmentType(shipmentType, pageable);
+                } else {
+                        page = shipmentRepository.findAllActive(pageable);
+                }
 
-        Page<Shipment> page = shipmentRepository.findByOrderId(orderId, pageable);
+                List<ShipmentResponse> content = page.getContent().stream()
+                                .map(shipmentMapper::toResponse)
+                                .toList();
 
-        List<ShipmentResponse> content = page.getContent().stream()
-                .map(shipmentMapper::toResponse)
-                .toList();
-
-        return new PageResponse<>(
-                content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isFirst(),
-                page.isLast());
-    }
-
-    public ShipmentResponse getShipmentById(Long id) {
-        log.debug("Getting shipment by id: {}", id);
-
-        Shipment shipment = shipmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
-
-        return shipmentMapper.toResponse(shipment);
-    }
-
-    public List<ShipmentResponse> getShipmentsByTrackingNumber(String trackingNumber) {
-        log.debug("Getting shipments by tracking number: {}", trackingNumber);
-
-        List<Shipment> shipments = shipmentRepository.findByTrackingNumber(trackingNumber);
-
-        return shipments.stream()
-                .map(shipmentMapper::toResponse)
-                .toList();
-    }
-
-    @Transactional
-    public ShipmentResponse createShipment(CreateShipmentRequest request) {
-        log.info("Creating shipment for order: {}", request.getOrderId());
-
-        // Validar que la orden existe
-        Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Orden no encontrada con ID: " + request.getOrderId()));
-
-        // Validar que la orden está en un estado válido para envío (debe estar PAGADA)
-        if (order.getStatus() != OrderStatus.PAID) {
-            throw new BadRequestException(
-                    "La orden debe estar PAGADA para crear un envío. Estado actual: " + order.getStatus());
+                return new PageResponse<>(
+                                content,
+                                page.getNumber(),
+                                page.getSize(),
+                                page.getTotalElements(),
+                                page.getTotalPages(),
+                                page.isFirst(),
+                                page.isLast());
         }
 
-        ShippingMethod shippingMethod = shippingMethodRepository.findById(request.getShippingMethodId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Método de envío no encontrado con ID: " + request.getShippingMethodId()));
+        public PageResponse<ShipmentResponse> getShipmentsByOrder(Long orderId, Pageable pageable) {
+                log.debug("Getting shipments for order: {}", orderId);
 
-        Shipment shipment = shipmentMapper.toEntity(request);
-        shipment.setOrderId(request.getOrderId());
-        shipment.setShippingMethod(shippingMethod);
-        shipment.setStatus(ShipmentStatus.IN_TRANSIT); // DIRECTO A EN_TRÁNSITO
-        shipment.setShippedAt(java.time.OffsetDateTime.now()); // Marcar como enviado ahora
+                Page<Shipment> page = shipmentRepository.findByOrderId(orderId, pageable);
 
-        Shipment saved = shipmentRepository.save(shipment);
+                List<ShipmentResponse> content = page.getContent().stream()
+                                .map(shipmentMapper::toResponse)
+                                .toList();
 
-        // AUTOMÁTICO PASO 1: Actualizar estado del pedido a PROCESSING (preparando
-        // envío)
-        log.info("Auto-updating order {} status to PROCESSING after shipment creation", request.getOrderId());
-        orderService.updateOrderStatus(
-                request.getOrderId(),
-                OrderStatus.PROCESSING,
-                "Envío creado - preparando pedido para despacho");
-
-        // AUTOMÁTICO PASO 2: Actualizar estado del pedido a SHIPPED (enviado)
-        log.info("Auto-updating order {} status to SHIPPED after shipment creation", request.getOrderId());
-        orderService.updateOrderStatus(
-                request.getOrderId(),
-                OrderStatus.SHIPPED,
-                "Envío despachado - pedido en tránsito al cliente");
-
-        // AUTOMÁTICO: Decrementar stock de cada item del pedido
-        Long defaultWarehouseId = 1L; // TODO: Configurar almacén principal desde settings
-        order.getItems().forEach(item -> {
-            log.info("Decreasing stock for variant {} by {} units", item.getVariantId(), item.getQuantity());
-            stockService.decreaseStock(
-                    defaultWarehouseId,
-                    item.getVariantId(),
-                    item.getQuantity(),
-                    order.getId(),
-                    null // Sistema automático
-            );
-        });
-
-        log.info("Shipment created successfully with tracking number: {} - Order shipped and stock decremented",
-                saved.getTrackingNumber());
-        return shipmentMapper.toResponse(saved);
-    }
-
-    /**
-     * Validar que la orden puede ser enviada
-     */
-    private boolean canShipOrder(OrderStatus orderStatus) {
-        return orderStatus == OrderStatus.PAID ||
-                orderStatus == OrderStatus.PROCESSING ||
-                orderStatus == OrderStatus.AWAIT_PAYMENT; // Permitir envío si está esperando pago (pago contra entrega)
-    }
-
-    @Transactional
-    public ShipmentResponse updateShipment(Long id, UpdateShipmentRequest request, Long updatedByUserId) {
-        log.info("Updating shipment with id: {}", id);
-
-        Shipment shipment = shipmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
-
-        ShipmentStatus previousStatus = shipment.getStatus();
-
-        shipmentMapper.updateEntityFromRequest(request, shipment);
-
-        // AUTOMÁTICO: Si el estado cambió a IN_TRANSIT (enviado), decrementar stock y
-        // actualizar orden a SHIPPED
-        if (previousStatus != ShipmentStatus.IN_TRANSIT &&
-                shipment.getStatus() == ShipmentStatus.IN_TRANSIT &&
-                shipment.getShipmentType() == ShipmentType.OUTBOUND) {
-
-            log.info("Shipment {} is now in transit, decreasing stock and updating order status to SHIPPED", id);
-
-            // Obtener la orden para decrementar stock de cada item
-            Order order = orderRepository.findById(shipment.getOrderId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Orden no encontrada con ID: " + shipment.getOrderId()));
-
-            Long defaultWarehouseId = 1L; // TODO: Configurar almacén principal desde settings
-
-            // AUTOMÁTICO: Decrementar stock físico para cada item de la orden
-            order.getItems().forEach(item -> {
-                log.info("Decreasing stock for variant {} by {} units", item.getVariantId(), item.getQuantity());
-                stockService.decreaseStock(
-                        defaultWarehouseId,
-                        item.getVariantId(),
-                        item.getQuantity(),
-                        order.getId(),
-                        updatedByUserId);
-            });
-
-            // AUTOMÁTICO: Actualizar estado del pedido a SHIPPED (enviado)
-            orderService.updateOrderStatus(
-                    shipment.getOrderId(),
-                    OrderStatus.SHIPPED,
-                    "Pedido en tránsito - enviado al cliente");
-
-            shipment.setShippedAt(java.time.OffsetDateTime.now());
+                return new PageResponse<>(
+                                content,
+                                page.getNumber(),
+                                page.getSize(),
+                                page.getTotalElements(),
+                                page.getTotalPages(),
+                                page.isFirst(),
+                                page.isLast());
         }
 
-        // AUTOMÁTICO: Si el estado cambió a DELIVERED, marcar fecha de entrega y
-        // actualizar orden a DELIVERED
-        if (previousStatus != ShipmentStatus.DELIVERED &&
-                shipment.getStatus() == ShipmentStatus.DELIVERED) {
+        public ShipmentResponse getShipmentById(Long id) {
+                log.debug("Getting shipment by id: {}", id);
 
-            log.info("Shipment {} delivered, updating order status to DELIVERED", id);
+                Shipment shipment = shipmentRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
 
-            shipment.setDeliveredAt(java.time.OffsetDateTime.now());
-
-            // AUTOMÁTICO: Actualizar estado del pedido a DELIVERED (entregado)
-            orderService.updateOrderStatus(
-                    shipment.getOrderId(),
-                    OrderStatus.DELIVERED,
-                    "Pedido entregado exitosamente al cliente");
+                return shipmentMapper.toResponse(shipment);
         }
 
-        Shipment updated = shipmentRepository.save(shipment);
+        public List<ShipmentResponse> getShipmentsByTrackingNumber(String trackingNumber) {
+                log.debug("Getting shipments by tracking number: {}", trackingNumber);
 
-        log.info("Shipment updated successfully: {}", updated.getTrackingNumber());
-        return shipmentMapper.toResponse(updated);
-    }
+                List<Shipment> shipments = shipmentRepository.findByTrackingNumber(trackingNumber);
 
-    @Transactional
-    public void deleteShipment(Long id) {
-        log.info("Deleting shipment with id: {}", id);
+                return shipments.stream()
+                                .map(shipmentMapper::toResponse)
+                                .toList();
+        }
 
-        Shipment shipment = shipmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
+        @Transactional
+        public ShipmentResponse createShipment(CreateShipmentRequest request) {
+                log.info("Creating shipment for order: {}", request.getOrderId());
 
-        shipment.setIsActive(false);
-        shipmentRepository.save(shipment);
+                // Validar que la orden existe
+                Order order = orderRepository.findById(request.getOrderId())
+                                .orElseThrow(
+                                                () -> new ResourceNotFoundException(
+                                                                "Orden no encontrada con ID: " + request.getOrderId()));
 
-        log.info("Shipment deleted successfully: {}", shipment.getTrackingNumber());
-    }
+                // Validar que la orden tiene una factura (requisito previo al envío)
+                if (!invoiceRepository.existsByOrderId(request.getOrderId())) {
+                        throw new BadRequestException(
+                                        "No se puede crear un envío para esta orden. Debe emitirse una factura primero.");
+                }
+
+                ShippingMethod shippingMethod = shippingMethodRepository.findById(request.getShippingMethodId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Método de envío no encontrado con ID: "
+                                                                + request.getShippingMethodId()));
+
+                Shipment shipment = shipmentMapper.toEntity(request);
+                shipment.setOrderId(request.getOrderId());
+                shipment.setShippingMethod(shippingMethod);
+                shipment.setStatus(ShipmentStatus.PENDING); // Inicia como PENDIENTE
+                // NO se marca shippedAt aquí, se marcará cuando se confirme el envío
+
+                Shipment saved = shipmentRepository.save(shipment);
+
+                // AUTOMÁTICO: Actualizar estado del pedido a PROCESSING (preparando envío)
+                log.info("Auto-updating order {} status to PROCESSING after shipment creation", request.getOrderId());
+                orderService.updateOrderStatus(
+                                request.getOrderId(),
+                                OrderStatus.PROCESSING,
+                                "Envío creado - preparando pedido para despacho");
+
+                log.info("Shipment created successfully with tracking number: {} - Order status: PROCESSING",
+                                saved.getTrackingNumber());
+                return shipmentMapper.toResponse(saved);
+        }
+
+        /**
+         * Marcar envío como enviado (transición de PENDING a IN_TRANSIT)
+         * Esto dispara el decremento de stock y actualiza el pedido a SHIPPED
+         */
+        @Transactional
+        public ShipmentResponse markAsShipped(Long id) {
+                log.info("Marking shipment {} as shipped", id);
+
+                Shipment shipment = shipmentRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
+
+                // Validar que el envío está en estado PENDING
+                if (shipment.getStatus() != ShipmentStatus.PENDING) {
+                        throw new BadRequestException(
+                                        "Solo se pueden marcar como enviados los envíos en estado PENDIENTE. Estado actual: "
+                                                        + shipment.getStatus());
+                }
+
+                // Cambiar estado a IN_TRANSIT
+                shipment.setStatus(ShipmentStatus.IN_TRANSIT);
+                shipment.setShippedAt(java.time.OffsetDateTime.now());
+
+                // Obtener la orden para decrementar stock de cada item
+                Order order = orderRepository.findById(shipment.getOrderId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Orden no encontrada con ID: " + shipment.getOrderId()));
+
+                Long defaultWarehouseId = 1L; // TODO: Configurar almacén principal desde settings
+
+                // AUTOMÁTICO: Decrementar stock físico para cada item de la orden
+                order.getItems().forEach(item -> {
+                        log.info("Decreasing stock for variant {} by {} units", item.getVariantId(),
+                                        item.getQuantity());
+                        stockService.decreaseStock(
+                                        defaultWarehouseId,
+                                        item.getVariantId(),
+                                        item.getQuantity(),
+                                        order.getId(),
+                                        null // Sistema automático
+                        );
+                });
+
+                // AUTOMÁTICO: Actualizar estado del pedido a SHIPPED
+                log.info("Auto-updating order {} status to SHIPPED", shipment.getOrderId());
+                orderService.updateOrderStatus(
+                                shipment.getOrderId(),
+                                OrderStatus.SHIPPED,
+                                "Envío despachado - pedido en tránsito al cliente");
+
+                Shipment updated = shipmentRepository.save(shipment);
+
+                log.info("Shipment {} marked as shipped successfully - Order status: SHIPPED and stock decremented",
+                                updated.getTrackingNumber());
+                return shipmentMapper.toResponse(updated);
+        }
+
+        /**
+         * Validar que la orden puede ser enviada
+         */
+        private boolean canShipOrder(OrderStatus orderStatus) {
+                return orderStatus == OrderStatus.PAID ||
+                                orderStatus == OrderStatus.PROCESSING ||
+                                orderStatus == OrderStatus.AWAIT_PAYMENT; // Permitir envío si está esperando pago (pago
+                                                                          // contra entrega)
+        }
+
+        @Transactional
+        public ShipmentResponse updateShipment(Long id, UpdateShipmentRequest request, Long updatedByUserId) {
+                log.info("Updating shipment with id: {}", id);
+
+                Shipment shipment = shipmentRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
+
+                ShipmentStatus previousStatus = shipment.getStatus();
+
+                shipmentMapper.updateEntityFromRequest(request, shipment);
+
+                // AUTOMÁTICO: Si el estado cambió a DELIVERED, marcar fecha de entrega y
+                // actualizar orden a DELIVERED
+                if (previousStatus != ShipmentStatus.DELIVERED &&
+                                shipment.getStatus() == ShipmentStatus.DELIVERED) {
+
+                        log.info("Shipment {} delivered, updating order status to DELIVERED", id);
+
+                        shipment.setDeliveredAt(java.time.OffsetDateTime.now());
+
+                        // AUTOMÁTICO: Actualizar estado del pedido a DELIVERED (entregado)
+                        orderService.updateOrderStatus(
+                                        shipment.getOrderId(),
+                                        OrderStatus.DELIVERED,
+                                        "Pedido entregado exitosamente al cliente");
+                }
+
+                Shipment updated = shipmentRepository.save(shipment);
+
+                log.info("Shipment updated successfully: {}", updated.getTrackingNumber());
+                return shipmentMapper.toResponse(updated);
+        }
+
+        @Transactional
+        public void deleteShipment(Long id) {
+                log.info("Deleting shipment with id: {}", id);
+
+                Shipment shipment = shipmentRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
+
+                // Si el envío fue enviado (IN_TRANSIT), restaurar el stock
+                if (shipment.getStatus() == ShipmentStatus.IN_TRANSIT) {
+                        log.info("Restoring stock for cancelled shipment {}", id);
+                        Order order = orderRepository.findById(shipment.getOrderId())
+                                        .orElseThrow(() -> new ResourceNotFoundException(
+                                                        "Orden no encontrada con ID: " + shipment.getOrderId()));
+
+                        Long defaultWarehouseId = 1L;
+                        order.getItems().forEach(item -> {
+                                log.info("Restoring stock for variant {} by {} units", item.getVariantId(),
+                                                item.getQuantity());
+                                stockService.increaseStock(
+                                                defaultWarehouseId,
+                                                item.getVariantId(),
+                                                item.getQuantity(),
+                                                item.getUnitPrice(), // unitCost
+                                                null, // purchaseId (no es una compra)
+                                                null); // userId (sistema automático)
+                        });
+                }
+
+                // Devolver el pedido a estado PAID
+                log.info("Returning order {} to PAID status after shipment deletion", shipment.getOrderId());
+                orderService.updateOrderStatus(
+                                shipment.getOrderId(),
+                                OrderStatus.PAID,
+                                "Envío eliminado - pedido devuelto a estado PAGADO");
+
+                shipment.setIsActive(false);
+                shipmentRepository.save(shipment);
+
+                log.info("Shipment deleted successfully: {}", shipment.getTrackingNumber());
+        }
 }
