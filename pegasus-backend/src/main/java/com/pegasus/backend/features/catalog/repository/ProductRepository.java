@@ -42,4 +42,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p WHERE p.brandId = :brandId AND p.isActive = true")
     Page<Product> findActiveByBrandId(@Param("brandId") Long brandId, Pageable pageable);
+
+    long countByCategoryId(Long categoryId);
 }

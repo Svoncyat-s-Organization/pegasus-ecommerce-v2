@@ -7,6 +7,7 @@ import com.pegasus.backend.features.catalog.dto.UpdateCategoryRequest;
 import com.pegasus.backend.features.catalog.entity.Category;
 import com.pegasus.backend.features.catalog.mapper.CategoryMapper;
 import com.pegasus.backend.features.catalog.repository.CategoryRepository;
+import com.pegasus.backend.features.catalog.repository.ProductRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
 
 /**
@@ -28,6 +30,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
+    private final ProductRepository productRepository;
 
     /**
      * Obtener todas las categorías con paginación y búsqueda opcional
@@ -68,6 +71,85 @@ public class CategoryService {
         log.debug("Getting root categories");
         List<Category> categories = categoryRepository.findByParentIdIsNull();
         return categoryMapper.toResponseList(categories);
+    }
+
+    /**
+     * Obtener todas las categorías en estructura jerárquica (árbol)
+     */
+    public List<CategoryResponse> getCategoriesTree() {
+        log.debug("Getting categories tree");
+        
+        // Obtener todas las categorías
+        List<Category> allCategories = categoryRepository.findAll();
+        List<CategoryResponse> allResponses = categoryMapper.toResponseList(allCategories);
+        
+        // Construir el árbol
+        return buildCategoryTree(allResponses);
+    }
+    
+    /**
+     * Construir estructura jerárquica de categorías
+     */
+    private List<CategoryResponse> buildCategoryTree(List<CategoryResponse> categories) {
+        // Crear un mapa para acceso rápido
+        var categoryMap = new java.util.HashMap<Long, CategoryResponse>();
+        var childrenMap = new java.util.HashMap<Long, java.util.ArrayList<CategoryResponse>>();
+        
+        // Inicializar mapas
+        for (CategoryResponse category : categories) {
+            categoryMap.put(category.id(), category);
+            childrenMap.put(category.id(), new java.util.ArrayList<>());
+        }
+        
+        // Organizar categorías por parentId
+        var rootCategories = new java.util.ArrayList<CategoryResponse>();
+        
+        for (CategoryResponse category : categories) {
+            if (category.parentId() == null) {
+                // Es una categoría raíz
+                rootCategories.add(category);
+            } else {
+                // Es una subcategoría, agregarla a su padre
+                childrenMap.get(category.parentId()).add(category);
+            }
+        }
+        
+        // Reconstruir las categorías con sus hijos
+        return rootCategories.stream()
+            .map(root -> attachChildren(root, childrenMap))
+            .toList();
+    }
+    
+    /**
+     * Adjuntar recursivamente los hijos a una categoría
+     */
+    private CategoryResponse attachChildren(
+        CategoryResponse category, 
+        java.util.HashMap<Long, java.util.ArrayList<CategoryResponse>> childrenMap
+    ) {
+        var children = childrenMap.get(category.id());
+        
+        if (children == null || children.isEmpty()) {
+            return category;
+        }
+        
+        // Recursivamente adjuntar hijos a cada subcategoría
+        var processedChildren = children.stream()
+            .map(child -> attachChildren(child, childrenMap))
+            .toList();
+        
+        return new CategoryResponse(
+            category.id(),
+            category.name(),
+            category.slug(),
+            category.description(),
+            category.parentId(),
+            category.parentName(),
+            category.isActive(),
+            category.createdAt(),
+            category.updatedAt(),
+            processedChildren
+        );
     }
 
     /**
@@ -135,35 +217,81 @@ public class CategoryService {
     }
 
     /**
-     * Eliminar categoría (soft delete)
+     * Eliminar categoría (eliminación física - permanente)
      */
     @Transactional
     public void deleteCategory(Long id) {
-        log.info("Deleting category: {}", id);
+        log.info("Deleting category physically: {}", id);
         Category category = findCategoryById(id);
+
+        // Verificar si tiene productos asociados
+        long productCount = productRepository.countByCategoryId(id);
+        if (productCount > 0) {
+            throw new IllegalStateException(
+                String.format("No se puede eliminar la categoría porque tiene %d producto(s) asociado(s). " +
+                    "Primero debes eliminar o reasignar los productos.", productCount)
+            );
+        }
 
         // Verificar si tiene subcategorías
         List<Category> subcategories = categoryRepository.findByParentId(id);
         if (!subcategories.isEmpty()) {
-            throw new IllegalStateException("No se puede eliminar una categoría con subcategorías");
+            throw new IllegalStateException(
+                String.format("No se puede eliminar la categoría porque tiene %d subcategoría(s). " +
+                    "Primero debes eliminar las subcategorías.", subcategories.size())
+            );
         }
 
-        category.setIsActive(false);
-        categoryRepository.save(category);
-        log.info("Category deleted successfully: {}", id);
+        // Eliminación física permanente
+        categoryRepository.deleteById(id);
+        log.info("Category deleted permanently: {}", id);
     }
 
     /**
-     * Alternar estado activo/inactivo
+     * Alternar estado activo/inactivo (soft delete reversible)
      */
     @Transactional
     public CategoryResponse toggleCategoryStatus(Long id) {
         log.info("Toggling category status: {}", id);
         Category category = findCategoryById(id);
+        
+        // Si se va a desactivar, verificar que no tenga subcategorías activas
+        if (category.getIsActive()) {
+            List<Category> activeSubcategories = categoryRepository.findByParentId(id)
+                .stream()
+                .filter(Category::getIsActive)
+                .toList();
+            
+            if (!activeSubcategories.isEmpty()) {
+                throw new IllegalStateException(
+                    String.format("No se puede desactivar la categoría porque tiene %d subcategoría(s) activa(s). " +
+                        "Primero desactiva las subcategorías.", activeSubcategories.size())
+                );
+            }
+        }
+        
         category.setIsActive(!category.getIsActive());
         Category updated = categoryRepository.save(category);
         log.info("Category status toggled: {} -> {}", id, updated.getIsActive());
         return categoryMapper.toResponse(updated);
+    }
+
+    /**
+     * Generar slug a partir de un nombre
+     */
+    public String generateSlug(String name) {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+        
+        // Normalizar y remover acentos
+        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
+            .replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
+        
+        // Convertir a minúsculas, reemplazar espacios y caracteres especiales por guiones
+        return normalized.toLowerCase()
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("^-+|-+$", ""); // Remover guiones al inicio y final
     }
 
     /**

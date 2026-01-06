@@ -47,6 +47,14 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/tree")
+    @Operation(summary = "Obtener categorías en estructura jerárquica", description = "Obtener todas las categorías organizadas en árbol padre-hijo")
+    @ApiResponse(responseCode = "200", description = "Árbol de categorías obtenido exitosamente")
+    public ResponseEntity<List<CategoryResponse>> getCategoriesTree() {
+        List<CategoryResponse> response = categoryService.getCategoriesTree();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}/subcategories")
     @Operation(summary = "Obtener subcategorías", description = "Obtener subcategorías de una categoría padre")
     @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
@@ -85,9 +93,10 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar categoría", description = "Eliminación lógica (soft delete)")
+    @Operation(summary = "Eliminar categoría", description = "Eliminación física permanente. Solo permitida si no tiene productos ni subcategorías")
     @ApiResponse(responseCode = "204", description = "Categoría eliminada exitosamente")
     @ApiResponse(responseCode = "404", description = "Categoría no encontrada")
+    @ApiResponse(responseCode = "400", description = "No se puede eliminar porque tiene productos o subcategorías")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
@@ -99,5 +108,13 @@ public class CategoryController {
     public ResponseEntity<CategoryResponse> toggleCategoryStatus(@PathVariable Long id) {
         CategoryResponse response = categoryService.toggleCategoryStatus(id);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/generate-slug")
+    @Operation(summary = "Generar slug", description = "Genera un slug URL-friendly a partir de un nombre")
+    @ApiResponse(responseCode = "200", description = "Slug generado exitosamente")
+    public ResponseEntity<String> generateSlug(@RequestParam String name) {
+        String slug = categoryService.generateSlug(name);
+        return ResponseEntity.ok(slug);
     }
 }
