@@ -5,7 +5,7 @@ import { BackofficeProtectedRoute } from '@routes/BackofficeProtectedRoute';
 import { StorefrontProtectedRoute } from '@routes/StorefrontProtectedRoute';
 
 // Backoffice Pages
-import { LoginPage as AdminLoginPage } from '@features/backoffice/auth/pages/LoginPage';
+import { LoginPage as AdminLoginPage, ProfilePage as AdminProfilePage } from '@features/backoffice/auth';
 import { DashboardPage } from '@features/backoffice/dashboard';
 import { UsersListPage } from '@features/backoffice/security';
 import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
@@ -67,6 +67,9 @@ export const AppRoutes = () => {
         {/* Dashboard */}
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+
+        {/* Profile */}
+        <Route path="profile" element={<AdminProfilePage />} />
 
         {/* Catalog */}
         <Route path="catalog/products" element={<ProductsListPage />} />
