@@ -46,7 +46,7 @@ export const useOrderMutations = () => {
       queryClient.invalidateQueries({ queryKey: ['order'] });
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       queryClient.invalidateQueries({ queryKey: ['shipments-order'] });
-      message.success('Envío creado exitosamente');
+      // No mostrar mensaje aquí, lo maneja el componente
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Error al crear el envío');

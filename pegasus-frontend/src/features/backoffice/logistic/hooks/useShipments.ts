@@ -83,6 +83,11 @@ export const useUpdateShipment = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       queryClient.invalidateQueries({ queryKey: ['shipment', variables.id] });
+      
+      // CRÍTICO: Invalidar queries de pedidos para refrescar el estado automáticamente
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+      
       message.success('Envío actualizado exitosamente');
     },
     onError: (error: unknown) => {

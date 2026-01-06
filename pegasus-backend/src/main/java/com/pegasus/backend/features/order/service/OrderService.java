@@ -257,6 +257,36 @@ public class OrderService {
         }
 
         /**
+         * Método helper para actualizar estado directamente (usado por otros servicios)
+         * Actualiza el estado sin userId (sistema automático)
+         */
+        @Transactional
+        public void updateOrderStatus(Long orderId, OrderStatus newStatus, String comments) {
+                log.debug("Auto-updating order {} status to {} - {}", orderId, newStatus, comments);
+
+                Order order = findOrderById(orderId);
+
+                // Validar transición de estado
+                validateStatusTransition(order.getStatus(), newStatus);
+
+                // Actualizar estado
+                order.setStatus(newStatus);
+                orderRepository.save(order);
+
+                // Crear registro en historial automático (sin userId)
+                OrderStatusHistory history = OrderStatusHistory.builder()
+                                .orderId(order.getId())
+                                .status(newStatus)
+                                .comments(comments)
+                                .createdBy(null) // Sistema automático
+                                .build();
+
+                orderStatusHistoryRepository.save(history);
+
+                log.info("Order {} status auto-updated to {}", orderId, newStatus);
+        }
+
+        /**
          * Cancelar un pedido
          */
         @Transactional
