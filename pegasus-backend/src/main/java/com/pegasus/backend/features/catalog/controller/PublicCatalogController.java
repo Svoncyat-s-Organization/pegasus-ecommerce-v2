@@ -2,10 +2,16 @@ package com.pegasus.backend.features.catalog.controller;
 
 import com.pegasus.backend.features.catalog.dto.BrandResponse;
 import com.pegasus.backend.features.catalog.dto.CategoryResponse;
+import com.pegasus.backend.features.catalog.dto.ImageResponse;
 import com.pegasus.backend.features.catalog.dto.ProductResponse;
+import com.pegasus.backend.features.catalog.dto.VariantResponse;
 import com.pegasus.backend.features.catalog.service.BrandService;
 import com.pegasus.backend.features.catalog.service.CategoryService;
+import com.pegasus.backend.features.catalog.service.ImageService;
 import com.pegasus.backend.features.catalog.service.ProductService;
+import com.pegasus.backend.features.catalog.service.VariantService;
+import com.pegasus.backend.features.inventory.dto.StockSummaryResponse;
+import com.pegasus.backend.features.inventory.service.StockService;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +34,9 @@ public class PublicCatalogController {
     private final ProductService productService;
     private final CategoryService categoryService;
     private final BrandService brandService;
+    private final VariantService variantService;
+    private final ImageService imageService;
+    private final StockService stockService;
 
     // ============================================
     // PRODUCTS
@@ -137,5 +146,60 @@ public class PublicCatalogController {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<BrandResponse> response = brandService.getAllBrands(null, pageable);
         return ResponseEntity.ok(response);
+    }
+
+    // ============================================
+    // VARIANTS (Public)
+    // ============================================
+
+    /**
+     * GET /api/public/catalog/products/{productId}/variants
+     * Obtiene variantes activas de un producto (públicamente accesible)
+     */
+    @GetMapping("/products/{productId}/variants")
+    public ResponseEntity<List<VariantResponse>> getProductVariants(@PathVariable Long productId) {
+        List<VariantResponse> response = variantService.getActiveVariantsByProductId(productId);
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================
+    // IMAGES (Public)
+    // ============================================
+
+    /**
+     * GET /api/public/catalog/products/{productId}/images
+     * Obtiene imágenes de un producto (públicamente accesible)
+     */
+    @GetMapping("/products/{productId}/images")
+    public ResponseEntity<List<ImageResponse>> getProductImages(@PathVariable Long productId) {
+        List<ImageResponse> response = imageService.getImagesByProductId(productId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/public/catalog/variants/{variantId}/images
+     * Obtiene imágenes de una variante específica (públicamente accesible)
+     */
+    @GetMapping("/variants/{variantId}/images")
+    public ResponseEntity<List<ImageResponse>> getVariantImages(@PathVariable Long variantId) {
+        List<ImageResponse> response = imageService.getImagesByVariantId(variantId);
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================
+    // STOCK (Public - Total stock across all warehouses)
+    // ============================================
+
+    /**
+     * GET /api/public/catalog/variants/{variantId}/stock
+     * Obtiene stock total de una variante (suma de todos los almacenes)
+     */
+    @GetMapping("/variants/{variantId}/stock")
+    public ResponseEntity<Integer> getVariantTotalStock(@PathVariable Long variantId) {
+        List<StockSummaryResponse> stockList = stockService.getStockByVariant(variantId);
+        int totalStock = stockList.stream()
+                .mapToInt(StockSummaryResponse::quantity)
+                .sum();
+        return ResponseEntity.ok(totalStock);
     }
 }
