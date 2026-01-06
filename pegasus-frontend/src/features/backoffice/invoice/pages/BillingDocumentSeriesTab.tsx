@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconPlus, IconPower, IconSearch } from '@tabler/icons-react';
+import { IconEdit, IconPlus, IconPower, IconRefresh, IconSearch } from '@tabler/icons-react';
 import type { DocumentSeriesResponse, DocumentSeriesType } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { DocumentSeriesFormModal } from '../components/DocumentSeriesFormModal';
@@ -24,7 +24,7 @@ export const BillingDocumentSeriesTab = () => {
   const [selected, setSelected] = useState<DocumentSeriesResponse | null>(null);
 
   const debouncedSearch = useDebounce(searchTerm, 500);
-  const { data, isLoading } = useBillingDocumentSeries(page, pageSize, debouncedSearch || undefined);
+  const { data, isLoading, refetch, isFetching } = useBillingDocumentSeries(page, pageSize, debouncedSearch || undefined);
   const toggleStatus = useToggleBillingDocumentSeries();
 
   const handleOpenCreate = () => {
@@ -116,9 +116,14 @@ export const BillingDocumentSeriesTab = () => {
           style={{ maxWidth: 360 }}
         />
 
-        <Button type="primary" icon={<IconPlus size={18} />} onClick={handleOpenCreate}>
-          Nueva serie
-        </Button>
+        <Space>
+          <Button icon={<IconRefresh size={18} />} onClick={() => refetch()} loading={isFetching} title="Actualizar lista">
+            Actualizar
+          </Button>
+          <Button type="primary" icon={<IconPlus size={18} />} onClick={handleOpenCreate}>
+            Nueva serie
+          </Button>
+        </Space>
       </div>
 
       <Table

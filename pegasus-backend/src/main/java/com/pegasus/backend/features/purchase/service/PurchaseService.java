@@ -1,6 +1,8 @@
 package com.pegasus.backend.features.purchase.service;
 
+import com.pegasus.backend.exception.BadRequestException;
 import com.pegasus.backend.exception.ResourceNotFoundException;
+import com.pegasus.backend.features.inventory.service.StockService;
 import com.pegasus.backend.features.purchase.dto.*;
 import com.pegasus.backend.features.purchase.entity.Purchase;
 import com.pegasus.backend.features.purchase.entity.PurchaseItem;
@@ -30,6 +32,9 @@ public class PurchaseService {
     private final PurchaseRepository purchaseRepository;
     private final SupplierRepository supplierRepository;
     private final PurchaseMapper purchaseMapper;
+    private final StockService stockService;
+    private final com.pegasus.backend.features.catalog.service.VariantService variantService;
+    private final com.pegasus.backend.features.catalog.service.ProductService productService;
 
     public PageResponse<PurchaseResponse> getAll(String search, Pageable pageable) {
         Page<Purchase> page = (search != null && !search.isBlank())
@@ -53,7 +58,39 @@ public class PurchaseService {
     public PurchaseResponse getById(Long id) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada con id: " + id));
-        return purchaseMapper.toResponse(purchase);
+        PurchaseResponse base = purchaseMapper.toResponse(purchase);
+
+        // Enrich items with variant SKU and product name and receivedQuantity
+        List<PurchaseItemResponse> enrichedItems = base.items().stream().map(i -> {
+            var variant = variantService.getVariantById(i.variantId());
+            var product = productService.getProductById(variant.productId());
+            return new PurchaseItemResponse(
+                    i.id(),
+                    i.variantId(),
+                    i.quantity(),
+                    i.unitCost(),
+                    i.subtotal(),
+                    i.createdAt(),
+                    variant.sku(),
+                    product.name(),
+                    // mapStruct will populate receivedQuantity if entity has it, otherwise use 0
+                    i.receivedQuantity() == null ? 0 : i.receivedQuantity());
+        }).toList();
+
+        return new PurchaseResponse(
+                base.id(),
+                base.supplier(),
+                base.warehouseId(),
+                base.userId(),
+                base.status(),
+                base.invoiceType(),
+                base.invoiceNumber(),
+                base.totalAmount(),
+                base.purchaseDate(),
+                base.notes(),
+                base.createdAt(),
+                base.updatedAt(),
+                enrichedItems);
     }
 
     @Transactional
@@ -101,9 +138,98 @@ public class PurchaseService {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada con id: " + id));
 
-        purchase.setStatus(request.status());
+        PurchaseStatus currentStatus = purchase.getStatus();
+        PurchaseStatus targetStatus = request.status();
+
+        if (currentStatus == PurchaseStatus.RECEIVED) {
+            throw new BadRequestException("La compra ya fue recepcionada y no puede cambiar de estado");
+        }
+
+        if (currentStatus == PurchaseStatus.CANCELLED) {
+            throw new BadRequestException("La compra está cancelada y no puede cambiar de estado");
+        }
+
+        if (targetStatus == PurchaseStatus.PENDING) {
+            throw new BadRequestException("No se puede volver a estado PENDIENTE");
+        }
+
+        if (targetStatus == PurchaseStatus.RECEIVED) {
+            if (purchase.getItems() == null || purchase.getItems().isEmpty()) {
+                throw new BadRequestException("No se puede recepcionar una compra sin ítems");
+            }
+
+            // Al recepcionar: incrementar stock por cada ítem y registrar movimientos
+            // (kardex)
+            for (PurchaseItem item : purchase.getItems()) {
+                int alreadyReceived = item.getReceivedQuantity() == null ? 0 : item.getReceivedQuantity();
+                int remaining = item.getQuantity() - alreadyReceived;
+                if (remaining > 0) {
+                    stockService.increaseStock(
+                            purchase.getWarehouseId(),
+                            item.getVariantId(),
+                            remaining,
+                            item.getUnitCost(),
+                            purchase.getId(),
+                            purchase.getUserId());
+                    item.setReceivedQuantity(item.getQuantity());
+                }
+            }
+        }
+
+        purchase.setStatus(targetStatus);
         Purchase updated = purchaseRepository.save(purchase);
         return purchaseMapper.toResponse(updated);
+    }
+
+    @Transactional
+    public PurchaseResponse receiveItems(Long id, ReceiveItemsRequest request) {
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada con id: " + id));
+
+        if (purchase.getStatus() == PurchaseStatus.CANCELLED) {
+            throw new BadRequestException("La compra está cancelada y no puede recepcionarse");
+        }
+
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new BadRequestException("No se recibieron ítems válidos");
+        }
+
+        // Process each receive item
+        for (var ri : request.items()) {
+            PurchaseItem item = purchase.getItems().stream()
+                    .filter(pi -> pi.getId().equals(ri.itemId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Item no encontrado: " + ri.itemId()));
+
+            int remaining = item.getQuantity() - (item.getReceivedQuantity() == null ? 0 : item.getReceivedQuantity());
+            if (ri.quantity() <= 0 || ri.quantity() > remaining) {
+                throw new BadRequestException("Cantidad a recepcionar inválida para item: " + ri.itemId());
+            }
+
+            // Increase stock and record movement
+            stockService.increaseStock(
+                    purchase.getWarehouseId(),
+                    item.getVariantId(),
+                    ri.quantity(),
+                    item.getUnitCost(),
+                    purchase.getId(),
+                    purchase.getUserId());
+
+            // Update received quantity
+            int newReceived = (item.getReceivedQuantity() == null ? 0 : item.getReceivedQuantity()) + ri.quantity();
+            item.setReceivedQuantity(newReceived);
+        }
+
+        // If all items fully received, mark purchase as RECEIVED
+        boolean allReceived = purchase.getItems().stream()
+                .allMatch(pi -> (pi.getReceivedQuantity() != null ? pi.getReceivedQuantity() : 0) >= pi.getQuantity());
+
+        if (allReceived) {
+            purchase.setStatus(PurchaseStatus.RECEIVED);
+        }
+
+        Purchase saved = purchaseRepository.save(purchase);
+        return getById(saved.getId());
     }
 
     @Transactional

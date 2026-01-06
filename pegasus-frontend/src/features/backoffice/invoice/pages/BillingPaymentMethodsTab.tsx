@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconPlus, IconPower, IconSearch } from '@tabler/icons-react';
+import { IconEdit, IconPlus, IconPower, IconRefresh, IconSearch } from '@tabler/icons-react';
 import type { PaymentMethodResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { PaymentMethodFormModal } from '../components/PaymentMethodFormModal';
@@ -19,7 +19,7 @@ export const BillingPaymentMethodsTab = () => {
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const { data, isLoading } = useBillingPaymentMethods(page, pageSize, debouncedSearch || undefined);
+  const { data, isLoading, refetch, isFetching } = useBillingPaymentMethods(page, pageSize, debouncedSearch || undefined);
   const toggleStatus = useToggleBillingPaymentMethod();
 
   const handleOpenCreate = () => {
@@ -96,9 +96,14 @@ export const BillingPaymentMethodsTab = () => {
           style={{ maxWidth: 360 }}
         />
 
-        <Button type="primary" icon={<IconPlus size={18} />} onClick={handleOpenCreate}>
-          Nuevo método
-        </Button>
+        <Space>
+          <Button icon={<IconRefresh size={18} />} onClick={() => refetch()} loading={isFetching} title="Actualizar lista">
+            Actualizar
+          </Button>
+          <Button type="primary" icon={<IconPlus size={18} />} onClick={handleOpenCreate}>
+            Nuevo método
+          </Button>
+        </Space>
       </div>
 
       <Table

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconEye, IconPlus, IconPrinter, IconSearch } from '@tabler/icons-react';
+import { IconEdit, IconEye, IconPlus, IconPrinter, IconRefresh, IconSearch } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import type { InvoiceStatus, InvoiceSummaryResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -28,7 +28,7 @@ export const BillingInvoicesTab = () => {
   const [selectedInvoiceStatus, setSelectedInvoiceStatus] = useState<InvoiceStatus | null>(null);
 
   const debouncedSearch = useDebounce(searchTerm, 500);
-  const { data, isLoading } = useBillingInvoices(page, pageSize, debouncedSearch || undefined, status);
+  const { data, isLoading, refetch, isFetching } = useBillingInvoices(page, pageSize, debouncedSearch || undefined, status);
 
   const handleOpenDetail = (id: number) => {
     setSelectedInvoiceId(id);
@@ -158,9 +158,14 @@ export const BillingInvoicesTab = () => {
             }))}
           />
         </div>
-        <Button type="primary" icon={<IconPlus size={18} />} onClick={() => setCreateOpen(true)}>
-          Nuevo comprobante
-        </Button>
+        <Space>
+          <Button icon={<IconRefresh size={18} />} onClick={() => refetch()} loading={isFetching} title="Actualizar lista">
+            Actualizar
+          </Button>
+          <Button type="primary" icon={<IconPlus size={18} />} onClick={() => setCreateOpen(true)}>
+            Nuevo comprobante
+          </Button>
+        </Space>
       </div>
 
       <Table

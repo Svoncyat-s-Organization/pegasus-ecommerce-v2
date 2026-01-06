@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconPlus, IconPower, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconPlus, IconPower, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-react';
 import type { SupplierResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
+import { formatPhone } from '@shared/utils/formatters';
 import { SupplierFormModal } from '../components/SupplierFormModal';
 import { SUPPLIER_STATUS } from '../constants/purchaseConstants';
 import { useSuppliers } from '../hooks/useSuppliers';
@@ -22,7 +23,7 @@ export const SuppliersListPage = () => {
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const { data, isLoading } = useSuppliers(page, pageSize, debouncedSearch || undefined);
+  const { data, isLoading, refetch, isFetching } = useSuppliers(page, pageSize, debouncedSearch || undefined);
   const deleteSupplier = useDeleteSupplier();
   const toggleStatus = useToggleSupplierStatus();
 
@@ -77,7 +78,7 @@ export const SuppliersListPage = () => {
       dataIndex: 'phone',
       key: 'phone',
       width: 160,
-      render: (value: string | undefined) => value || '-',
+      render: (value: string | undefined) => (value ? formatPhone(value) : '-'),
     },
     {
       title: 'Estado',
@@ -145,9 +146,14 @@ export const SuppliersListPage = () => {
           allowClear
           style={{ maxWidth: 420 }}
         />
-        <Button type="primary" icon={<IconPlus size={18} />} onClick={handleCreate}>
-          Nuevo Proveedor
-        </Button>
+        <Space>
+          <Button icon={<IconRefresh size={18} />} onClick={() => refetch()} loading={isFetching} title="Actualizar lista">
+            Actualizar
+          </Button>
+          <Button type="primary" icon={<IconPlus size={18} />} onClick={handleCreate}>
+            Nuevo Proveedor
+          </Button>
+        </Space>
       </div>
 
       <Table

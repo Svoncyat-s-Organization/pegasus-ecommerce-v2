@@ -35,6 +35,9 @@ public class PurchaseItem {
     @Column(name = "subtotal", nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
 
+    @Column(name = "received_quantity", nullable = false)
+    private Integer receivedQuantity = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Button, Input, Select, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconPlus, IconSearch } from '@tabler/icons-react';
+import { IconPlus, IconRefresh, IconSearch } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import type { OrderSummaryResponse, PaymentResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -43,7 +43,7 @@ export const BillingPaymentsTab = () => {
     return (paymentMethodsData?.content || []).map((m) => ({ label: m.name, value: m.id }));
   }, [paymentMethodsData]);
 
-  const { data, isLoading } = useBillingPayments(page, pageSize, {
+  const { data, isLoading, refetch, isFetching } = useBillingPayments(page, pageSize, {
     search: debouncedSearch || undefined,
     orderId,
     paymentMethodId,
@@ -141,9 +141,14 @@ export const BillingPaymentsTab = () => {
           />
         </div>
 
-        <Button type="primary" icon={<IconPlus size={18} />} onClick={() => setCreateOpen(true)}>
-          Registrar pago
-        </Button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Button icon={<IconRefresh size={18} />} onClick={() => refetch()} loading={isFetching} title="Actualizar lista">
+            Actualizar
+          </Button>
+          <Button type="primary" icon={<IconPlus size={18} />} onClick={() => setCreateOpen(true)}>
+            Registrar pago
+          </Button>
+        </div>
       </div>
 
       <Table
