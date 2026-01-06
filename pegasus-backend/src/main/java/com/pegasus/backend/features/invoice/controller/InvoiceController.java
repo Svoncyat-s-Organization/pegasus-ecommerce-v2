@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/admin/billing/invoices")
 @RequiredArgsConstructor
@@ -53,6 +55,12 @@ public class InvoiceController {
             @RequestParam String series,
             @RequestParam String number) {
         return ResponseEntity.ok(invoiceService.getBySeriesAndNumber(series.trim(), number.trim()));
+    }
+
+    @PostMapping("/invoiced-order-ids")
+    @Operation(summary = "Listar pedidos con comprobante", description = "Dado un listado de orderIds, devuelve solo los que ya tienen un comprobante emitido")
+    public ResponseEntity<List<Long>> getInvoicedOrderIds(@RequestBody List<Long> orderIds) {
+        return ResponseEntity.ok(invoiceService.getInvoicedOrderIds(orderIds));
     }
 
     @PostMapping

@@ -5,6 +5,7 @@ import { useDebounce } from '@shared/hooks/useDebounce';
 import { INVOICE_TYPE_LABEL } from '../constants/billingConstants';
 import { useCreateBillingInvoice } from '../hooks/useBillingMutations';
 import { useAdminOrders } from '../hooks/useAdminOrders';
+import { useInvoicedOrderIds } from '../hooks/useBillingInvoices';
 import { useBillingDocumentSeries } from '../hooks/useBillingDocumentSeries';
 
 interface InvoiceFormModalProps {
@@ -28,21 +29,38 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated }: InvoiceFormModal
 
   const { data: documentSeriesData, isLoading: isLoadingSeries } = useBillingDocumentSeries(0, 200);
 
+  const paidOrders = useMemo(() => {
+    return (ordersData?.content || []).filter((o: OrderSummaryResponse) => o.status === 'PAID');
+  }, [ordersData]);
+
+  const paidOrderIds = useMemo(() => {
+    return paidOrders
+      .map((o) => o.id)
+      .filter((id): id is number => typeof id === 'number')
+      .sort((a, b) => a - b);
+  }, [paidOrders]);
+
+  const { data: invoicedOrderIds, isLoading: isLoadingInvoicedOrderIds } = useInvoicedOrderIds(paidOrderIds);
+  const invoicedOrderIdSet = useMemo(() => new Set(invoicedOrderIds || []), [invoicedOrderIds]);
+
+  const eligiblePaidOrders = useMemo(() => {
+    return paidOrders.filter((o) => !invoicedOrderIdSet.has(o.id));
+  }, [paidOrders, invoicedOrderIdSet]);
+
   const ordersOptions = useMemo(() => {
-    const orders = (ordersData?.content || []).filter((o: OrderSummaryResponse) => o.status === 'PAID');
-    return orders.map((o: OrderSummaryResponse) => ({
+    return eligiblePaidOrders.map((o: OrderSummaryResponse) => ({
       value: o.id,
       label: `${o.orderNumber} - ${o.customerName}`,
     }));
-  }, [ordersData]);
+  }, [eligiblePaidOrders]);
 
   const ordersById = useMemo(() => {
     const map = new Map<number, OrderSummaryResponse>();
-    for (const o of (ordersData?.content || []).filter((o: OrderSummaryResponse) => o.status === 'PAID')) {
+    for (const o of eligiblePaidOrders) {
       map.set(o.id, o);
     }
     return map;
-  }, [ordersData]);
+  }, [eligiblePaidOrders]);
 
   const activeSeriesList = useMemo(() => {
     return (documentSeriesData?.content || []).filter((s: DocumentSeriesResponse) => s.isActive);
@@ -136,7 +154,7 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated }: InvoiceFormModal
                 filterOption={false}
                 onSearch={(value) => setOrderSearchTerm(value)}
                 options={ordersOptions}
-                loading={isLoadingOrders}
+                loading={isLoadingOrders || isLoadingInvoicedOrderIds}
                 optionFilterProp="label"
                 onChange={(value) => {
                   const id = typeof value === 'number' ? value : Number(value);

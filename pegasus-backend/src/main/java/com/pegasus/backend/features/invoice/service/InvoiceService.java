@@ -84,6 +84,13 @@ public class InvoiceService {
         return invoiceMapper.toResponse(invoice);
     }
 
+    public List<Long> getInvoicedOrderIds(List<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return List.of();
+        }
+        return invoiceRepository.findInvoicedOrderIds(orderIds);
+    }
+
     @Transactional
     public InvoiceResponse create(CreateInvoiceRequest request) {
         Order order = orderRepository.findById(request.orderId())

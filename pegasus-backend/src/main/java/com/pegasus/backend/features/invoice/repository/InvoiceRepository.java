@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -38,4 +40,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
                         "LOWER(i.receiverTaxId) LIKE LOWER(CONCAT('%', :search, '%')))")
         Page<Invoice> searchByStatus(@Param("search") String search, @Param("status") InvoiceStatus status,
                         Pageable pageable);
+
+        @Query("SELECT DISTINCT i.orderId FROM Invoice i WHERE i.orderId IN :orderIds")
+        List<Long> findInvoicedOrderIds(@Param("orderIds") Collection<Long> orderIds);
 }
