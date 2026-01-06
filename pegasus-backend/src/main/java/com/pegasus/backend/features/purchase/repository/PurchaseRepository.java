@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
+    boolean existsBySupplier_Id(Long supplierId);
+
     @Query("SELECT p FROM Purchase p " +
             "JOIN p.supplier s " +
             "WHERE LOWER(p.invoiceNumber) LIKE LOWER(CONCAT('%', :search, '%')) " +

@@ -24,6 +24,11 @@ export const StockListPage = () => {
 
   const { adjustStock, transferStock, isAdjusting, isTransferring } = useStockMutations();
 
+  const handleOpenAdjust = (stock: StockResponse) => {
+    setSelectedStock(stock);
+    setAdjustModalOpen(true);
+  };
+
   const handleWarehouseChange = (warehouseId: number) => {
     setSelectedWarehouseId(warehouseId);
   };
@@ -118,6 +123,7 @@ export const StockListPage = () => {
           currentPage={page + 1}
           pageSize={pageSize}
           onPageChange={handlePageChange}
+          onAdjust={handleOpenAdjust}
         />
       )}
 

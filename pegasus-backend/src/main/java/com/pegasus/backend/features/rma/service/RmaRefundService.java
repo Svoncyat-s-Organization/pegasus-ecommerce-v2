@@ -1,21 +1,19 @@
 package com.pegasus.backend.features.rma.service;
 
 import com.pegasus.backend.exception.BadRequestException;
-import com.pegasus.backend.features.inventory.service.MovementService;
+import com.pegasus.backend.features.inventory.service.StockService;
 import com.pegasus.backend.features.rma.dto.RmaResponse;
 import com.pegasus.backend.features.rma.entity.Rma;
 import com.pegasus.backend.features.rma.entity.RmaItem;
 import com.pegasus.backend.features.rma.mapper.RmaMapper;
 import com.pegasus.backend.features.rma.repository.RmaRepository;
 import com.pegasus.backend.shared.enums.ItemCondition;
-import com.pegasus.backend.shared.enums.OperationType;
 import com.pegasus.backend.shared.enums.RmaStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -30,7 +28,7 @@ public class RmaRefundService {
 
     private final RmaService rmaService;
     private final RmaRepository rmaRepository;
-    private final MovementService movementService;
+    private final StockService stockService;
     private final RmaMapper rmaMapper;
 
     /**
@@ -70,10 +68,10 @@ public class RmaRefundService {
         rma.setStatus(RmaStatus.REFUNDED);
         rma.setRefundedAt(OffsetDateTime.now());
 
-        String note = "Reembolso procesado: " + rma.getRefundAmount() + 
-                      " vía " + rma.getRefundMethod() + ". " +
-                      (comments != null ? comments : "");
-        
+        String note = "Reembolso procesado: " + rma.getRefundAmount() +
+                " vía " + rma.getRefundMethod() + ". " +
+                (comments != null ? comments : "");
+
         if (rma.getStaffNotes() != null) {
             rma.setStaffNotes(rma.getStaffNotes() + "\n" + note);
         } else {
@@ -82,7 +80,7 @@ public class RmaRefundService {
 
         Rma savedRma = rmaRepository.save(rma);
 
-        rmaService.createStatusHistory(rma.getId(), RmaStatus.REFUNDED, 
+        rmaService.createStatusHistory(rma.getId(), RmaStatus.REFUNDED,
                 note, staffUserId);
 
         log.info("Refund processed successfully for RMA: {}", rma.getRmaNumber());
@@ -112,8 +110,8 @@ public class RmaRefundService {
         rma.setClosedAt(OffsetDateTime.now());
 
         String note = "RMA cerrado. Items restockeados: " + restockedItems + ". " +
-                      (comments != null ? comments : "");
-        
+                (comments != null ? comments : "");
+
         if (rma.getStaffNotes() != null) {
             rma.setStaffNotes(rma.getStaffNotes() + "\n" + note);
         } else {
@@ -122,10 +120,10 @@ public class RmaRefundService {
 
         Rma savedRma = rmaRepository.save(rma);
 
-        rmaService.createStatusHistory(rma.getId(), RmaStatus.CLOSED, 
+        rmaService.createStatusHistory(rma.getId(), RmaStatus.CLOSED,
                 note, staffUserId);
 
-        log.info("RMA closed successfully: {}. Restocked items: {}", 
+        log.info("RMA closed successfully: {}. Restocked items: {}",
                 rma.getRmaNumber(), restockedItems);
         return rmaMapper.toResponse(savedRma);
     }
@@ -145,18 +143,13 @@ public class RmaRefundService {
 
         for (RmaItem item : approvedItems) {
             try {
-                // Crear movement en inventory
-                movementService.recordMovement(
-                        item.getVariantId(),
+                // Restock real + movimiento RETURN
+                stockService.returnStock(
                         warehouseId,
-                        item.getQuantity(), // Cantidad positiva (aumenta stock)
-                        BigDecimal.ZERO, // unit_cost 0.00 para returns
-                        OperationType.RETURN,
-                        "Restock por devolución RMA: " + rma.getRmaNumber(),
-                        item.getId(),
-                        "rma_items",
-                        staffUserId
-                );
+                        item.getVariantId(),
+                        item.getQuantity(),
+                        rma.getId(),
+                        staffUserId);
 
                 restockedCount++;
                 log.debug("Item restocked: RmaItem {} - Variant {} - Quantity {}",

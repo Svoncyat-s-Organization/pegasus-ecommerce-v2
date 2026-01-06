@@ -1,5 +1,6 @@
 package com.pegasus.backend.features.purchase.service;
 
+import com.pegasus.backend.exception.BadRequestException;
 import com.pegasus.backend.exception.ResourceNotFoundException;
 import com.pegasus.backend.features.purchase.dto.CreateSupplierRequest;
 import com.pegasus.backend.features.purchase.dto.SupplierResponse;
@@ -7,6 +8,7 @@ import com.pegasus.backend.features.purchase.dto.UpdateSupplierRequest;
 import com.pegasus.backend.features.purchase.entity.Supplier;
 import com.pegasus.backend.features.purchase.entity.SupplierDocumentType;
 import com.pegasus.backend.features.purchase.mapper.SupplierMapper;
+import com.pegasus.backend.features.purchase.repository.PurchaseRepository;
 import com.pegasus.backend.features.purchase.repository.SupplierRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import com.pegasus.backend.shared.locations.repository.UbigeoRepository;
@@ -26,6 +28,7 @@ import java.util.List;
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
+    private final PurchaseRepository purchaseRepository;
     private final SupplierMapper supplierMapper;
     private final UbigeoRepository ubigeoRepository;
 
@@ -45,8 +48,7 @@ public class SupplierService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     public SupplierResponse getById(Long id) {
@@ -106,6 +108,13 @@ public class SupplierService {
         if (!supplierRepository.existsById(id)) {
             throw new ResourceNotFoundException("Proveedor no encontrado con id: " + id);
         }
+
+        if (purchaseRepository.existsBySupplier_Id(id)) {
+            throw new BadRequestException(
+                    "No se puede eliminar el proveedor porque tiene órdenes de compra asociadas. " +
+                            "Elimine o reasigne esas compras antes de continuar.");
+        }
+
         supplierRepository.deleteById(id);
     }
 
@@ -133,8 +142,7 @@ public class SupplierService {
             throw new IllegalArgumentException(
                     docType == SupplierDocumentType.DNI
                             ? "DNI debe tener exactamente 8 dígitos"
-                            : "RUC debe tener exactamente 11 dígitos"
-            );
+                            : "RUC debe tener exactamente 11 dígitos");
         }
     }
 }

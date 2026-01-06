@@ -15,6 +15,14 @@ export const OPERATION_TYPE_LABELS: Record<OperationType, string> = {
   TRANSFER_OUT: 'Transferencia Saliente',
 };
 
+// Kardex MVP: only show these 4 types in the Movements screen
+export const KARDEx_VISIBLE_OPERATION_TYPES: OperationType[] = [
+  'INVENTORY_ADJUSTMENT',
+  'PURCHASE',
+  'SALE',
+  'RETURN',
+];
+
 // Operation Type Colors (for Tags)
 export const OPERATION_TYPE_COLORS: Record<OperationType, string> = {
   INVENTORY_ADJUSTMENT: 'purple',
