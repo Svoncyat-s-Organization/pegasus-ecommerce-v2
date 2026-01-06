@@ -1,4 +1,4 @@
-import { Steps, Card, Button, Space, Typography, Tag, Modal, Input, message } from 'antd';
+import { Card, Button, Space, Typography, Tag, Modal, Input, message } from 'antd';
 import {
   IconClock,
   IconCreditCard,
@@ -161,37 +161,99 @@ export const OrderStatusTimeline = ({
           </Space>
         </Card>
       ) : (
-        <Steps
-          current={currentStepIndex}
-          items={statusSteps.map((step, index) => ({
-            title: step.title,
-            description: step.description,
-            icon: (
+        <div style={{ padding: '30px 20px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              position: 'relative',
+            }}
+          >
+            {/* Línea de conexión */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 30,
+                left: '8%',
+                right: '8%',
+                height: 4,
+                background: '#e8e8e8',
+                zIndex: 1,
+              }}
+            >
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background:
-                    index <= currentStepIndex
-                      ? `linear-gradient(135deg, ${step.color} 0%, ${step.color}cc 100%)`
-                      : '#f0f0f0',
-                  color: index <= currentStepIndex ? '#fff' : '#bfbfbf',
-                  transition: 'all 0.3s ease',
-                  boxShadow: index === currentStepIndex ? `0 0 0 4px ${step.color}22` : 'none',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #1890ff 0%, #52c41a 100%)',
+                  width: `${(currentStepIndex / (statusSteps.length - 1)) * 100}%`,
+                  transition: 'width 0.5s ease',
                 }}
-              >
-                {step.icon}
-              </div>
-            ),
-            status:
-              index < currentStepIndex ? 'finish' : index === currentStepIndex ? 'process' : 'wait',
-          }))}
-          style={{ padding: '20px 0' }}
-        />
+              />
+            </div>
+
+            {/* Pasos */}
+            {statusSteps.map((step, index) => {
+              const isCompleted = index < currentStepIndex;
+              const isCurrent = index === currentStepIndex;
+
+              return (
+                <div
+                  key={step.status}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    flex: 1,
+                    position: 'relative',
+                  }}
+                >
+                  {/* Ícono arriba */}
+                  <div
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: '50%',
+                      background:
+                        isCompleted || isCurrent
+                          ? `linear-gradient(135deg, ${step.color} 0%, ${step.color}cc 100%)`
+                          : '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 12,
+                      zIndex: 2,
+                      transition: 'all 0.3s ease',
+                      color: isCompleted || isCurrent ? '#fff' : '#bfbfbf',
+                      boxShadow: isCurrent ? `0 0 0 4px ${step.color}22` : 'none',
+                      transform: isCurrent ? 'scale(1.1)' : 'scale(1)',
+                    }}
+                  >
+                    {step.icon}
+                  </div>
+
+                  {/* Texto abajo */}
+                  <div style={{ textAlign: 'center', maxWidth: 100 }}>
+                    <Text
+                      strong
+                      style={{
+                        fontSize: 13,
+                        color: isCompleted || isCurrent ? '#000' : '#999',
+                        display: 'block',
+                        marginBottom: 4,
+                      }}
+                    >
+                      {step.title}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 11, lineHeight: '1.3' }}>
+                      {step.description}
+                    </Text>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       <Modal
