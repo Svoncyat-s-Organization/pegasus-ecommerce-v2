@@ -1,8 +1,11 @@
-import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert } from 'antd';
+import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert, Button, Space } from 'antd';
+import { IconTruckDelivery } from '@tabler/icons-react';
+import { useState } from 'react';
 import type { OrderItemResponse, OrderStatusHistoryResponse } from '@types';
 import { useOrderDetail } from '../hooks/useOrderDetail';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../constants/orderStatus';
 import { formatCurrency } from '@shared/utils/formatters';
+import { CreateShipmentModal } from './CreateShipmentModal';
 import dayjs from 'dayjs';
 
 interface OrderDetailModalProps {
@@ -13,6 +16,10 @@ interface OrderDetailModalProps {
 
 export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalProps) => {
   const { data: order, isLoading, error } = useOrderDetail(orderId);
+  const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
+
+  // Estados que permiten crear envíos
+  const canCreateShipment = order && ['PAID', 'PROCESSING', 'AWAIT_PAYMENT'].includes(order.status);
 
   const itemColumns = [
     {
@@ -54,13 +61,27 @@ export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalPro
   ];
 
   return (
-    <Modal
-      title="Detalle del Pedido"
-      open={open}
-      onCancel={onClose}
-      width={900}
-      footer={null}
-    >
+    <>
+      <Modal
+        title="Detalle del Pedido"
+        open={open}
+        onCancel={onClose}
+        width={900}
+        footer={
+          <Space>
+            <Button onClick={onClose}>Cerrar</Button>
+            {canCreateShipment && (
+              <Button
+                type="primary"
+                icon={<IconTruckDelivery size={16} />}
+                onClick={() => setCreateShipmentOpen(true)}
+              >
+                Crear Envío
+              </Button>
+            )}
+          </Space>
+        }
+      >
       {isLoading && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <Spin size="large" />
@@ -163,6 +184,14 @@ export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalPro
           )}
         </div>
       )}
-    </Modal>
+      </Modal>
+
+      {/* Modal para crear envío */}
+      <CreateShipmentModal
+        orderId={orderId}
+        open={createShipmentOpen}
+        onClose={() => setCreateShipmentOpen(false)}
+      />
+    </>
   );
 };

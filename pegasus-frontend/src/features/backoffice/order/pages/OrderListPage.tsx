@@ -1,11 +1,12 @@
 import { Card, Typography, Input, Select, Button, Space } from 'antd';
-import { IconRefresh } from '@tabler/icons-react';
+import { IconRefresh, IconPlus } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useOrders } from '../hooks/useOrders';
 import { useOrderMutations } from '../hooks/useOrderMutations';
 import { OrderList } from '../components/OrderList';
 import { OrderDetailModal } from '../components/OrderDetailModal';
 import { UpdateStatusModal } from '../components/UpdateStatusModal';
+import { CreateOrderModal } from '../components/CreateOrderModal';
 import { ORDER_STATUS_LABELS } from '../constants/orderStatus';
 import type { OrderStatus } from '@types';
 
@@ -25,13 +26,14 @@ export const OrderListPage = () => {
     refetch,
   } = useOrders();
 
-  const { cancelOrder, isCancelling } = useOrderMutations();
+  const { cancelOrder, isCancelling, createOrder, isCreatingOrder } = useOrderMutations();
 
   // Modal states
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<OrderStatus | null>(null);
+  const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
 
   const handleViewDetail = (orderId: number) => {
     setSelectedOrderId(orderId);
@@ -104,10 +106,13 @@ export const OrderListPage = () => {
               </Button>
             </Space>
 
-            {/* Placeholder for Create Order button (future feature) */}
-            {/* <Button type="primary" icon={<IconPlus size={16} />}>
-              Nuevo Pedido
-            </Button> */}
+            <Button
+              type="primary"
+              icon={<IconPlus size={16} />}
+              onClick={() => setCreateOrderModalOpen(true)}
+            >
+              Crear Pedido
+            </Button>
           </Space>
         </div>
 
@@ -136,6 +141,13 @@ export const OrderListPage = () => {
         currentStatus={selectedOrderStatus}
         open={updateStatusModalOpen}
         onClose={handleCloseUpdateStatusModal}
+      />
+
+      <CreateOrderModal
+        open={createOrderModalOpen}
+        onClose={() => setCreateOrderModalOpen(false)}
+        onSubmit={createOrder}
+        isLoading={isCreatingOrder}
       />
     </>
   );

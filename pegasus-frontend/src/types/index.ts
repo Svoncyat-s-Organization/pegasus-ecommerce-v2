@@ -747,6 +747,20 @@ export interface CreateShipmentRequest {
   notes?: string;
 }
 
+export interface CreateShipmentForOrderRequest {
+  shipmentType: string;
+  shippingMethodId: number;
+  trackingNumber: string;
+  shippingCost: number;
+  weightKg: number;
+  estimatedDeliveryDate: string;
+  recipientName?: string;
+  recipientPhone?: string;
+  requireSignature?: boolean;
+  packageQuantity?: number;
+  notes?: string;
+}
+
 export interface UpdateShipmentRequest {
   status?: string;
   notes?: string;

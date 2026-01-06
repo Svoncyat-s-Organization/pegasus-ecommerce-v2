@@ -5,6 +5,8 @@ import type {
   PageResponse,
   CreateOrderRequest,
   UpdateOrderStatusRequest,
+  CreateShipmentForOrderRequest,
+  Shipment,
   OrderStatus,
 } from '@types';
 
@@ -21,7 +23,7 @@ export const getOrders = async (
   search?: string,
   status?: OrderStatus
 ): Promise<PageResponse<OrderSummaryResponse>> => {
-  const params: Record<string, any> = { page, size };
+  const params: Record<string, string | number> = { page, size };
   if (search) params.search = search;
   if (status) params.status = status;
 
@@ -88,5 +90,17 @@ export const cancelOrder = async (
   const { data } = await api.patch(`/admin/orders/${id}/cancel`, null, {
     params: { reason },
   });
+  return data;
+};
+
+/**
+ * Crear envío para un pedido
+ * Permite al backoffice crear envíos manualmente cuando los clientes tienen problemas
+ */
+export const createShipmentForOrder = async (
+  orderId: number,
+  request: CreateShipmentForOrderRequest
+): Promise<Shipment> => {
+  const { data } = await api.post(`/admin/orders/${orderId}/shipments`, request);
   return data;
 };
