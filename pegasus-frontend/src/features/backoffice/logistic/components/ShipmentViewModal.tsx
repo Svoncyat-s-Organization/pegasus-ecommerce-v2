@@ -27,10 +27,6 @@ const getStatusColor = (status: string): string => {
 export const ShipmentViewModal = ({ open, onClose, shipment }: ShipmentViewModalProps) => {
   if (!shipment) return null;
 
-  const shippingAddressStr = typeof shipment.shippingAddress === 'string'
-    ? shipment.shippingAddress
-    : JSON.stringify(shipment.shippingAddress, null, 2);
-
   return (
     <Modal
       title="Detalles del Envío"
@@ -55,10 +51,6 @@ export const ShipmentViewModal = ({ open, onClose, shipment }: ShipmentViewModal
         </Descriptions.Item>
 
         <Descriptions.Item label="ID de Orden">{shipment.orderId}</Descriptions.Item>
-        <Descriptions.Item label="ID de RMA">
-          {shipment.rmaId || <Typography.Text type="secondary">N/A</Typography.Text>}
-        </Descriptions.Item>
-
         <Descriptions.Item label="Método de Envío">
           {shipment.shippingMethodName || <Typography.Text type="secondary">N/A</Typography.Text>}
         </Descriptions.Item>
@@ -88,12 +80,6 @@ export const ShipmentViewModal = ({ open, onClose, shipment }: ShipmentViewModal
         </Descriptions.Item>
         <Descriptions.Item label="Última Actualización">
           {formatDate(shipment.updatedAt)}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Dirección de Envío" span={2}>
-          <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {shippingAddressStr}
-          </pre>
         </Descriptions.Item>
 
         {shipment.notes && (

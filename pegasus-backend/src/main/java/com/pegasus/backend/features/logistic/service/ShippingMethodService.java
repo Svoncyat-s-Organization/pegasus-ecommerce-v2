@@ -1,11 +1,13 @@
 package com.pegasus.backend.features.logistic.service;
 
+import com.pegasus.backend.exception.BadRequestException;
 import com.pegasus.backend.exception.ResourceNotFoundException;
 import com.pegasus.backend.features.logistic.dto.CreateShippingMethodRequest;
 import com.pegasus.backend.features.logistic.dto.ShippingMethodResponse;
 import com.pegasus.backend.features.logistic.dto.UpdateShippingMethodRequest;
 import com.pegasus.backend.features.logistic.entity.ShippingMethod;
 import com.pegasus.backend.features.logistic.mapper.ShippingMethodMapper;
+import com.pegasus.backend.features.logistic.repository.ShipmentRepository;
 import com.pegasus.backend.features.logistic.repository.ShippingMethodRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import java.util.List;
 public class ShippingMethodService {
 
     private final ShippingMethodRepository shippingMethodRepository;
+    private final ShipmentRepository shipmentRepository;
     private final ShippingMethodMapper shippingMethodMapper;
 
     public PageResponse<ShippingMethodResponse> getAllShippingMethods(String search, Boolean isActive,
@@ -37,7 +40,7 @@ public class ShippingMethodService {
         } else if (isActive != null) {
             page = shippingMethodRepository.findByIsActive(isActive, pageable);
         } else {
-            page = shippingMethodRepository.findAll(pageable);
+            page = shippingMethodRepository.findAllActive(pageable);
         }
 
         List<ShippingMethodResponse> content = page.getContent().stream()
@@ -95,6 +98,14 @@ public class ShippingMethodService {
         ShippingMethod shippingMethod = shippingMethodRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Método de envío no encontrado con ID: " + id));
 
+        // Validar que no haya envíos activos (PENDING o IN_TRANSIT) usando este método
+        boolean hasActiveShipments = shipmentRepository.existsActiveShipmentsByShippingMethod(id);
+        if (hasActiveShipments) {
+            throw new BadRequestException(
+                    "No se puede eliminar el método de envío porque tiene envíos en proceso o en tránsito. " +
+                            "Complete o cancele los envíos antes de eliminarlo.");
+        }
+
         shippingMethod.setIsActive(false);
         shippingMethodRepository.save(shippingMethod);
 
@@ -106,9 +117,9 @@ public class ShippingMethodService {
      */
     public List<ShippingMethodResponse> getActiveShippingMethods() {
         log.debug("Getting all active shipping methods for storefront");
-        
+
         List<ShippingMethod> activeMethods = shippingMethodRepository.findByIsActiveTrue();
-        
+
         return activeMethods.stream()
                 .map(shippingMethodMapper::toResponse)
                 .toList();

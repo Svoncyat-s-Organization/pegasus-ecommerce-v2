@@ -1,11 +1,8 @@
-import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert, Button, Space, Divider } from 'antd';
-import { IconTruckDelivery } from '@tabler/icons-react';
-import { useState } from 'react';
+import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert, Button, Divider } from 'antd';
 import type { OrderItemResponse, OrderStatusHistoryResponse } from '@types';
 import { useOrderDetail } from '../hooks/useOrderDetail';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../constants/orderStatus';
 import { formatCurrency } from '@shared/utils/formatters';
-import { CreateShipmentModal } from './CreateShipmentModal';
 import { OrderStatusTimeline } from './OrderStatusTimeline';
 import dayjs from 'dayjs';
 
@@ -17,10 +14,6 @@ interface OrderDetailModalProps {
 
 export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalProps) => {
   const { data: order, isLoading, error, refetch } = useOrderDetail(orderId);
-  const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
-
-  // Estados que permiten crear envíos
-  const canCreateShipment = order && ['PAID', 'PROCESSING', 'AWAIT_PAYMENT'].includes(order.status);
 
   const itemColumns = [
     {
@@ -68,20 +61,7 @@ export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalPro
         open={open}
         onCancel={onClose}
         width={900}
-        footer={
-          <Space>
-            <Button onClick={onClose}>Cerrar</Button>
-            {canCreateShipment && (
-              <Button
-                type="primary"
-                icon={<IconTruckDelivery size={16} />}
-                onClick={() => setCreateShipmentOpen(true)}
-              >
-                Crear Envío
-              </Button>
-            )}
-          </Space>
-        }
+        footer={<Button onClick={onClose}>Cerrar</Button>}
       >
       {isLoading && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -163,48 +143,9 @@ export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalPro
               size="small"
             />
           </div>
-
-          {/* Historial de Estados */}
-          {order.statusHistories.length > 0 && (
-            <div>
-              <h3 style={{ marginBottom: 16 }}>Historial de Estados</h3>
-              <Timeline
-                items={order.statusHistories.map((history: OrderStatusHistoryResponse) => ({
-                  color: ORDER_STATUS_COLORS[history.status],
-                  children: (
-                    <div>
-                      <div>
-                        <Tag color={ORDER_STATUS_COLORS[history.status]}>
-                          {ORDER_STATUS_LABELS[history.status]}
-                        </Tag>
-                      </div>
-                      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                        {dayjs(history.changedAt).format('DD/MM/YYYY HH:mm')} por {history.changedByUsername}
-                      </div>
-                      {history.notes && (
-                        <div style={{ fontSize: 12, marginTop: 4 }}>
-                          <strong>Notas:</strong> {history.notes}
-                        </div>
-                      )}
-                    </div>
-                  ),
-                }))}
-              />
-            </div>
-          )}
         </div>
       )}
       </Modal>
-
-      {/* Modal para crear envío */}
-      <CreateShipmentModal
-        open={createShipmentOpen}
-        onClose={() => setCreateShipmentOpen(false)}
-        onSuccess={() => {
-          // Refrescar el detalle del pedido cuando se crea el envío exitosamente
-          refetch();
-        }}
-      />
     </>
   );
 };

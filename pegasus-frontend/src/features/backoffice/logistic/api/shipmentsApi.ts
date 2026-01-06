@@ -65,6 +65,11 @@ export const updateShipment = async (
   return data;
 };
 
+export const markAsShipped = async (id: number): Promise<Shipment> => {
+  const { data } = await api.post(`/admin/shipments/${id}/mark-as-shipped`);
+  return data;
+};
+
 export const deleteShipment = async (id: number): Promise<void> => {
   await api.delete(`/admin/shipments/${id}`);
 };

@@ -392,9 +392,13 @@ public class OrderService {
                 allowedTransitions.put(OrderStatus.PAID,
                                 Set.of(OrderStatus.PROCESSING, OrderStatus.REFUNDED));
                 allowedTransitions.put(OrderStatus.PROCESSING,
-                                Set.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED));
+                                Set.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED, OrderStatus.PAID)); // Permitir
+                                                                                                       // volver a PAID
+                                                                                                       // si se elimina
+                                                                                                       // el envío
                 allowedTransitions.put(OrderStatus.SHIPPED,
-                                Set.of(OrderStatus.DELIVERED));
+                                Set.of(OrderStatus.DELIVERED, OrderStatus.PROCESSING)); // Permitir volver a PROCESSING
+                                                                                        // si hay problemas
                 allowedTransitions.put(OrderStatus.DELIVERED,
                                 Set.of(OrderStatus.REFUNDED));
                 allowedTransitions.put(OrderStatus.CANCELLED, Set.of());

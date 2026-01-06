@@ -8,6 +8,7 @@ import {
   getShipmentsByTrackingNumber,
   createShipment,
   updateShipment,
+  markAsShipped,
   deleteShipment,
 } from '../api/shipmentsApi';
 
@@ -66,10 +67,6 @@ export const useCreateShipment = () => {
     mutationFn: (request: CreateShipmentRequest) => createShipment(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
-      message.success('Envío creado exitosamente');
-    },
-    onError: (error: unknown) => {
-      message.error(getApiErrorMessage(error) || 'Error al crear el envío');
     },
   });
 };
@@ -87,11 +84,6 @@ export const useUpdateShipment = () => {
       // CRÍTICO: Invalidar queries de pedidos para refrescar el estado automáticamente
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order'] });
-      
-      message.success('Envío actualizado exitosamente');
-    },
-    onError: (error: unknown) => {
-      message.error(getApiErrorMessage(error) || 'Error al actualizar el envío');
     },
   });
 };
@@ -103,10 +95,21 @@ export const useDeleteShipment = () => {
     mutationFn: (id: number) => deleteShipment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
-      message.success('Envío eliminado exitosamente');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
     },
-    onError: (error: unknown) => {
-      message.error(getApiErrorMessage(error) || 'Error al eliminar el envío');
+  });
+};
+
+export const useMarkAsShipped = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => markAsShipped(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
     },
   });
 };

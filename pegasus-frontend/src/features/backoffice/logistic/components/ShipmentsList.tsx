@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Input, Button, Table, Space, Tag, Popconfirm, Select } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconEye, IconRefresh } from '@tabler/icons-react';
+import { Input, Button, Table, Space, Tag, Popconfirm, Select, message, Tooltip } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconEye, IconRefresh, IconTruckDelivery } from '@tabler/icons-react';
 import { useDebounce } from '@shared/hooks/useDebounce';
-import { useShipments } from '../hooks/useShipments';
+import { useShipments, useMarkAsShipped } from '../hooks/useShipments';
 import { formatCurrency } from '@shared/utils/formatters';
 import { SHIPMENT_STATUSES, SHIPMENT_TYPES } from '../constants';
 import dayjs from 'dayjs';
@@ -27,6 +27,7 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
   const [typeFilter, setTypeFilter] = useState<string | undefined>();
   const debouncedSearch = useDebounce(searchTerm, 500);
   const queryClient = useQueryClient();
+  const markAsShippedMutation = useMarkAsShipped();
 
   const { data, isLoading } = useShipments(
     page,
@@ -42,6 +43,16 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
 
   const handleDelete = (id: number) => {
     onDelete(id);
+  };
+
+  const handleMarkAsShipped = async (id: number) => {
+    try {
+      await markAsShippedMutation.mutateAsync(id);
+      message.success('Envío marcado como enviado exitosamente');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      message.error(err.response?.data?.message || 'Error al marcar el envío como enviado');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -72,13 +83,15 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
       title: 'Tipo',
       dataIndex: 'shipmentType',
       key: 'shipmentType',
-      width: 100,
+      width: 180,
       render: (type: string) => <Tag>{SHIPMENT_TYPES[type as keyof typeof SHIPMENT_TYPES] || type}</Tag>,
     },
     {
       title: 'Método de Envío',
       dataIndex: 'shippingMethodName',
       key: 'shippingMethodName',
+      width: 200,
+      ellipsis: true,
     },
     {
       title: 'Destinatario',
@@ -121,36 +134,58 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 120,
+      width: 200,
       render: (record: Shipment) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => onView(record.id)}
-            title="Ver detalles"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => onEdit(record.id)}
-            title="Editar"
-          />
+          <Tooltip title="Ver detalles">
+            <Button
+              type="link"
+              size="small"
+              icon={<IconEye size={16} />}
+              onClick={() => onView(record.id)}
+            />
+          </Tooltip>
+          {record.status === 'PENDING' && (
+            <Popconfirm
+              title="¿Confirmar envío?"
+              description="Esto marcará el envío como en tránsito y actualizará el pedido."
+              onConfirm={() => handleMarkAsShipped(record.id)}
+              okText="Sí"
+              cancelText="No"
+            >
+              <Tooltip title="Marcar como enviado">
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<IconTruckDelivery size={16} />}
+                  loading={markAsShippedMutation.isPending}
+                />
+              </Tooltip>
+            </Popconfirm>
+          )}
+          <Tooltip title="Editar">
+            <Button
+              type="link"
+              size="small"
+              icon={<IconEdit size={16} />}
+              onClick={() => onEdit(record.id)}
+            />
+          </Tooltip>
           <Popconfirm
             title="¿Está seguro de eliminar este envío?"
+            description="El pedido volverá a estado PAGADO"
             onConfirm={() => handleDelete(record.id)}
             okText="Sí"
             cancelText="No"
           >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
+            <Tooltip title="Eliminar">
+              <Button
+                type="link"
+                danger
+                size="small"
+                icon={<IconTrash size={16} />}
+              />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),

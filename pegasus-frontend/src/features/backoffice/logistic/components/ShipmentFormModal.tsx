@@ -67,7 +67,6 @@ export const ShipmentFormModal = ({
       form.setFieldsValue({
         recipientName: orderDetail.customerName,
         recipientPhone: phoneNumber,
-        shippingAddress: JSON.stringify(orderDetail.shippingAddress, null, 2),
       });
     }
   }, [orderDetail, customerData, form]);
@@ -105,21 +104,13 @@ export const ShipmentFormModal = ({
     try {
       const values = await form.validateFields();
       
-      // Parsear shippingAddress si viene como string
-      let shippingAddress = values.shippingAddress;
-      if (typeof shippingAddress === 'string') {
-        try {
-          shippingAddress = JSON.parse(shippingAddress);
-        } catch (e) {
-          console.error('Error parsing shippingAddress:', e);
-          shippingAddress = {};
-        }
-      }
+      // Obtener la dirección del pedido seleccionado
+      const shippingAddress = orderDetail?.shippingAddress || {};
       
       const submitData = {
         ...values,
         estimatedDeliveryDate: values.estimatedDeliveryDate.toISOString(),
-        shippingAddress: shippingAddress || {},
+        shippingAddress,
       };
       onSubmit(submitData);
       form.resetFields();
@@ -183,7 +174,7 @@ export const ShipmentFormModal = ({
         )}
 
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={24}>
             <Form.Item
               label="Tipo de Envío"
               name="shipmentType"
@@ -197,11 +188,6 @@ export const ShipmentFormModal = ({
                   </Option>
                 ))}
               </Select>
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="ID de RMA (opcional)" name="rmaId">
-              <InputNumber min={1} placeholder="1" style={{ width: '100%' }} />
             </Form.Item>
           </Col>
         </Row>
@@ -321,30 +307,6 @@ export const ShipmentFormModal = ({
 
         <Form.Item label="Notas (opcional)" name="notes">
           <Input.TextArea rows={3} placeholder="Notas adicionales sobre el envío..." />
-        </Form.Item>
-
-        <Form.Item
-          label="Dirección de Envío (JSON)"
-          name="shippingAddress"
-          tooltip="Ingrese la dirección en formato JSON"
-          rules={[
-            { required: true, message: 'La dirección de envío es requerida' },
-            {
-              validator: (_, value) => {
-                try {
-                  if (value) JSON.parse(value);
-                  return Promise.resolve();
-                } catch {
-                  return Promise.reject(new Error('JSON inválido'));
-                }
-              },
-            },
-          ]}
-        >
-          <Input.TextArea
-            rows={3}
-            placeholder='{"street": "Av. Principal 123", "district": "Lima", "ubigeo": "150101"}'
-          />
         </Form.Item>
       </Form>
     </Modal>
