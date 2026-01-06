@@ -1,5 +1,5 @@
 import { Modal, Form, Select, Input, Button, Switch, Alert } from 'antd';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import type { RmaItemResponse, ItemCondition } from '@types';
 import { ITEM_CONDITION_LABELS } from '../constants/rmaConstants';
 import { useRmaMutations } from '../hooks/useRmaMutations';
@@ -15,7 +15,7 @@ interface InspectItemModalProps {
 export const InspectItemModal = ({ item, open, onClose }: InspectItemModalProps) => {
   const [form] = Form.useForm();
   const { inspectItem, isInspecting } = useRmaMutations();
-  const [selectedCondition, setSelectedCondition] = useState<ItemCondition | null>(null);
+  const selectedCondition = Form.useWatch<ItemCondition>('itemCondition', form);
 
   useEffect(() => {
     if (item && open) {
@@ -24,7 +24,6 @@ export const InspectItemModal = ({ item, open, onClose }: InspectItemModalProps)
         inspectionNotes: item.inspectionNotes,
         restockApproved: item.restockApproved ?? false,
       });
-      setSelectedCondition(item.itemCondition || null);
     }
   }, [item, open, form]);
 
@@ -41,14 +40,13 @@ export const InspectItemModal = ({ item, open, onClose }: InspectItemModalProps)
         form.resetFields();
         onClose();
       }
-    } catch (error) {
+    } catch {
       // Form validation error or mutation error (handled in hook)
     }
   };
 
   const handleCancel = () => {
     form.resetFields();
-    setSelectedCondition(null);
     onClose();
   };
 
@@ -96,7 +94,6 @@ export const InspectItemModal = ({ item, open, onClose }: InspectItemModalProps)
             >
               <Select
                 placeholder="Seleccione la condición"
-                onChange={(value) => setSelectedCondition(value)}
                 options={Object.entries(ITEM_CONDITION_LABELS).map(([value, label]) => ({
                   label,
                   value,

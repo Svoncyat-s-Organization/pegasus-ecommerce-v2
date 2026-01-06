@@ -5,7 +5,7 @@ import { useShippingMethods } from '@features/backoffice/logistic/hooks/useShipp
 import { useOrderMutations } from '../hooks/useOrderMutations';
 import { getPaidOrders, getOrderById } from '../api/ordersApi';
 import { customersApi } from '@features/backoffice/customer/api/customersApi';
-import type { CreateShipmentForOrderRequest, OrderResponse, ShippingMethodResponse } from '@types';
+import type { CreateShipmentForOrderRequest, OrderResponse } from '@types';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;

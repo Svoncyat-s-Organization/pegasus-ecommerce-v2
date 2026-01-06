@@ -1,6 +1,12 @@
-import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert, Button, Space } from 'antd';
-import type { RmaItemResponse, RmaStatusHistoryResponse } from '@types';
+import { Modal, Descriptions, Table, Tag, Spin, Alert, Button, Input, Select, message } from 'antd';
+import { useMemo, useState } from 'react';
+import type { RmaItemResponse, RefundMethod } from '@types';
+// Icons are rendered inside RmaStatusTimeline
 import { useRmaDetail } from '../hooks/useRmaDetail';
+import { useRmaMutations } from '../hooks/useRmaMutations';
+import { ApprovalModal } from './ApprovalModal';
+import { InspectionModal } from './InspectionModal';
+import { RmaStatusTimeline } from './RmaStatusTimeline';
 import {
   RMA_STATUS_LABELS,
   RMA_STATUS_COLORS,
@@ -8,7 +14,6 @@ import {
   ITEM_CONDITION_LABELS,
   ITEM_CONDITION_COLORS,
   REFUND_METHOD_LABELS,
-  isActionAvailable,
 } from '../constants/rmaConstants';
 import { formatCurrency } from '@shared/utils/formatters';
 import dayjs from 'dayjs';
@@ -17,31 +22,99 @@ interface RmaDetailModalProps {
   rmaId: number | null;
   open: boolean;
   onClose: () => void;
-  onMarkReceived?: (rmaId: number) => void;
-  onInspect?: (rmaId: number) => void;
-  onCompleteInspection?: (rmaId: number) => void;
-  onProcessRefund?: (rmaId: number) => void;
-  onCloseRmaAction?: (rmaId: number) => void;
 }
 
 export const RmaDetailModal = ({
   rmaId,
   open,
   onClose,
-  onMarkReceived,
-  onInspect,
-  onCompleteInspection,
-  onProcessRefund,
-  onCloseRmaAction,
 }: RmaDetailModalProps) => {
+  const DEFAULT_WAREHOUSE_ID = 1;
   const { data: rma, isLoading, error } = useRmaDetail(rmaId);
+  const {
+    markInTransit,
+    markReceived,
+    inspectItem,
+    updateRma,
+    processRefund,
+    closeRma,
+    isMarkingInTransit,
+    isMarkingReceived,
+    isInspecting,
+    isUpdating,
+    isProcessingRefund,
+    isClosing,
+  } = useRmaMutations();
+
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
+
+  const [markInTransitOpen, setMarkInTransitOpen] = useState(false);
+  const [markReceivedOpen, setMarkReceivedOpen] = useState(false);
+  const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
+  const [refundDecisionOpen, setRefundDecisionOpen] = useState(false);
+  const [closeRmaOpen, setCloseRmaOpen] = useState(false);
+
+  const [comments, setComments] = useState('');
+  const [refundMethod, setRefundMethod] = useState<RefundMethod | undefined>(undefined);
+
+  // Visual status timeline is handled by RmaStatusTimeline
+
+  const isSpecialStatus = rma?.status === 'REJECTED' || rma?.status === 'CANCELLED';
+
+
+  const uninspectedItems = useMemo(() => {
+    if (!rma) return [];
+    return rma.items.filter((i) => !i.itemCondition);
+  }, [rma]);
+
+  const canAdvance = useMemo(() => {
+    if (!rma) return false;
+    if (isSpecialStatus) return false;
+    return rma.status !== 'CLOSED';
+  }, [isSpecialStatus, rma]);
+
+  const resetActionState = () => {
+    setComments('');
+    setRefundMethod(undefined);
+  };
+
+  const handleAdvance = () => {
+    if (!rma) return;
+
+    switch (rma.status) {
+      case 'PENDING':
+        setApprovalModalOpen(true);
+        return;
+      case 'APPROVED':
+        setMarkInTransitOpen(true);
+        return;
+      case 'IN_TRANSIT':
+        setMarkReceivedOpen(true);
+        return;
+      case 'RECEIVED':
+        setInspectionModalOpen(true);
+        return;
+      case 'INSPECTING':
+        if (uninspectedItems.length > 0) {
+          setInspectionModalOpen(true);
+          return;
+        }
+        setRefundDecisionOpen(true);
+        return;
+      case 'REFUNDED':
+        setCloseRmaOpen(true);
+        return;
+      default:
+        return;
+    }
+  };
 
   const itemColumns = [
     {
       title: '#',
       key: 'index',
       width: 60,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: RmaItemResponse, index: number) => index + 1,
     },
     {
       title: 'Producto',
@@ -94,54 +167,66 @@ export const RmaDetailModal = ({
         );
       },
     },
+    {
+      title: 'Acción',
+      key: 'action',
+      width: 120,
+      render: (item: RmaItemResponse) => {
+        const isInInspection = rma?.status === 'RECEIVED' || rma?.status === 'INSPECTING';
+        if (!isInInspection) return null;
+        return item.itemCondition ? <Tag color="success">Listo</Tag> : <Tag color="default">Pendiente</Tag>;
+      },
+    },
   ];
 
-  const renderActions = () => {
-    if (!rma) return null;
+  const confirmMarkInTransit = async () => {
+    if (!rma) return;
+    try {
+      await markInTransit({ rmaId: rma.id, comments });
+      setMarkInTransitOpen(false);
+      resetActionState();
+    } catch {
+      // handled in hook
+    }
+  };
 
-    const actions: React.ReactNode[] = [];
+  const confirmMarkReceived = async () => {
+    if (!rma) return;
+    try {
+      await markReceived({ rmaId: rma.id });
+      setMarkReceivedOpen(false);
+      resetActionState();
+    } catch {
+      // handled in hook
+    }
+  };
 
-    if (isActionAvailable(rma.status, 'mark-received') && onMarkReceived) {
-      actions.push(
-        <Button key="received" type="primary" onClick={() => onMarkReceived(rma.id)}>
-          Marcar como Recibido
-        </Button>
-      );
+  const confirmRefundDecision = async () => {
+    if (!rma) return;
+    if (!refundMethod) {
+      message.warning('Seleccione un método');
+      return;
     }
 
-    if (isActionAvailable(rma.status, 'inspect-items') && onInspect) {
-      actions.push(
-        <Button key="inspect" type="primary" onClick={() => onInspect(rma.id)}>
-          Inspeccionar Items
-        </Button>
-      );
+    try {
+      await updateRma({ rmaId: rma.id, request: { refundMethod } });
+      await processRefund({ rmaId: rma.id, comments });
+      setRefundDecisionOpen(false);
+      resetActionState();
+    } catch {
+      // handled in hook
     }
+  };
 
-    if (rma.status === 'INSPECTING' && onCompleteInspection) {
-      actions.push(
-        <Button key="complete" type="primary" onClick={() => onCompleteInspection(rma.id)}>
-          Completar Inspección
-        </Button>
-      );
+  const confirmCloseRma = async () => {
+    if (!rma) return;
+    try {
+      await closeRma({ rmaId: rma.id, warehouseId: DEFAULT_WAREHOUSE_ID, comments });
+      setCloseRmaOpen(false);
+      resetActionState();
+    } catch {
+      // handled in hook
     }
-
-    if (rma.status === 'INSPECTING' && rma.items.every(item => item.itemCondition) && onProcessRefund) {
-      actions.push(
-        <Button key="refund" type="primary" style={{ background: '#722ed1' }} onClick={() => onProcessRefund(rma.id)}>
-          Procesar Reembolso
-        </Button>
-      );
-    }
-
-    if (isActionAvailable(rma.status, 'close') && onCloseRmaAction) {
-      actions.push(
-        <Button key="close" type="primary" style={{ background: '#52c41a' }} onClick={() => onCloseRmaAction(rma.id)}>
-          Cerrar RMA
-        </Button>
-      );
-    }
-
-    return actions.length > 0 ? <Space>{actions}</Space> : null;
   };
 
   return (
@@ -154,7 +239,6 @@ export const RmaDetailModal = ({
         <Button key="close" onClick={onClose}>
           Cerrar
         </Button>,
-        renderActions(),
       ]}
     >
       {isLoading && (
@@ -174,6 +258,14 @@ export const RmaDetailModal = ({
 
       {rma && (
         <div>
+          <div style={{ marginBottom: 24 }}>
+            <RmaStatusTimeline
+              currentStatus={rma.status}
+              canAdvance={canAdvance}
+              onAdvance={handleAdvance}
+            />
+          </div>
+
           {/* Información General */}
           <Descriptions title="Información General" bordered column={2} style={{ marginBottom: 24 }}>
             <Descriptions.Item label="N° RMA" span={2}>
@@ -250,37 +342,113 @@ export const RmaDetailModal = ({
               size="small"
             />
           </div>
-
-          {/* Historial de Estados */}
-          {rma.statusHistories.length > 0 && (
-            <div>
-              <h3 style={{ marginBottom: 16 }}>Historial de Estados</h3>
-              <Timeline
-                items={rma.statusHistories.map((history: RmaStatusHistoryResponse) => ({
-                  color: RMA_STATUS_COLORS[history.status],
-                  children: (
-                    <div>
-                      <div>
-                        <Tag color={RMA_STATUS_COLORS[history.status]}>
-                          {RMA_STATUS_LABELS[history.status]}
-                        </Tag>
-                      </div>
-                      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                        {dayjs(history.changedAt).format('DD/MM/YYYY HH:mm')} por {history.changedByUsername}
-                      </div>
-                      {history.comments && (
-                        <div style={{ fontSize: 12, marginTop: 4 }}>
-                          <strong>Comentarios:</strong> {history.comments}
-                        </div>
-                      )}
-                    </div>
-                  ),
-                }))}
-              />
-            </div>
-          )}
         </div>
       )}
+
+      <ApprovalModal
+        rmaId={rmaId}
+        open={approvalModalOpen}
+        onClose={() => setApprovalModalOpen(false)}
+      />
+
+      <Modal
+        title="Cliente envió el paquete"
+        open={markInTransitOpen}
+        onOk={confirmMarkInTransit}
+        onCancel={() => {
+          setMarkInTransitOpen(false);
+          resetActionState();
+        }}
+        confirmLoading={isMarkingInTransit}
+      >
+        <Input.TextArea
+          rows={4}
+          placeholder="Comentarios opcionales..."
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+        />
+      </Modal>
+
+      <Modal
+        title="Marcar como recibido"
+        open={markReceivedOpen}
+        onOk={confirmMarkReceived}
+        onCancel={() => {
+          setMarkReceivedOpen(false);
+          resetActionState();
+        }}
+        confirmLoading={isMarkingReceived}
+      >
+        ¿Confirmar que el paquete fue recibido?
+      </Modal>
+
+      {rma && (
+        <InspectionModal
+          open={inspectionModalOpen}
+          rma={rma}
+          uninspectedItems={uninspectedItems}
+          onClose={() => setInspectionModalOpen(false)}
+          onInspectItem={inspectItem}
+          isInspecting={isInspecting}
+        />
+      )}
+
+      <Modal
+        title="Decidir reembolso"
+        open={refundDecisionOpen}
+        onOk={confirmRefundDecision}
+        onCancel={() => {
+          setRefundDecisionOpen(false);
+          resetActionState();
+        }}
+        confirmLoading={isUpdating || isProcessingRefund}
+      >
+        <div style={{ marginBottom: 12 }}>
+          <strong>Monto:</strong> {rma ? formatCurrency(rma.refundAmount) : ''}
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label>Método:</label>
+          <Select
+            value={refundMethod}
+            onChange={(v) => setRefundMethod(v)}
+            style={{ width: '100%', marginTop: 8 }}
+            placeholder="Seleccione un método"
+            options={Object.entries(REFUND_METHOD_LABELS)
+              .filter(([value]) => value !== 'EXCHANGE')
+              .map(([value, label]) => ({
+                value,
+                label,
+              }))}
+          />
+        </div>
+        <Input.TextArea
+          rows={4}
+          placeholder="Comentarios opcionales..."
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+        />
+      </Modal>
+
+      <Modal
+        title="Cerrar RMA"
+        open={closeRmaOpen}
+        onOk={confirmCloseRma}
+        onCancel={() => {
+          setCloseRmaOpen(false);
+          resetActionState();
+        }}
+        confirmLoading={isClosing}
+      >
+        <div style={{ marginBottom: 12 }}>
+          ¿Confirmar el cierre de la devolución?
+        </div>
+        <Input.TextArea
+          rows={4}
+          placeholder="Comentarios opcionales..."
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+        />
+      </Modal>
     </Modal>
   );
 };

@@ -55,8 +55,7 @@ public class RmaService {
             String search,
             RmaStatus status,
             Long customerId,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         log.debug("Getting RMAs with search: {}, status: {}, customerId: {}, page: {}",
                 search, status, customerId, pageable.getPageNumber());
 
@@ -70,8 +69,7 @@ public class RmaService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**
@@ -114,8 +112,7 @@ public class RmaService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**
@@ -138,19 +135,18 @@ public class RmaService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**
      * Crear nueva solicitud de RMA
      */
     @Transactional
-    public RmaResponse createRma(CreateRmaRequest request, Long customerId) {
-        log.info("Creating RMA for order: {} by customer: {}", request.orderId(), customerId);
+    public RmaResponse createRma(CreateRmaRequest request, Long staffUserId) {
+        log.info("Creating RMA for order: {} by staff user: {}", request.orderId(), staffUserId);
 
-        // Validar orden y permisos
-        Order order = validateOrderForRma(request.orderId(), customerId);
+        // Validar orden (solo órdenes entregadas dentro de ventana)
+        Order order = validateOrderForRma(request.orderId());
 
         // Validar items
         List<RmaItem> rmaItems = validateAndBuildRmaItems(request.items(), order);
@@ -164,7 +160,7 @@ public class RmaService {
         Rma rma = Rma.builder()
                 .rmaNumber(generateRmaNumber())
                 .orderId(request.orderId())
-                .customerId(customerId)
+                .customerId(order.getCustomerId())
                 .status(RmaStatus.PENDING)
                 .reason(request.reason())
                 .customerComments(request.customerComments())
@@ -182,8 +178,8 @@ public class RmaService {
         Rma savedRma = rmaRepository.save(rma);
 
         // Crear historial inicial
-        createStatusHistory(savedRma.getId(), RmaStatus.PENDING, 
-                "Solicitud de devolución creada por cliente", customerId);
+        createStatusHistory(savedRma.getId(), RmaStatus.PENDING,
+                "Solicitud de devolución creada por staff", staffUserId);
 
         log.info("RMA created successfully: {}", savedRma.getRmaNumber());
         return rmaMapper.toResponse(savedRma);
@@ -220,7 +216,7 @@ public class RmaService {
         Rma updatedRma = rmaRepository.save(rma);
 
         if (statusChanged) {
-            createStatusHistory(rma.getId(), rma.getStatus(), 
+            createStatusHistory(rma.getId(), rma.getStatus(),
                     request.staffNotes(), userId);
         }
 
@@ -270,8 +266,7 @@ public class RmaService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**
@@ -289,8 +284,7 @@ public class RmaService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     // ==================== HELPER METHODS ====================
@@ -307,21 +301,16 @@ public class RmaService {
     /**
      * Validar orden para RMA
      */
-    private Order validateOrderForRma(Long orderId, Long customerId) {
+    private Order validateOrderForRma(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Orden no encontrada con ID: " + orderId));
 
-        // Verificar que la orden pertenece al cliente
-        if (!order.getCustomerId().equals(customerId)) {
-            throw new BadRequestException("La orden no pertenece a este cliente");
-        }
-
         // Verificar que la orden está en estado válido para devolución
         if (order.getStatus() != OrderStatus.DELIVERED) {
             throw new BadRequestException(
-                    "Solo se pueden devolver órdenes en estado DELIVERED. Estado actual: " 
-                    + order.getStatus());
+                    "Solo se pueden devolver órdenes en estado DELIVERED. Estado actual: "
+                            + order.getStatus());
         }
 
         // Verificar ventana de devolución (30 días)
@@ -355,8 +344,8 @@ public class RmaService {
             // Verificar cantidad
             if (itemRequest.quantity() > orderItem.getQuantity()) {
                 throw new BadRequestException(
-                        "Cantidad a devolver (" + itemRequest.quantity() + 
-                        ") excede la cantidad comprada (" + orderItem.getQuantity() + ")");
+                        "Cantidad a devolver (" + itemRequest.quantity() +
+                                ") excede la cantidad comprada (" + orderItem.getQuantity() + ")");
             }
 
             // Verificar que no existe RMA pendiente para este order_item

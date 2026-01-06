@@ -146,7 +146,9 @@ export const OrderListPage = () => {
       <CreateOrderModal
         open={createOrderModalOpen}
         onClose={() => setCreateOrderModalOpen(false)}
-        onSubmit={createOrder}
+        onSubmit={async (values) => {
+          await createOrder(values);
+        }}
         isLoading={isCreatingOrder}
       />
     </>

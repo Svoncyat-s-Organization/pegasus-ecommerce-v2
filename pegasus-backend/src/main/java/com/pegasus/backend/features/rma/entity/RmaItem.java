@@ -29,7 +29,7 @@ public class RmaItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "rma_id", nullable = false)
+    @Column(name = "rma_id", nullable = false, insertable = false, updatable = false)
     private Long rmaId;
 
     @Column(name = "order_item_id", nullable = false)
@@ -67,7 +67,7 @@ public class RmaItem {
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rma_id", insertable = false, updatable = false)
+    @JoinColumn(name = "rma_id", nullable = false)
     private Rma rma;
 
     @ManyToOne(fetch = FetchType.LAZY)
