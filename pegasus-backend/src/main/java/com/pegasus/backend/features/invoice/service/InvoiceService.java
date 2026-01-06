@@ -13,9 +13,11 @@ import com.pegasus.backend.features.invoice.entity.series.DocumentSeries;
 import com.pegasus.backend.features.invoice.entity.series.DocumentSeriesType;
 import com.pegasus.backend.features.invoice.mapper.InvoiceMapper;
 import com.pegasus.backend.features.invoice.repository.InvoiceRepository;
+import com.pegasus.backend.features.order.entity.Order;
 import com.pegasus.backend.features.invoice.service.series.DocumentSeriesService;
 import com.pegasus.backend.features.order.repository.OrderRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
+import com.pegasus.backend.shared.enums.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -82,10 +84,24 @@ public class InvoiceService {
         return invoiceMapper.toResponse(invoice);
     }
 
+    public List<Long> getInvoicedOrderIds(List<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return List.of();
+        }
+        return invoiceRepository.findInvoicedOrderIds(orderIds);
+    }
+
     @Transactional
     public InvoiceResponse create(CreateInvoiceRequest request) {
-        if (!orderRepository.existsById(request.orderId())) {
-            throw new ResourceNotFoundException("Pedido no encontrado con ID: " + request.orderId());
+        Order order = orderRepository.findById(request.orderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido no encontrado con ID: " + request.orderId()));
+
+        if (invoiceRepository.existsByOrderId(request.orderId())) {
+            throw new BadRequestException("Ya existe un comprobante para el pedido seleccionado");
+        }
+
+        if (order.getStatus() != OrderStatus.PAID) {
+            throw new BadRequestException("Solo se puede emitir un comprobante si el pedido está pagado");
         }
 
         SeriesNumber seriesNumber = resolveSeriesAndNumber(request);

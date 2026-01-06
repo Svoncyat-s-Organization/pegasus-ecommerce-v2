@@ -779,16 +779,6 @@ export interface CreateTrackingEventRequest {
 // ============================================
 // Order Module Types
 // ============================================
-export type OrderStatus = 
-  | 'PENDING' 
-  | 'AWAIT_PAYMENT' 
-  | 'PAID' 
-  | 'PROCESSING' 
-  | 'SHIPPED' 
-  | 'DELIVERED' 
-  | 'CANCELLED' 
-  | 'REFUNDED';
-
 export interface AddressDTO {
   ubigeoId: string;
   address: string;

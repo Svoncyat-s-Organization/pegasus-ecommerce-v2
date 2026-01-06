@@ -120,6 +120,28 @@ const menuItems: MenuItem[] = [
     label: 'Facturación',
     icon: <IconFileText size={18} />,
     path: '/admin/invoices',
+    children: [
+      {
+        key: '/admin/invoices/invoices',
+        label: 'Comprobantes',
+        path: '/admin/invoices/invoices',
+      },
+      {
+        key: '/admin/invoices/payments',
+        label: 'Pagos',
+        path: '/admin/invoices/payments',
+      },
+      {
+        key: '/admin/invoices/series',
+        label: 'Series',
+        path: '/admin/invoices/series',
+      },
+      {
+        key: '/admin/invoices/payment-methods',
+        label: 'Métodos de pago',
+        path: '/admin/invoices/payment-methods',
+      },
+    ],
   },
   {
     key: '/admin/rma',
@@ -247,6 +269,12 @@ export const BackofficeSidebar = () => {
         .map((item) => {
           // Si tiene children, filtrar recursivamente
           if (item.children) {
+            // Si el permiso es a nivel de módulo (ruta del padre), mostrar todo el submenú.
+            // Útil cuando el backend entrega permisos como '/admin/invoices' en lugar de rutas hijas.
+            if (item.path && allowedPaths.includes(item.path)) {
+              return item;
+            }
+
             const filteredChildren = filterItems(item.children);
             // Solo incluir el padre si tiene hijos visibles
             if (filteredChildren.length > 0) {

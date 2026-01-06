@@ -5,6 +5,8 @@ import com.pegasus.backend.features.invoice.entity.series.DocumentSeries;
 import com.pegasus.backend.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -57,7 +59,8 @@ public class Invoice extends BaseEntity {
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", nullable = false, columnDefinition = "invoice_status_enum")
     private InvoiceStatus status;
 
     @Column(name = "issued_at", nullable = false)

@@ -15,7 +15,12 @@ import { OrderListPage } from '@features/backoffice/order';
 import { RmaListPage } from '@features/backoffice/rma';
 import { WarehouseListPage, StockListPage, MovementListPage } from '@features/backoffice/inventory';
 import { PurchasesListPage, SuppliersListPage } from '@features/backoffice/purchase';
-import { BillingPage } from '@features/backoffice/invoice';
+import {
+  BillingDocumentSeriesPage,
+  BillingInvoicesPage,
+  BillingPaymentMethodsPage,
+  BillingPaymentsPage,
+} from '@features/backoffice/invoice';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -84,7 +89,13 @@ export const AppRoutes = () => {
         <Route path="logistics/carriers" element={<PlaceholderPage title="Transportistas" description="Gestión de empresas transportistas" />} />
 
         {/* Invoices */}
-        <Route path="invoices" element={<BillingPage />} />
+        <Route path="invoices">
+          <Route index element={<Navigate to="invoices" replace />} />
+          <Route path="invoices" element={<BillingInvoicesPage />} />
+          <Route path="payments" element={<BillingPaymentsPage />} />
+          <Route path="series" element={<BillingDocumentSeriesPage />} />
+          <Route path="payment-methods" element={<BillingPaymentMethodsPage />} />
+        </Route>
 
         {/* RMA / Returns */}
         <Route path="rma" element={<RmaListPage />} />
