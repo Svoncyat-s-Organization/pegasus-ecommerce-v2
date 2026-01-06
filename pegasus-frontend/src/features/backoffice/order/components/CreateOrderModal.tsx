@@ -20,9 +20,10 @@ import { useQuery } from '@tanstack/react-query';
 import { customersApi } from '@features/backoffice/customer/api/customersApi';
 import { getVariants } from '@features/backoffice/catalog/api/variantsApi';
 import { getProducts } from '@features/backoffice/catalog/api/productsApi';
+import { locationsApi } from '@shared/api/locationsApi';
 import { useDepartments, useProvinces, useDistricts } from '@shared/hooks/useLocations';
 import { formatCurrency } from '@shared/utils/formatters';
-import type { CreateOrderRequest, VariantResponse, ProductResponse } from '@types';
+import type { CreateOrderRequest, VariantResponse, ProductResponse, CustomerResponse } from '@types';
 
 const { Text } = Typography;
 
@@ -45,6 +46,7 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
   const [form] = Form.useForm();
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number>();
   const [selectedDepartment, setSelectedDepartment] = useState<string>();
   const [selectedProvince, setSelectedProvince] = useState<string>();
 
@@ -52,6 +54,13 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
   const { data: customersData } = useQuery({
     queryKey: ['customers', 0, 100],
     queryFn: () => customersApi.getCustomers(0, 100),
+  });
+
+  // Fetch customer addresses cuando se selecciona un cliente
+  const { data: customerAddresses } = useQuery({
+    queryKey: ['customerAddresses', selectedCustomerId],
+    queryFn: () => customersApi.getCustomerAddresses(selectedCustomerId!),
+    enabled: !!selectedCustomerId,
   });
 
   // Fetch variants para los items
@@ -99,6 +108,76 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
     setOrderItems(enrichedItems);
   }, [form.getFieldValue('items'), variantsData, productsData]);
 
+  // Auto-rellenar datos del cliente cuando se selecciona
+  useEffect(() => {
+    const loadCustomerData = async () => {
+      if (!selectedCustomerId || !customerAddresses || customerAddresses.length === 0) {
+        console.log('No loading customer data:', { selectedCustomerId, hasAddresses: !!customerAddresses });
+        return;
+      }
+
+      const selectedCustomer = customersData?.content.find(
+        (c: CustomerResponse) => c.id === selectedCustomerId
+      );
+      if (!selectedCustomer) {
+        console.log('Customer not found');
+        return;
+      }
+
+      console.log('Loading customer data:', selectedCustomer);
+      console.log('Customer addresses:', customerAddresses);
+
+      // Buscar dirección de envío por defecto
+      const defaultAddress = customerAddresses.find((addr) => addr.isDefaultShipping);
+      const addressToUse = defaultAddress || customerAddresses[0];
+
+      console.log('Address to use:', addressToUse);
+
+      if (addressToUse) {
+        // Obtener ubicación desde ubigeoId
+        try {
+          // El ubigeoId es del distrito, necesitamos obtener departamento y provincia
+          const ubigeo = await locationsApi.getUbigeoById(addressToUse.ubigeoId);
+          
+          console.log('Ubigeo loaded:', ubigeo);
+
+          // Primero establecer los estados para que los selectores se habiliten
+          setSelectedDepartment(ubigeo.departmentId);
+          setSelectedProvince(ubigeo.provinceId);
+
+          // Luego establecer los valores del form
+          form.setFieldsValue({
+            recipientName: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
+            recipientPhone: selectedCustomer.phone || '',
+            department: ubigeo.departmentId,
+            province: ubigeo.provinceId,
+            district: addressToUse.ubigeoId,
+            address: addressToUse.address,
+            reference: addressToUse.reference || '',
+          });
+
+          console.log('Form values set successfully');
+        } catch (error) {
+          console.error('Error loading ubigeo:', error);
+          // Si no se puede obtener el ubigeo, al menos rellenar nombre y teléfono
+          form.setFieldsValue({
+            recipientName: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
+            recipientPhone: selectedCustomer.phone || '',
+          });
+        }
+      } else {
+        console.log('No address found, filling only name and phone');
+        // Si no hay direcciones, solo rellenar nombre y teléfono
+        form.setFieldsValue({
+          recipientName: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
+          recipientPhone: selectedCustomer.phone || '',
+        });
+      }
+    };
+
+    loadCustomerData();
+  }, [selectedCustomerId, customerAddresses, customersData, form]);
+
   const handleSubmit = async (values: any) => {
     try {
       const request: CreateOrderRequest = {
@@ -130,6 +209,7 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
   const handleCancel = () => {
     form.resetFields();
     setOrderItems([]);
+    setSelectedCustomerId(undefined);
     setSelectedDepartment(undefined);
     setSelectedProvince(undefined);
     onClose();
@@ -238,6 +318,7 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
             showSearch
             placeholder="Buscar cliente por nombre o email"
             optionFilterProp="children"
+            onChange={(value) => setSelectedCustomerId(value)}
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }

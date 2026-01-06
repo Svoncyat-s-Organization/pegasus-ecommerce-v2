@@ -15,6 +15,15 @@ export interface DistrictResponse {
   name: string;
 }
 
+export interface UbigeoResponse {
+  id: string;
+  department: string;
+  province: string;
+  district: string;
+  departmentId: string;
+  provinceId: string;
+}
+
 const BASE_URL = '/locations';
 
 export const locationsApi = {
@@ -33,6 +42,12 @@ export const locationsApi = {
   // Get districts by province
   getDistrictsByProvince: async (provinceId: string): Promise<DistrictResponse[]> => {
     const { data } = await api.get<DistrictResponse[]>(`${BASE_URL}/districts/${provinceId}`);
+    return data;
+  },
+
+  // Get ubigeo by ID (distrito completo con departamento y provincia)
+  getUbigeoById: async (ubigeoId: string): Promise<UbigeoResponse> => {
+    const { data } = await api.get<UbigeoResponse>(`${BASE_URL}/ubigeo/${ubigeoId}`);
     return data;
   },
 };
