@@ -66,22 +66,29 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated }: InvoiceFormModal
     return (documentSeriesData?.content || []).filter((s: DocumentSeriesResponse) => s.isActive);
   }, [documentSeriesData]);
 
+  const availableInvoiceTypes = useMemo(() => {
+    const types = new Set<InvoiceType>();
+    for (const s of activeSeriesList) {
+      types.add(s.documentType as InvoiceType);
+    }
+    return (['BILL', 'INVOICE', 'CREDIT_NOTE'] as InvoiceType[]).filter((t) => types.has(t));
+  }, [activeSeriesList]);
+
   const seriesOptionsByType = useMemo(() => {
     const byType = new Map<InvoiceType, { value: number; label: string }[]>();
-    byType.set('BILL', []);
-    byType.set('INVOICE', []);
+    for (const t of availableInvoiceTypes) {
+      byType.set(t, []);
+    }
 
     for (const s of activeSeriesList) {
-      if (s.documentType === 'BILL') {
-        byType.get('BILL')?.push({ value: s.id, label: `${s.series} (Correlativo: ${s.currentNumber})` });
-      }
-      if (s.documentType === 'INVOICE') {
-        byType.get('INVOICE')?.push({ value: s.id, label: `${s.series} (Correlativo: ${s.currentNumber})` });
-      }
+      byType.get(s.documentType as InvoiceType)?.push({
+        value: s.id,
+        label: `${s.series} (Correlativo: ${s.currentNumber})`,
+      });
     }
 
     return byType;
-  }, [activeSeriesList]);
+  }, [activeSeriesList, availableInvoiceTypes]);
 
   const seriesById = useMemo(() => {
     const map = new Map<number, DocumentSeriesResponse>();
@@ -181,10 +188,7 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated }: InvoiceFormModal
                 onChange={() => {
                   form.setFieldsValue({ seriesId: undefined });
                 }}
-                options={(Object.keys(INVOICE_TYPE_LABEL) as InvoiceType[]).map((type) => ({
-                  value: type,
-                  label: INVOICE_TYPE_LABEL[type],
-                }))}
+                options={availableInvoiceTypes.map((type) => ({ value: type, label: INVOICE_TYPE_LABEL[type] }))}
               />
             </Form.Item>
           </Col>

@@ -13,5 +13,7 @@ public interface PurchaseMapper {
     @Mapping(target = "items", source = "items")
     PurchaseResponse toResponse(Purchase entity);
 
+    @Mapping(target = "variantSku", ignore = true)
+    @Mapping(target = "productName", ignore = true)
     PurchaseItemResponse toItemResponse(PurchaseItem entity);
 }

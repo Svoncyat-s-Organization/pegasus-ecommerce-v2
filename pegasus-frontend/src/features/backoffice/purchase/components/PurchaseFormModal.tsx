@@ -161,9 +161,16 @@ export const PurchaseFormModal = ({ open, onCancel }: PurchaseFormModalProps) =>
             <Form.Item
               label="Tipo de comprobante"
               name="invoiceType"
-              rules={[{ required: true, message: 'Ingrese el tipo de comprobante' }]}
+              rules={[{ required: true, message: 'Seleccione el tipo de comprobante' }]}
             >
-              <Input placeholder="Ej: FACTURA" maxLength={20} />
+              <Select
+                placeholder="Seleccione"
+                options={[
+                  { value: 'BILL', label: 'Boleta' },
+                  { value: 'INVOICE', label: 'Factura' },
+                  { value: 'CREDIT_NOTE', label: 'Nota de crédito' },
+                ]}
+              />
             </Form.Item>
           </Col>
 

@@ -178,6 +178,7 @@ public class InvoiceService {
         return switch (invoiceType) {
             case BILL -> DocumentSeriesType.BILL;
             case INVOICE -> DocumentSeriesType.INVOICE;
+            case CREDIT_NOTE -> DocumentSeriesType.CREDIT_NOTE;
         };
     }
 
