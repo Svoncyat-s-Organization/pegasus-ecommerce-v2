@@ -6,6 +6,7 @@ import { StorefrontProtectedRoute } from '@routes/StorefrontProtectedRoute';
 
 // Backoffice Pages
 import { LoginPage as AdminLoginPage } from '@features/backoffice/auth/pages/LoginPage';
+import { DashboardPage } from '@features/backoffice/dashboard';
 import { UsersListPage } from '@features/backoffice/security';
 import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
 import { CustomersListPage } from '@features/backoffice/customer';
@@ -25,13 +26,6 @@ import { CartPage } from '@features/storefront/cart';
 import { CheckoutPage, OrderConfirmationPage } from '@features/storefront/checkout';
 
 // Temporary placeholder pages
-const DashboardPage = () => (
-  <div style={{ padding: '24px' }}>
-    <h1 style={{ marginBottom: '8px', fontSize: '24px', fontWeight: 600 }}>Dashboard</h1>
-    <p style={{ color: '#666' }}>Panel de control principal del backoffice</p>
-  </div>
-);
-
 const PlaceholderPage = ({ title, description }: { title: string; description: string }) => (
   <div style={{ padding: '24px' }}>
     <h1 style={{ marginBottom: '8px', fontSize: '24px', fontWeight: 600 }}>{title}</h1>

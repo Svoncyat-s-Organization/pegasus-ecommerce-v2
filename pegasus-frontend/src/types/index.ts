@@ -779,16 +779,6 @@ export interface CreateTrackingEventRequest {
 // ============================================
 // Order Module Types
 // ============================================
-export type OrderStatus = 
-  | 'PENDING' 
-  | 'AWAIT_PAYMENT' 
-  | 'PAID' 
-  | 'PROCESSING' 
-  | 'SHIPPED' 
-  | 'DELIVERED' 
-  | 'CANCELLED' 
-  | 'REFUNDED';
-
 export interface AddressDTO {
   ubigeoId: string;
   address: string;
@@ -1108,4 +1098,202 @@ export interface MovementResponse {
   userId: number;
   username: string;
   createdAt: string;
+}
+
+// ============================================
+// Dashboard Module Types
+// ============================================
+export interface ChartPointResponse {
+  label: string;
+  value: number;
+  count: number;
+}
+
+export interface SalesMetricsResponse {
+  totalSales: number;
+  totalOrders: number;
+  averageTicket: number;
+  salesGrowthPercent: number;
+  ordersGrowthPercent: number;
+  periodLabel: string;
+}
+
+export interface CustomerMetricsResponse {
+  totalCustomers: number;
+  activeCustomers: number;
+  newCustomersThisMonth: number;
+  newCustomersLastMonth: number;
+  customerGrowthPercent: number;
+}
+
+export interface LowStockProductResponse {
+  variantId: number;
+  productName: string;
+  variantSku: string;
+  warehouseName: string;
+  currentStock: number;
+  reservedStock: number;
+  availableStock: number;
+}
+
+export interface InventoryMetricsResponse {
+  totalProducts: number;
+  activeProducts: number;
+  totalVariants: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+  totalInventoryValue: number;
+  lowStockProducts: LowStockProductResponse[];
+}
+
+export interface PurchaseMetricsResponse {
+  totalPurchases: number;
+  totalPurchasesAmount: number;
+  pendingPurchases: number;
+  periodLabel: string;
+}
+
+export interface RmaMetricsResponse {
+  pendingRmas: number;
+  processingRmas: number;
+  completedRmas: number;
+  rmaRate: number;
+  periodLabel: string;
+}
+
+export interface OrdersByStatusResponse {
+  status: string;
+  count: number;
+  label: string;
+}
+
+export interface TopProductResponse {
+  productId: number;
+  productName: string;
+  productCode: string;
+  variantSku: string;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+export interface RecentOrderResponse {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  total: number;
+  status: string;
+  statusLabel: string;
+  createdAt: string;
+}
+
+export interface SalesChartDataResponse {
+  dailySales: ChartPointResponse[];
+  monthlySales: ChartPointResponse[];
+}
+
+export interface DashboardSummaryResponse {
+  sales: SalesMetricsResponse;
+  customers: CustomerMetricsResponse;
+  inventory: InventoryMetricsResponse;
+  purchases: PurchaseMetricsResponse;
+  rma: RmaMetricsResponse;
+  ordersByStatus: OrdersByStatusResponse[];
+  topProducts: TopProductResponse[];
+  recentOrders: RecentOrderResponse[];
+  charts: SalesChartDataResponse;
+}
+
+// ============================================
+// Report Module Types
+// ============================================
+
+// Sales Report
+export interface SalesReportRow {
+  date: string;
+  orders: number;
+  sales: number;
+}
+
+export interface SalesReportResponse {
+  startDate: string;
+  endDate: string;
+  totalOrders: number;
+  totalSales: number;
+  averageTicket: number;
+  details: SalesReportRow[];
+}
+
+// Invoice Report
+export interface InvoiceReportRow {
+  id: number;
+  type: InvoiceType;
+  series: string;
+  number: string;
+  issuedAt: string;
+  receiverTaxId: string;
+  receiverName: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: InvoiceStatus;
+}
+
+export interface InvoiceReportResponse {
+  startDate: string;
+  endDate: string;
+  totalInvoices: number;
+  totalBills: number;
+  totalTaxAmount: number;
+  totalAmount: number;
+  documents: InvoiceReportRow[];
+}
+
+// Purchase Report
+export interface PurchaseReportRow {
+  supplierId: number;
+  supplierName: string;
+  supplierDocNumber: string;
+  purchaseCount: number;
+  totalAmount: number;
+}
+
+export interface PurchaseReportResponse {
+  startDate: string;
+  endDate: string;
+  totalPurchases: number;
+  totalAmount: number;
+  bySupplier: PurchaseReportRow[];
+}
+
+// Inventory Report
+export interface InventoryWarehouseRow {
+  warehouseId: number;
+  warehouseName: string;
+  variantCount: number;
+  units: number;
+  value: number;
+}
+
+export interface InventoryReportResponse {
+  reportDate: string;
+  totalVariants: number;
+  totalUnits: number;
+  totalValue: number;
+  byWarehouse: InventoryWarehouseRow[];
+}
+
+// Payment Report
+export interface PaymentMethodRow {
+  paymentMethodId: number;
+  paymentMethodName: string;
+  count: number;
+  amount: number;
+}
+
+export interface PaymentReportResponse {
+  startDate: string;
+  endDate: string;
+  totalPayments: number;
+  totalAmount: number;
+  byPaymentMethod: PaymentMethodRow[];
 }

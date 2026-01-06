@@ -14,6 +14,7 @@ import com.pegasus.backend.features.rma.repository.RmaRepository;
 import com.pegasus.backend.shared.enums.OrderStatus;
 import com.pegasus.backend.shared.enums.RmaStatus;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -296,7 +297,7 @@ public class DashboardService {
                 SELECT oi.productId, oi.productName, p.code, oi.sku, 
                        SUM(oi.quantity), SUM(oi.total)
                 FROM OrderItem oi
-                JOIN Order o ON oi.orderId = o.id
+                JOIN oi.order o
                 LEFT JOIN Product p ON oi.productId = p.id
                 WHERE o.status IN (:statuses)
                 GROUP BY oi.productId, oi.productName, p.code, oi.sku
@@ -618,25 +619,27 @@ public class DashboardService {
 
     /**
      * Obtener ventas diarias (últimos N días)
+     * Usa Native Query con funciones PostgreSQL
      */
+    @SuppressWarnings("unchecked")
     private List<ChartPointResponse> getDailySalesData(int days) {
         OffsetDateTime now = OffsetDateTime.now(PERU_OFFSET);
         OffsetDateTime start = now.minusDays(days).withHour(0).withMinute(0).withSecond(0).withNano(0);
         
-        List<OrderStatus> countableStatuses = List.of(
-                OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED
-        );
+        List<String> countableStatuses = List.of("PAID", "PROCESSING", "SHIPPED", "DELIVERED");
         
-        String jpql = """
-                SELECT FUNCTION('DATE', o.createdAt), COALESCE(SUM(o.total), 0), COUNT(o)
-                FROM Order o
-                WHERE o.createdAt >= :start
+        String sql = """
+                SELECT DATE(o.created_at) as sale_date, 
+                       COALESCE(SUM(o.total), 0) as total_sales, 
+                       COUNT(o.id) as order_count
+                FROM orders o
+                WHERE o.created_at >= :start
                 AND o.status IN (:statuses)
-                GROUP BY FUNCTION('DATE', o.createdAt)
-                ORDER BY FUNCTION('DATE', o.createdAt) ASC
+                GROUP BY DATE(o.created_at)
+                ORDER BY DATE(o.created_at) ASC
                 """;
         
-        TypedQuery<Object[]> query = entityManager.createQuery(jpql, Object[].class);
+        Query query = entityManager.createNativeQuery(sql);
         query.setParameter("start", start);
         query.setParameter("statuses", countableStatuses);
         
@@ -645,7 +648,7 @@ public class DashboardService {
         // Crear mapa con resultados
         Map<LocalDate, Object[]> dataMap = new HashMap<>();
         for (Object[] row : results) {
-            LocalDate date = (LocalDate) row[0];
+            LocalDate date = ((java.sql.Date) row[0]).toLocalDate();
             dataMap.put(date, row);
         }
         
@@ -659,7 +662,7 @@ public class DashboardService {
                 chartData.add(new ChartPointResponse(
                         date.toString(),
                         (BigDecimal) data[1],
-                        (Long) data[2]
+                        ((Number) data[2]).longValue()
                 ));
             } else {
                 chartData.add(new ChartPointResponse(
@@ -675,27 +678,29 @@ public class DashboardService {
 
     /**
      * Obtener ventas mensuales (últimos N meses)
+     * Usa Native Query con funciones PostgreSQL (EXTRACT)
      */
+    @SuppressWarnings("unchecked")
     private List<ChartPointResponse> getMonthlySalesData(int months) {
         OffsetDateTime now = OffsetDateTime.now(PERU_OFFSET);
         OffsetDateTime start = now.minusMonths(months).withDayOfMonth(1)
                 .withHour(0).withMinute(0).withSecond(0).withNano(0);
         
-        List<OrderStatus> countableStatuses = List.of(
-                OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED
-        );
+        List<String> countableStatuses = List.of("PAID", "PROCESSING", "SHIPPED", "DELIVERED");
         
-        String jpql = """
-                SELECT FUNCTION('YEAR', o.createdAt), FUNCTION('MONTH', o.createdAt), 
-                       COALESCE(SUM(o.total), 0), COUNT(o)
-                FROM Order o
-                WHERE o.createdAt >= :start
+        String sql = """
+                SELECT EXTRACT(YEAR FROM o.created_at)::INTEGER as sale_year, 
+                       EXTRACT(MONTH FROM o.created_at)::INTEGER as sale_month,
+                       COALESCE(SUM(o.total), 0) as total_sales, 
+                       COUNT(o.id) as order_count
+                FROM orders o
+                WHERE o.created_at >= :start
                 AND o.status IN (:statuses)
-                GROUP BY FUNCTION('YEAR', o.createdAt), FUNCTION('MONTH', o.createdAt)
-                ORDER BY FUNCTION('YEAR', o.createdAt) ASC, FUNCTION('MONTH', o.createdAt) ASC
+                GROUP BY EXTRACT(YEAR FROM o.created_at), EXTRACT(MONTH FROM o.created_at)
+                ORDER BY EXTRACT(YEAR FROM o.created_at) ASC, EXTRACT(MONTH FROM o.created_at) ASC
                 """;
         
-        TypedQuery<Object[]> query = entityManager.createQuery(jpql, Object[].class);
+        Query query = entityManager.createNativeQuery(sql);
         query.setParameter("start", start);
         query.setParameter("statuses", countableStatuses);
         
@@ -704,8 +709,8 @@ public class DashboardService {
         // Crear mapa con resultados (key: "YYYY-MM")
         Map<String, Object[]> dataMap = new HashMap<>();
         for (Object[] row : results) {
-            Integer year = (Integer) row[0];
-            Integer month = (Integer) row[1];
+            Integer year = ((Number) row[0]).intValue();
+            Integer month = ((Number) row[1]).intValue();
             String key = String.format("%d-%02d", year, month);
             dataMap.put(key, row);
         }
@@ -724,7 +729,7 @@ public class DashboardService {
                 chartData.add(new ChartPointResponse(
                         label,
                         (BigDecimal) data[2],
-                        (Long) data[3]
+                        ((Number) data[3]).longValue()
                 ));
             } else {
                 chartData.add(new ChartPointResponse(
