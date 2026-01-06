@@ -34,7 +34,7 @@ public class RmaApprovalService {
      */
     @Transactional
     public RmaResponse approveOrRejectRma(Long rmaId, ApproveRmaRequest request, Long staffUserId) {
-        log.info("Processing RMA approval/rejection for id: {} by staff: {}", 
+        log.info("Processing RMA approval/rejection for id: {} by staff: {}",
                 rmaId, staffUserId);
 
         Rma rma = rmaService.findRmaById(rmaId);
@@ -42,8 +42,8 @@ public class RmaApprovalService {
         // Validar que está en estado PENDING
         if (rma.getStatus() != RmaStatus.PENDING) {
             throw new BadRequestException(
-                    "Solo se pueden aprobar/rechazar RMAs en estado PENDING. Estado actual: " 
-                    + rma.getStatus());
+                    "Solo se pueden aprobar/rechazar RMAs en estado PENDING. Estado actual: "
+                            + rma.getStatus());
         }
 
         if (request.approved()) {
@@ -73,7 +73,7 @@ public class RmaApprovalService {
         Rma savedRma = rmaRepository.save(rma);
 
         // Crear historial
-        rmaService.createStatusHistory(rma.getId(), RmaStatus.APPROVED, 
+        rmaService.createStatusHistory(rma.getId(), RmaStatus.APPROVED,
                 approvalNote, staffUserId);
 
         log.info("RMA approved successfully: {}", rma.getRmaNumber());
@@ -101,7 +101,7 @@ public class RmaApprovalService {
         Rma savedRma = rmaRepository.save(rma);
 
         // Crear historial
-        rmaService.createStatusHistory(rma.getId(), RmaStatus.REJECTED, 
+        rmaService.createStatusHistory(rma.getId(), RmaStatus.REJECTED,
                 rejectionNote, staffUserId);
 
         log.info("RMA rejected: {}", rma.getRmaNumber());
@@ -116,11 +116,11 @@ public class RmaApprovalService {
 
         // Política de cargos por reposición (restocking fee)
         BigDecimal restockingFeePercentage = switch (reason) {
-            case DEFECTIVE, WRONG_ITEM, NOT_AS_DESCRIBED, DAMAGED_SHIPPING -> 
+            case DEFECTIVE, WRONG_ITEM, NOT_AS_DESCRIBED, DAMAGED_SHIPPING ->
                 BigDecimal.ZERO; // Culpa de la empresa, sin cargo
-            case CHANGED_MIND, SIZE_COLOR -> 
+            case CHANGED_MIND, SIZE_COLOR ->
                 new BigDecimal("0.10"); // 10% cargo por cambio de opinión
-            case LATE_DELIVERY, OTHER -> 
+            case LATE_DELIVERY, OTHER ->
                 new BigDecimal("0.05"); // 5% cargo moderado
         };
 
@@ -137,7 +137,7 @@ public class RmaApprovalService {
         // Política de reembolso de envío
         // Solo si la culpa es de la empresa
         BigDecimal shippingCostRefund = switch (reason) {
-            case DEFECTIVE, WRONG_ITEM, NOT_AS_DESCRIBED, DAMAGED_SHIPPING -> 
+            case DEFECTIVE, WRONG_ITEM, NOT_AS_DESCRIBED, DAMAGED_SHIPPING ->
                 BigDecimal.ZERO; // Simplificado: obtener del order en producción
             default -> BigDecimal.ZERO;
         };
@@ -159,8 +159,8 @@ public class RmaApprovalService {
 
         if (rma.getStatus() != RmaStatus.IN_TRANSIT) {
             throw new BadRequestException(
-                    "Solo se pueden marcar como recibidos RMAs en estado IN_TRANSIT. Estado actual: " 
-                    + rma.getStatus());
+                    "Solo se pueden marcar como recibidos RMAs en estado IN_TRANSIT. Estado actual: "
+                            + rma.getStatus());
         }
 
         rma.setStatus(RmaStatus.RECEIVED);
@@ -173,6 +173,32 @@ public class RmaApprovalService {
         rmaService.createStatusHistory(rma.getId(), RmaStatus.RECEIVED, note, staffUserId);
 
         log.info("RMA marked as received: {}", rma.getRmaNumber());
+        return rmaMapper.toResponse(savedRma);
+    }
+
+    /**
+     * Marcar RMA como enviado por cliente (en tránsito)
+     */
+    @Transactional
+    public RmaResponse markAsInTransit(Long rmaId, String comments, Long staffUserId) {
+        log.info("Marking RMA as in transit: {} by staff: {}", rmaId, staffUserId);
+
+        Rma rma = rmaService.findRmaById(rmaId);
+
+        if (rma.getStatus() != RmaStatus.APPROVED) {
+            throw new BadRequestException(
+                    "Solo se pueden marcar como en tránsito RMAs en estado APPROVED. Estado actual: "
+                            + rma.getStatus());
+        }
+
+        rma.setStatus(RmaStatus.IN_TRANSIT);
+
+        Rma savedRma = rmaRepository.save(rma);
+
+        String note = "Cliente envió el paquete. " + (comments != null ? comments : "");
+        rmaService.createStatusHistory(rma.getId(), RmaStatus.IN_TRANSIT, note, staffUserId);
+
+        log.info("RMA marked as in transit: {}", rma.getRmaNumber());
         return rmaMapper.toResponse(savedRma);
     }
 }

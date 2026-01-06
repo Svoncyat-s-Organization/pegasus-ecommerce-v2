@@ -83,11 +83,11 @@ export const REFUND_METHOD_LABELS: Record<RefundMethod, string> = {
  */
 export const RMA_ACTIONS_BY_STATUS: Record<RmaStatus, string[]> = {
   PENDING: ['approve', 'reject', 'cancel'],
-  APPROVED: ['mark-received', 'cancel'],
+  APPROVED: ['mark-in-transit', 'cancel'],
   REJECTED: [],
   IN_TRANSIT: ['mark-received'],
   RECEIVED: ['inspect-items', 'cancel'],
-  INSPECTING: ['complete-inspection'],
+  INSPECTING: ['inspect-items', 'complete-inspection'],
   REFUNDED: ['close'],
   CLOSED: [],
   CANCELLED: [],

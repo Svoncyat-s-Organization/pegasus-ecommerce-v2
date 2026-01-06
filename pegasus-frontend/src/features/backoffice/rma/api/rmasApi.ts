@@ -4,6 +4,7 @@ import type {
   RmaSummaryResponse,
   PageResponse,
   RmaStatus,
+  CreateRmaRequest,
   ApproveRmaRequest,
   InspectItemRequest,
   RmaItemResponse,
@@ -24,7 +25,7 @@ export const getRmas = async (
   status?: RmaStatus,
   customerId?: number
 ): Promise<PageResponse<RmaSummaryResponse>> => {
-  const params: Record<string, any> = { page, size };
+  const params: Record<string, string | number | boolean | undefined> = { page, size };
   if (search) params.search = search;
   if (status) params.status = status;
   if (customerId) params.customerId = customerId;
@@ -38,6 +39,14 @@ export const getRmas = async (
  */
 export const getRmaById = async (id: number): Promise<RmaResponse> => {
   const { data } = await api.get(`/admin/rmas/${id}`);
+  return data;
+};
+
+/**
+ * Crear una nueva devolución (RMA) desde backoffice
+ */
+export const createRma = async (request: CreateRmaRequest): Promise<RmaResponse> => {
+  const { data } = await api.post('/admin/rmas', request);
   return data;
 };
 
@@ -109,6 +118,19 @@ export const approveOrRejectRma = async (
   request: ApproveRmaRequest
 ): Promise<RmaResponse> => {
   const { data } = await api.post(`/admin/rmas/${id}/approve`, request);
+  return data;
+};
+
+/**
+ * Marcar RMA como en tránsito (cliente envió el paquete)
+ */
+export const markAsInTransit = async (
+  id: number,
+  comments?: string
+): Promise<RmaResponse> => {
+  const { data } = await api.post(`/admin/rmas/${id}/mark-in-transit`, null, {
+    params: { comments },
+  });
   return data;
 };
 

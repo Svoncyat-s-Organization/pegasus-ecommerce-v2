@@ -485,7 +485,7 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
                     </Col>
                   </Row>
 
-                  <Divider orientation="left" style={{ marginTop: 24, marginBottom: 16 }}>
+                  <Divider titlePlacement="start" style={{ marginTop: 24, marginBottom: 16 }}>
                     Ubicación
                   </Divider>
 
@@ -532,7 +532,7 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
                             label: prov.name,
                             value: prov.id,
                           }))}
-                          loading={selectedDepartment && !provinces}
+                          loading={!!selectedDepartment && !provinces}
                         />
                       </Form.Item>
                     </Col>
@@ -551,13 +551,13 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
                             label: dist.name,
                             value: dist.id,
                           }))}
-                          loading={selectedProvince && !districts}
+                          loading={!!selectedProvince && !districts}
                         />
                       </Form.Item>
                     </Col>
                   </Row>
 
-                  <Divider orientation="left" style={{ marginTop: 24, marginBottom: 16 }}>
+                  <Divider titlePlacement="start" style={{ marginTop: 24, marginBottom: 16 }}>
                     Detalles de Dirección
                   </Divider>
 

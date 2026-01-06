@@ -1,4 +1,4 @@
-import { Modal, Form, Radio, Input, Button, Alert } from 'antd';
+import { Modal, Form, Radio, Input, Button } from 'antd';
 import { useRmaMutations } from '../hooks/useRmaMutations';
 
 const { TextArea } = Input;
@@ -27,7 +27,7 @@ export const ApprovalModal = ({ rmaId, open, onClose }: ApprovalModalProps) => {
         form.resetFields();
         onClose();
       }
-    } catch (error) {
+    } catch {
       // Form validation error or mutation error (handled in hook)
     }
   };
@@ -83,13 +83,6 @@ export const ApprovalModal = ({ rmaId, open, onClose }: ApprovalModalProps) => {
           />
         </Form.Item>
 
-        <Alert
-          message="Información"
-          description="Si aprueba: el cliente podrá enviar los productos. Si rechaza: la solicitud será cerrada."
-          type="info"
-          showIcon
-          style={{ marginTop: 16 }}
-        />
       </Form>
     </Modal>
   );

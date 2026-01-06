@@ -1,5 +1,5 @@
 import { Table, Tag, Button, Space, Popconfirm, Badge } from 'antd';
-import { IconEye, IconX, IconCheck, IconBan } from '@tabler/icons-react';
+import { IconEye, IconX } from '@tabler/icons-react';
 import type { RmaSummaryResponse, RmaStatus } from '@types';
 import { RMA_STATUS_LABELS, RMA_STATUS_COLORS, RMA_REASON_LABELS, isActionAvailable } from '../constants/rmaConstants';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -13,8 +13,6 @@ interface RmaListProps {
   totalElements: number;
   onPageChange: (page: number, pageSize: number) => void;
   onViewDetail: (rmaId: number) => void;
-  onApprove: (rmaId: number) => void;
-  onReject: (rmaId: number) => void;
   onCancel: (rmaId: number) => void;
 }
 
@@ -26,8 +24,6 @@ export const RmaList = ({
   totalElements,
   onPageChange,
   onViewDetail,
-  onApprove,
-  onReject,
   onCancel,
 }: RmaListProps) => {
   const columns = [
@@ -35,7 +31,7 @@ export const RmaList = ({
       title: '#',
       key: 'index',
       width: 60,
-      render: (_: any, __: any, index: number) => (page * pageSize) + index + 1,
+      render: (_: unknown, __: RmaSummaryResponse, index: number) => (page * pageSize) + index + 1,
     },
     {
       title: 'N° RMA',
@@ -98,7 +94,7 @@ export const RmaList = ({
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 150,
+      width: 110,
       render: (record: RmaSummaryResponse) => (
         <Space size="small">
           <Button
@@ -108,40 +104,6 @@ export const RmaList = ({
             title="Ver detalles"
             onClick={() => onViewDetail(record.id)}
           />
-          {isActionAvailable(record.status, 'approve') && (
-            <Popconfirm
-              title="¿Aprobar RMA?"
-              description="El cliente podrá enviar los productos"
-              onConfirm={() => onApprove(record.id)}
-              okText="Sí"
-              cancelText="No"
-            >
-              <Button
-                type="link"
-                size="small"
-                icon={<IconCheck size={16} />}
-                title="Aprobar"
-                style={{ color: '#52c41a' }}
-              />
-            </Popconfirm>
-          )}
-          {isActionAvailable(record.status, 'reject') && (
-            <Popconfirm
-              title="¿Rechazar RMA?"
-              description="Esta acción no se puede deshacer"
-              onConfirm={() => onReject(record.id)}
-              okText="Sí"
-              cancelText="No"
-            >
-              <Button
-                type="link"
-                danger
-                size="small"
-                icon={<IconBan size={16} />}
-                title="Rechazar"
-              />
-            </Popconfirm>
-          )}
           {isActionAvailable(record.status, 'cancel') && (
             <Popconfirm
               title="¿Cancelar RMA?"
