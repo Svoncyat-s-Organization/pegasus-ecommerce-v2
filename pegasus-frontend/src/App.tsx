@@ -20,6 +20,10 @@ function App() {
           colorPrimary: '#2f54eb',
           borderRadius: 6,
           fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
+          ...(isDark && {
+            colorBgContainer: '#1f1f1f',
+            colorBgLayout: '#000000ff',
+          }),
         },
       }}
     >

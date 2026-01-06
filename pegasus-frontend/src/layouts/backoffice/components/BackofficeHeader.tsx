@@ -45,6 +45,9 @@ export const BackofficeHeader = () => {
         justifyContent: 'space-between',
         alignItems: 'center',
         borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
       }}
     >
       <Space direction="vertical" size={0} style={{ lineHeight: 'normal' }}>

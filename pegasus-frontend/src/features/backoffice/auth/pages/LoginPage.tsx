@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message, Alert } from 'antd';
+import { Form, Input, Button, Card, Typography, message, Alert, theme } from 'antd';
 import { IconLock, IconMail } from '@tabler/icons-react';
 import { useLogin } from '../hooks/useLogin';
 import { useNavigate } from 'react-router-dom';
 import type { LoginRequest } from '@types';
 
 const { Title, Text } = Typography;
+const { useToken } = theme;
 
 export const LoginPage = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const loginMutation = useLogin();
   const [isLoading, setIsLoading] = useState(false);
+  const { token } = useToken();
 
   const onFinish = async (values: LoginRequest) => {
     setIsLoading(true);
@@ -36,7 +38,8 @@ export const LoginPage = () => {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '100vh',
-        background: '#f5f5f5',
+        background: token.colorBgLayout,
+        transition: 'background 0.3s ease',
       }}
     >
       <Card
@@ -44,7 +47,7 @@ export const LoginPage = () => {
           width: 420,
           boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           borderRadius: 15,
-          border: '1px solid #e8e8e8',
+          border: '1px solid #303030',
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>

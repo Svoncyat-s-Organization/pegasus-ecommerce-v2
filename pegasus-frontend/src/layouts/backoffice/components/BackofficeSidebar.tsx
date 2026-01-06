@@ -1,4 +1,4 @@
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, theme } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
@@ -23,6 +23,7 @@ import logoSvg from '@assets/logo/default.svg';
 import logoInvertedSvg from '@assets/logo/inverted.svg';
 
 const { Sider } = Layout;
+const { useToken } = theme;
 
 const menuItems: MenuItem[] = [
   {
@@ -218,6 +219,7 @@ export const BackofficeSidebar = () => {
   const { collapsed, toggleCollapsed } = useSidebarStore();
   const { isDark, toggleTheme } = useThemeStore();
   const { data: allowedPaths, isLoading } = useUserPermissions();
+  const { token } = useToken();
 
   // Logo actual según el tema
   const currentLogo = isDark ? logoInvertedSvg : logoSvg;
@@ -230,8 +232,8 @@ export const BackofficeSidebar = () => {
     left: 0,
     top: 0,
     bottom: 0,
-    borderRight: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-    ...(isDark && { background: '#141414' }), // Fondo gris oscuro en dark mode
+    borderRight: `1px solid ${token.colorBorder}`,
+    background: token.colorBgContainer,
   };
 
   // Estilos reutilizables para el logo header
@@ -244,8 +246,8 @@ export const BackofficeSidebar = () => {
     gap: collapsed ? 0 : 8,
     fontSize: collapsed ? 14 : 16,
     fontWeight: 600,
-    borderBottom: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-    color: isDark ? '#ffffff' : '#1f1f1f',
+    borderBottom: `1px solid ${token.colorBorder}`,
+    color: token.colorText,
     cursor: 'pointer',
     userSelect: 'none' as const,
     transition: 'opacity 0.2s',

@@ -6,6 +6,7 @@ import { StorefrontProtectedRoute } from '@routes/StorefrontProtectedRoute';
 
 // Backoffice Pages
 import { LoginPage as AdminLoginPage } from '@features/backoffice/auth/pages/LoginPage';
+import { DashboardPage } from '@features/backoffice/dashboard';
 import { UsersListPage } from '@features/backoffice/security';
 import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
 import { CustomersListPage } from '@features/backoffice/customer';
@@ -15,6 +16,8 @@ import { OrderListPage } from '@features/backoffice/order';
 import { RmaListPage } from '@features/backoffice/rma';
 import { WarehouseListPage, StockListPage, MovementListPage } from '@features/backoffice/inventory';
 import { PurchasesListPage, SuppliersListPage } from '@features/backoffice/purchase';
+import { ReportsPage } from '@features/backoffice/report';
+import { SettingsPage } from '@features/backoffice/settings';
 import {
   BillingDocumentSeriesPage,
   BillingInvoicesPage,
@@ -30,13 +33,6 @@ import { CartPage } from '@features/storefront/cart';
 import { CheckoutPage, OrderConfirmationPage } from '@features/storefront/checkout';
 
 // Temporary placeholder pages
-const DashboardPage = () => (
-  <div style={{ padding: '24px' }}>
-    <h1 style={{ marginBottom: '8px', fontSize: '24px', fontWeight: 600 }}>Dashboard</h1>
-    <p style={{ color: '#666' }}>Panel de control principal del backoffice</p>
-  </div>
-);
-
 const PlaceholderPage = ({ title, description }: { title: string; description: string }) => (
   <div style={{ padding: '24px' }}>
     <h1 style={{ marginBottom: '8px', fontSize: '24px', fontWeight: 600 }}>{title}</h1>
@@ -108,10 +104,10 @@ export const AppRoutes = () => {
         <Route path="security/roles" element={<RolesPermissionsPage />} />
 
         {/* Reports */}
-        <Route path="reports" element={<PlaceholderPage title="Reportes" description="Generación de reportes y estadísticas" />} />
+        <Route path="reports" element={<ReportsPage />} />
 
         {/* Settings */}
-        <Route path="settings" element={<PlaceholderPage title="Configuración" description="Configuración general del sistema" />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       {/* ==================== STOREFRONT ROUTES ==================== */}
