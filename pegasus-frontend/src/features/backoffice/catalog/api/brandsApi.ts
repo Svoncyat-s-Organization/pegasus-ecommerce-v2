@@ -41,7 +41,7 @@ export const updateBrand = async (id: number, request: UpdateBrandRequest): Prom
 };
 
 /**
- * Eliminar marca (soft delete)
+ * Eliminar marca (eliminación física permanente)
  */
 export const deleteBrand = async (id: number): Promise<void> => {
   await api.delete(`/admin/brands/${id}`);
@@ -52,5 +52,15 @@ export const deleteBrand = async (id: number): Promise<void> => {
  */
 export const toggleBrandStatus = async (id: number): Promise<BrandResponse> => {
   const { data } = await api.put(`/admin/brands/${id}/toggle-status`);
+  return data;
+};
+
+/**
+ * Generar slug a partir de un nombre
+ */
+export const generateSlug = async (name: string): Promise<string> => {
+  const { data } = await api.get(`/admin/brands/generate-slug`, {
+    params: { name },
+  });
   return data;
 };

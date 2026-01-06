@@ -15,7 +15,6 @@ public record CreateBrandRequest(
         @Size(max = 50, message = "El slug no puede exceder 50 caracteres")
         String slug,
 
-        @NotBlank(message = "La URL de la imagen es requerida")
         @Size(max = 255, message = "La URL no puede exceder 255 caracteres")
         String imageUrl
 ) {}

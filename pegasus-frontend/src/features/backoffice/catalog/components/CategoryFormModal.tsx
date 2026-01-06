@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, message } from 'antd';
+import { Modal, Form, Input, Select } from 'antd';
 import { useRootCategories } from '../hooks/useCategories';
 import { generateSlug } from '../api/categoriesApi';
 import type { CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest } from '@types';

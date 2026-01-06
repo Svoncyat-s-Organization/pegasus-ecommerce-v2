@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography } from 'antd';
 import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch, IconFolder, IconFile } from '@tabler/icons-react';
-import { useCategories, useDeleteCategory, useToggleCategoryStatus, useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
+import { useDeleteCategory, useToggleCategoryStatus, useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { CategoryFormModal } from '../components/CategoryFormModal';
 import { getCategoriesTree } from '../api/categoriesApi';

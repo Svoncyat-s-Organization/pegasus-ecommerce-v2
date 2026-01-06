@@ -7,6 +7,7 @@ import com.pegasus.backend.features.catalog.dto.UpdateBrandRequest;
 import com.pegasus.backend.features.catalog.entity.Brand;
 import com.pegasus.backend.features.catalog.mapper.BrandMapper;
 import com.pegasus.backend.features.catalog.repository.BrandRepository;
+import com.pegasus.backend.features.catalog.repository.ProductRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
 
 /**
@@ -28,6 +30,7 @@ public class BrandService {
 
     private final BrandRepository brandRepository;
     private final BrandMapper brandMapper;
+    private final ProductRepository productRepository;
 
     /**
      * Obtener todas las marcas con paginación y búsqueda opcional
@@ -112,19 +115,29 @@ public class BrandService {
     }
 
     /**
-     * Eliminar marca (soft delete)
+     * Eliminar marca (eliminación física - permanente)
      */
     @Transactional
     public void deleteBrand(Long id) {
-        log.info("Deleting brand: {}", id);
+        log.info("Deleting brand physically: {}", id);
         Brand brand = findBrandById(id);
-        brand.setIsActive(false);
-        brandRepository.save(brand);
-        log.info("Brand deleted successfully: {}", id);
+
+        // Verificar si tiene productos asociados
+        long productCount = productRepository.countByBrandId(id);
+        if (productCount > 0) {
+            throw new IllegalStateException(
+                String.format("No se puede eliminar la marca porque tiene %d producto(s) asociado(s). " +
+                    "Primero debes eliminar o reasignar los productos.", productCount)
+            );
+        }
+
+        // Eliminación física permanente
+        brandRepository.deleteById(id);
+        log.info("Brand deleted permanently: {}", id);
     }
 
     /**
-     * Alternar estado activo/inactivo
+     * Alternar estado activo/inactivo (soft delete reversible)
      */
     @Transactional
     public BrandResponse toggleBrandStatus(Long id) {
@@ -134,6 +147,24 @@ public class BrandService {
         Brand updated = brandRepository.save(brand);
         log.info("Brand status toggled: {} -> {}", id, updated.getIsActive());
         return brandMapper.toResponse(updated);
+    }
+
+    /**
+     * Generar slug a partir de un nombre
+     */
+    public String generateSlug(String name) {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+        
+        // Normalizar y remover acentos
+        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
+            .replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
+        
+        // Convertir a minúsculas, reemplazar espacios y caracteres especiales por guiones
+        return normalized.toLowerCase()
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("^-+|-+$", ""); // Remover guiones al inicio y final
     }
 
     /**

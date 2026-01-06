@@ -67,9 +67,10 @@ public class BrandController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar marca", description = "Eliminación lógica (soft delete)")
+    @Operation(summary = "Eliminar marca", description = "Eliminación física permanente. Solo permitida si no tiene productos asociados")
     @ApiResponse(responseCode = "204", description = "Marca eliminada exitosamente")
     @ApiResponse(responseCode = "404", description = "Marca no encontrada")
+    @ApiResponse(responseCode = "400", description = "No se puede eliminar porque tiene productos asociados")
     public ResponseEntity<Void> deleteBrand(@PathVariable Long id) {
         brandService.deleteBrand(id);
         return ResponseEntity.noContent().build();
@@ -81,5 +82,13 @@ public class BrandController {
     public ResponseEntity<BrandResponse> toggleBrandStatus(@PathVariable Long id) {
         BrandResponse response = brandService.toggleBrandStatus(id);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/generate-slug")
+    @Operation(summary = "Generar slug", description = "Genera un slug URL-friendly a partir de un nombre")
+    @ApiResponse(responseCode = "200", description = "Slug generado exitosamente")
+    public ResponseEntity<String> generateSlug(@RequestParam String name) {
+        String slug = brandService.generateSlug(name);
+        return ResponseEntity.ok(slug);
     }
 }

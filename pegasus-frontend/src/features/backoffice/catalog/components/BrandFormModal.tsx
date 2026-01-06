@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Form, Input } from 'antd';
+import { generateSlug } from '../api/brandsApi';
 import type { BrandResponse, CreateBrandRequest, UpdateBrandRequest } from '@types';
 
 interface BrandFormModalProps {
@@ -18,16 +19,19 @@ export const BrandFormModal = ({
   loading,
 }: BrandFormModalProps) => {
   const [form] = Form.useForm();
+  const [slugModifiedManually, setSlugModifiedManually] = useState(false);
   const isEdit = !!initialValues;
 
   useEffect(() => {
     if (open) {
+      setSlugModifiedManually(false);
       if (initialValues) {
         form.setFieldsValue({
           name: initialValues.name,
           slug: initialValues.slug,
           imageUrl: initialValues.imageUrl,
         });
+        setSlugModifiedManually(true); // En modo edición, no auto-generar
       } else {
         form.resetFields();
       }
@@ -45,7 +49,27 @@ export const BrandFormModal = ({
 
   const handleCancel = () => {
     form.resetFields();
+    setSlugModifiedManually(false);
     onCancel();
+  };
+
+  const handleNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    
+    // Solo auto-generar si no está editando y el usuario no ha modificado el slug manualmente
+    if (!isEdit && !slugModifiedManually && name.trim()) {
+      try {
+        const slug = await generateSlug(name);
+        form.setFieldsValue({ slug });
+      } catch (error) {
+        console.error('Error generating slug:', error);
+      }
+    }
+  };
+
+  const handleSlugChange = () => {
+    // Marcar que el usuario modificó el slug manualmente
+    setSlugModifiedManually(true);
   };
 
   return (
@@ -73,7 +97,10 @@ export const BrandFormModal = ({
             { max: 100, message: 'Máximo 100 caracteres' },
           ]}
         >
-          <Input placeholder="Ingrese el nombre de la marca" />
+          <Input 
+            placeholder="Ingrese el nombre de la marca" 
+            onChange={handleNameChange}
+          />
         </Form.Item>
 
         <Form.Item
@@ -84,14 +111,17 @@ export const BrandFormModal = ({
             { max: 100, message: 'Máximo 100 caracteres' },
             { pattern: /^[a-z0-9-]+$/, message: 'Solo letras minúsculas, números y guiones' },
           ]}
-          tooltip="URL amigable (ejemplo: nike, adidas)"
+          tooltip="URL amigable (ejemplo: nike, adidas). Se genera automáticamente al escribir el nombre"
         >
-          <Input placeholder="Ingrese el slug (ej: nike)" />
+          <Input 
+            placeholder="Ingrese el slug (ej: nike)" 
+            onChange={handleSlugChange}
+          />
         </Form.Item>
 
         <Form.Item
           name="imageUrl"
-          label="URL de Imagen"
+          label="URL de Imagen (Opcional)"
           rules={[
             { type: 'url', message: 'Debe ser una URL válida' },
           ]}

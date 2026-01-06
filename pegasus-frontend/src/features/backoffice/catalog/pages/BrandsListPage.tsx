@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconPower } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch } from '@tabler/icons-react';
 import { useBrands, useDeleteBrand, useToggleBrandStatus, useCreateBrand, useUpdateBrand } from '../hooks/useBrands';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { BrandFormModal } from '../components/BrandFormModal';
@@ -111,11 +111,12 @@ export const BrandsListPage = () => {
             title={record.isActive ? 'Desactivar' : 'Activar'}
           />
           <Popconfirm
-            title="¿Eliminar marca?"
-            description="Esta acción no se puede deshacer"
+            title="¿Eliminar marca permanentemente?"
+            description="Esta acción es irreversible. Solo se puede eliminar si no tiene productos asociados."
             onConfirm={() => handleDelete(record.id)}
-            okText="Sí"
-            cancelText="No"
+            okText="Sí, eliminar"
+            cancelText="Cancelar"
+            okButtonProps={{ danger: true }}
           >
             <Button
               type="link"
@@ -157,6 +158,7 @@ export const BrandsListPage = () => {
             setPage(0);
           }}
           allowClear
+          prefix={<IconSearch size={16} />}
           style={{ maxWidth: 400 }}
         />
         <Button type="primary" icon={<IconPlus size={16} />} onClick={() => handleOpenModal()}>
