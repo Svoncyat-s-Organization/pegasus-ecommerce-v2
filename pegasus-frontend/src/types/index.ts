@@ -125,10 +125,22 @@ export type PurchaseStatus = 'PENDING' | 'RECEIVED' | 'CANCELLED';
 export interface PurchaseItemResponse {
   id: number;
   variantId: number;
+  variantSku?: string;
+  productName?: string;
   quantity: number;
+  receivedQuantity?: number;
   unitCost: number;
   subtotal: number;
   createdAt: string;
+}
+
+export interface ReceiveItemRequest {
+  itemId: number;
+  quantity: number;
+}
+
+export interface ReceiveItemsRequest {
+  items: ReceiveItemRequest[];
 }
 
 export interface CreatePurchaseItemRequest {
@@ -171,7 +183,7 @@ export interface PurchaseResponse {
 // ============================================
 // Billing Module Types (Invoices & Payments)
 // ============================================
-export type InvoiceType = 'BILL' | 'INVOICE';
+export type InvoiceType = 'BILL' | 'INVOICE' | 'CREDIT_NOTE';
 
 export type InvoiceStatus = 'ISSUED' | 'CANCELLED' | 'REJECTED';
 

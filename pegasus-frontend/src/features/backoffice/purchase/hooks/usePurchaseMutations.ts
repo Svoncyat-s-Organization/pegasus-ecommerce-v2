@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
-import type { CreatePurchaseRequest, UpdatePurchaseStatusRequest } from '@types';
+import type { CreatePurchaseRequest, ReceiveItemsRequest, UpdatePurchaseStatusRequest } from '@types';
 import { purchasesApi } from '../api/purchasesApi';
 
 export const useCreatePurchase = () => {
@@ -33,6 +33,25 @@ export const useUpdatePurchaseStatus = () => {
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
       message.error(err.response?.data?.message || 'Error al actualizar estado');
+    },
+  });
+};
+
+export const useReceivePurchaseItems = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { id: number; request: ReceiveItemsRequest }) =>
+      purchasesApi.receiveItems(params.id, params.request),
+    onSuccess: (_data, variables) => {
+      message.success('Recepción registrada');
+      queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['purchases', 'detail'] });
+      queryClient.invalidateQueries({ queryKey: ['movements', 'purchase', variables.id] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      message.error(err.response?.data?.message || 'Error al recepcionar');
     },
   });
 };

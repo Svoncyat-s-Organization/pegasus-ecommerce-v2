@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Modal, Form, Input, Row, Col, Select } from 'antd';
 import type { CreateSupplierRequest, SupplierDocumentType, UpdateSupplierRequest } from '@types';
 import { useDepartments, useDistricts, useProvinces } from '@shared/hooks/useLocations';
+import { cleanPhone } from '@shared/utils/formatters';
 import { useSupplierById } from '../hooks/useSuppliers';
 import { useCreateSupplier, useUpdateSupplier } from '../hooks/useSupplierMutations';
 
@@ -58,7 +59,7 @@ export const SupplierFormModal = ({ open, mode, supplierId, onCancel }: Supplier
         docNumber: supplier.docNumber,
         companyName: supplier.companyName,
         contactName: supplier.contactName,
-        phone: supplier.phone,
+        phone: supplier.phone ? cleanPhone(supplier.phone) : undefined,
         email: supplier.email,
         address: supplier.address,
         departmentId,
@@ -92,7 +93,7 @@ export const SupplierFormModal = ({ open, mode, supplierId, onCancel }: Supplier
 
     // Clean phone number (remove spaces)
     if (payload.phone) {
-      payload.phone = payload.phone.replace(/\s/g, '');
+      payload.phone = cleanPhone(payload.phone);
     }
 
     if (mode === 'create') {
@@ -196,21 +197,20 @@ export const SupplierFormModal = ({ open, mode, supplierId, onCancel }: Supplier
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="Teléfono" name="phone">
+            <Form.Item
+              label="Teléfono"
+              name="phone"
+              rules={[
+                {
+                  pattern: /^$|^9\d{8}$/,
+                  message: 'Debe ser 9 dígitos e iniciar con 9',
+                },
+              ]}
+            >
               <Input
-                placeholder="Ej: 987 654 321"
-                maxLength={11}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  let formatted = '';
-                  for (let i = 0; i < value.length; i++) {
-                    if (i > 0 && i % 3 === 0) {
-                      formatted += ' ';
-                    }
-                    formatted += value[i];
-                  }
-                  form.setFieldsValue({ phone: formatted });
-                }}
+                placeholder="987654321"
+                addonBefore="+51"
+                maxLength={9}
                 onKeyPress={(event) => {
                   if (!/[0-9]/.test(event.key)) {
                     event.preventDefault();

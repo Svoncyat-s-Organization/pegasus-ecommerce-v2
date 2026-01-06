@@ -3,6 +3,8 @@ package com.pegasus.backend.shared.locations.service;
 import com.pegasus.backend.shared.locations.dto.DepartmentResponse;
 import com.pegasus.backend.shared.locations.dto.DistrictResponse;
 import com.pegasus.backend.shared.locations.dto.ProvinceResponse;
+import com.pegasus.backend.shared.locations.dto.UbigeoResponse;
+import com.pegasus.backend.shared.locations.entity.Ubigeo;
 import com.pegasus.backend.shared.locations.repository.UbigeoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,5 +52,26 @@ public class LocationService {
         return ubigeoRepository.findDistrictsByProvince(provinceId).stream()
                 .map(row -> new DistrictResponse((String) row[0], (String) row[1]))
                 .toList();
+    }
+
+    /**
+     * Obtener ubicación completa por ID de ubigeo (distrito)
+     */
+    public UbigeoResponse getUbigeoById(String ubigeoId) {
+        log.debug("Fetching ubigeo: {}", ubigeoId);
+        Ubigeo ubigeo = ubigeoRepository.findById(ubigeoId)
+                .orElseThrow(() -> new IllegalArgumentException("Ubigeo no encontrado: " + ubigeoId));
+
+        // Extraer departmentId (2 primeros dígitos) y provinceId (4 primeros dígitos)
+        String departmentId = ubigeoId.substring(0, 2);
+        String provinceId = ubigeoId.substring(0, 4);
+
+        return new UbigeoResponse(
+                ubigeo.getId(),
+                ubigeo.getDepartmentName(),
+                ubigeo.getProvinceName(),
+                ubigeo.getDistrictName(),
+                departmentId,
+                provinceId);
     }
 }

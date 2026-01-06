@@ -3,6 +3,7 @@ package com.pegasus.backend.features.order.controller;
 import com.pegasus.backend.features.logistic.dto.ShipmentResponse;
 import com.pegasus.backend.features.order.dto.*;
 import com.pegasus.backend.features.order.service.OrderService;
+import com.pegasus.backend.features.order.service.OrderStatusService;
 import com.pegasus.backend.shared.dto.PageResponse;
 import com.pegasus.backend.shared.enums.OrderStatus;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
         private final OrderService orderService;
+        private final OrderStatusService orderStatusService;
 
         @GetMapping
         @Operation(summary = "Listar pedidos", description = "Obtener todos los pedidos con paginación y filtros opcionales")
@@ -116,5 +118,28 @@ public class OrderController {
                         @Valid @RequestBody CreateShipmentForOrderRequest request) {
                 ShipmentResponse response = orderService.createShipmentForOrder(orderId, request);
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }
+
+        @PostMapping("/{id}/advance-status")
+        @Operation(summary = "Avanzar al siguiente estado", description = "Avanzar automáticamente al siguiente estado lógico en el flujo del pedido")
+        @ApiResponse(responseCode = "200", description = "Estado avanzado exitosamente")
+        @ApiResponse(responseCode = "400", description = "No hay siguiente estado disponible")
+        @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
+        public ResponseEntity<OrderResponse> advanceOrderStatus(
+                        @PathVariable Long id,
+                        @RequestParam(required = false) String notes) {
+                orderStatusService.advanceToNextStatus(id, notes);
+                OrderResponse response = orderService.getOrderById(id);
+                return ResponseEntity.ok(response);
+        }
+
+        @GetMapping("/{id}/next-statuses")
+        @Operation(summary = "Obtener estados siguientes válidos", description = "Obtener lista de estados a los que puede transicionar el pedido actual")
+        @ApiResponse(responseCode = "200", description = "Lista de estados válidos")
+        @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
+        public ResponseEntity<java.util.Set<OrderStatus>> getNextValidStatuses(@PathVariable Long id) {
+                OrderResponse order = orderService.getOrderById(id);
+                java.util.Set<OrderStatus> nextStatuses = orderStatusService.getNextValidStatuses(order.status());
+                return ResponseEntity.ok(nextStatuses);
         }
 }

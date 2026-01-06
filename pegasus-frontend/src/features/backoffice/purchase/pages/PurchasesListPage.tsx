@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconEye, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconEye, IconPlus, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import type { PurchaseResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -29,7 +29,7 @@ export const PurchasesListPage = () => {
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const { data, isLoading } = usePurchases(page, pageSize, debouncedSearch || undefined);
+  const { data, isLoading, refetch, isFetching } = usePurchases(page, pageSize, debouncedSearch || undefined);
   const deletePurchase = useDeletePurchase();
 
   const handleOpenDetail = (id: number) => {
@@ -144,9 +144,14 @@ export const PurchasesListPage = () => {
           allowClear
           style={{ maxWidth: 420 }}
         />
-        <Button type="primary" icon={<IconPlus size={18} />} onClick={() => setCreateOpen(true)}>
-          Nueva Compra
-        </Button>
+        <Space>
+          <Button icon={<IconRefresh size={18} />} onClick={() => refetch()} loading={isFetching} title="Actualizar lista">
+            Actualizar
+          </Button>
+          <Button type="primary" icon={<IconPlus size={18} />} onClick={() => setCreateOpen(true)}>
+            Nueva Compra
+          </Button>
+        </Space>
       </div>
 
       <Table

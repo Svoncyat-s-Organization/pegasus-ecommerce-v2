@@ -1,4 +1,4 @@
-import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert, Button, Space } from 'antd';
+import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert, Button, Space, Divider } from 'antd';
 import { IconTruckDelivery } from '@tabler/icons-react';
 import { useState } from 'react';
 import type { OrderItemResponse, OrderStatusHistoryResponse } from '@types';
@@ -6,6 +6,7 @@ import { useOrderDetail } from '../hooks/useOrderDetail';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../constants/orderStatus';
 import { formatCurrency } from '@shared/utils/formatters';
 import { CreateShipmentModal } from './CreateShipmentModal';
+import { OrderStatusTimeline } from './OrderStatusTimeline';
 import dayjs from 'dayjs';
 
 interface OrderDetailModalProps {
@@ -15,7 +16,7 @@ interface OrderDetailModalProps {
 }
 
 export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalProps) => {
-  const { data: order, isLoading, error } = useOrderDetail(orderId);
+  const { data: order, isLoading, error, refetch } = useOrderDetail(orderId);
   const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
 
   // Estados que permiten crear envíos
@@ -99,6 +100,15 @@ export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalPro
 
       {order && (
         <div>
+          {/* Timeline de Estado del Pedido */}
+          <OrderStatusTimeline
+            currentStatus={order.status}
+            orderId={order.id}
+            onStatusChange={() => refetch()}
+          />
+
+          <Divider />
+
           {/* Información General */}
           <Descriptions title="Información General" bordered column={2} style={{ marginBottom: 24 }}>
             <Descriptions.Item label="N° Pedido" span={2}>

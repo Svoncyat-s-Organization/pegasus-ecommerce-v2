@@ -2,6 +2,7 @@ package com.pegasus.backend.features.purchase.controller;
 
 import com.pegasus.backend.features.purchase.dto.CreatePurchaseRequest;
 import com.pegasus.backend.features.purchase.dto.PurchaseResponse;
+import com.pegasus.backend.features.purchase.dto.ReceiveItemsRequest;
 import com.pegasus.backend.features.purchase.dto.UpdatePurchaseStatusRequest;
 import com.pegasus.backend.features.purchase.service.PurchaseService;
 import com.pegasus.backend.shared.dto.PageResponse;
@@ -53,6 +54,14 @@ public class PurchaseController {
             @PathVariable Long id,
             @Valid @RequestBody UpdatePurchaseStatusRequest request) {
         return ResponseEntity.ok(purchaseService.updateStatus(id, request));
+    }
+
+    @PostMapping("/{id}/receive")
+    @Operation(summary = "Recepcionar ítems (parcial)", description = "Recepcionar cantidades parciales de los ítems de una compra")
+    public ResponseEntity<PurchaseResponse> receiveItems(
+            @PathVariable Long id,
+            @Valid @RequestBody ReceiveItemsRequest request) {
+        return ResponseEntity.ok(purchaseService.receiveItems(id, request));
     }
 
     @DeleteMapping("/{id}")
