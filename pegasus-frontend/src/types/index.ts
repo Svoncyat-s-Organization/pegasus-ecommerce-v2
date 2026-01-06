@@ -1297,3 +1297,77 @@ export interface PaymentReportResponse {
   totalAmount: number;
   byPaymentMethod: PaymentMethodRow[];
 }
+
+// ============================================
+// Settings Module Types
+// ============================================
+
+// Business Info
+export interface BusinessInfoResponse {
+  id: number;
+  businessName: string;
+  ruc: string;
+  legalAddress: string;
+  ubigeoId: string;
+  phone: string;
+  email: string;
+  website?: string;
+  logoUrl?: string;
+  businessDescription?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  tiktokUrl?: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface UpdateBusinessInfoRequest {
+  businessName: string;
+  ruc: string;
+  legalAddress: string;
+  ubigeoId: string;
+  phone: string;
+  email: string;
+  website?: string;
+  logoUrl?: string;
+  businessDescription?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  tiktokUrl?: string;
+}
+
+// Storefront Settings
+export interface StorefrontSettingsResponse {
+  id: number;
+  storefrontName: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  termsAndConditions?: string;
+  privacyPolicy?: string;
+  returnPolicy?: string;
+  shippingPolicy?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  whatsappNumber?: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface UpdateStorefrontSettingsRequest {
+  storefrontName: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  termsAndConditions?: string;
+  privacyPolicy?: string;
+  returnPolicy?: string;
+  shippingPolicy?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  whatsappNumber?: string;
+}

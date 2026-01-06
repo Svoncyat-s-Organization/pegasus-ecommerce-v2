@@ -18,6 +18,7 @@ import { WarehouseListPage, StockListPage, MovementListPage } from '@features/ba
 import { PurchasesListPage, SuppliersListPage } from '@features/backoffice/purchase';
 import { BillingPage } from '@features/backoffice/invoice';
 import { ReportsPage } from '@features/backoffice/report';
+import { SettingsPage } from '@features/backoffice/settings';
 
 // Storefront Pages
 import { HomePage } from '@features/storefront/home/pages/HomePage';
@@ -95,7 +96,7 @@ export const AppRoutes = () => {
         <Route path="reports" element={<ReportsPage />} />
 
         {/* Settings */}
-        <Route path="settings" element={<PlaceholderPage title="Configuración" description="Configuración general del sistema" />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       {/* ==================== STOREFRONT ROUTES ==================== */}
