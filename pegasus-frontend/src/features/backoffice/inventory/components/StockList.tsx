@@ -1,4 +1,4 @@
-import { Table, Tag } from 'antd';
+import { Table, Tag, Button } from 'antd';
 import type { StockResponse } from '@types';
 import { getStockStatusColor, getStockStatusText } from '../constants/inventoryConstants';
 import dayjs from 'dayjs';
@@ -10,6 +10,7 @@ interface StockListProps {
   currentPage: number;
   pageSize: number;
   onPageChange: (page: number, pageSize: number) => void;
+  onAdjust: (stock: StockResponse) => void;
 }
 
 export const StockList = ({
@@ -19,6 +20,7 @@ export const StockList = ({
   currentPage,
   pageSize,
   onPageChange,
+  onAdjust,
 }: StockListProps) => {
   const columns = [
     {
@@ -77,6 +79,16 @@ export const StockList = ({
       key: 'updatedAt',
       width: 120,
       render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
+    },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      width: 120,
+      render: (_: unknown, record: StockResponse) => (
+        <Button type="link" onClick={() => onAdjust(record)}>
+          Ajustar
+        </Button>
+      ),
     },
   ];
 

@@ -71,9 +71,7 @@ export const MovementList = ({
       width: 100,
       align: 'right' as const,
       render: (qty: number, record: MovementResponse) => {
-        const isInbound = ['INVENTORY_ADJUSTMENT', 'PURCHASE', 'RETURN', 'CANCELLATION', 'TRANSFER_IN'].includes(
-          record.operationType
-        );
+        const isInbound = ['INVENTORY_ADJUSTMENT', 'PURCHASE', 'RETURN'].includes(record.operationType);
         return (
           <span style={{ color: isInbound ? 'green' : 'red', fontWeight: 'bold' }}>
             {isInbound ? '+' : '-'}

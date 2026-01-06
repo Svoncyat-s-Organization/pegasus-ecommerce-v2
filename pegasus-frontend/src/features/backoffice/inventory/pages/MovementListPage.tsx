@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { useMovements } from '../hooks/useMovements';
 import { useActiveWarehouses } from '../hooks/useWarehouseDetail';
 import { MovementList } from '../components/MovementList';
-import { OPERATION_TYPE_LABELS } from '../constants/inventoryConstants';
+import { KARDEx_VISIBLE_OPERATION_TYPES, OPERATION_TYPE_LABELS } from '../constants/inventoryConstants';
 import type { OperationType } from '@types';
 
 const { Title, Text } = Typography;
@@ -38,9 +38,9 @@ export const MovementListPage = () => {
     );
   };
 
-  const operationTypeOptions = Object.entries(OPERATION_TYPE_LABELS).map(([key, label]) => ({
-    label,
-    value: key,
+  const operationTypeOptions = KARDEx_VISIBLE_OPERATION_TYPES.map((type) => ({
+    label: OPERATION_TYPE_LABELS[type],
+    value: type,
   }));
 
   return (
@@ -51,7 +51,7 @@ export const MovementListPage = () => {
           Kardex - Movimientos de Inventario
         </Title>
         <Text type="secondary">
-          Historial completo de todos los movimientos de stock (entradas, salidas, transferencias, ajustes).
+          Historial de movimientos de inventario: compras, ventas, devoluciones y ajustes.
         </Text>
       </div>
 

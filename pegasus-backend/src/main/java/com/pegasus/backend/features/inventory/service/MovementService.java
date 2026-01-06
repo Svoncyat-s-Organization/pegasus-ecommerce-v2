@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * Servicio para registro de movimientos de inventario
@@ -39,6 +40,13 @@ public class MovementService {
         private final UserRepository userRepository;
         private final MovementMapper movementMapper;
 
+        // Kardex MVP: only show these 4 types in Movements screen
+        private static final List<OperationType> KARDEx_ALLOWED_TYPES = List.of(
+                        OperationType.INVENTORY_ADJUSTMENT,
+                        OperationType.PURCHASE,
+                        OperationType.SALE,
+                        OperationType.RETURN);
+
         /**
          * Busca movimientos con filtros
          */
@@ -53,8 +61,19 @@ public class MovementService {
                 log.debug("Searching movements with filters - warehouse: {}, variant: {}, type: {}",
                                 warehouseId, variantId, operationType);
 
-                Page<Movement> movements = movementRepository.searchMovements(
-                                warehouseId, variantId, operationType, fromDate, toDate, pageable);
+                if (operationType != null && !KARDEx_ALLOWED_TYPES.contains(operationType)) {
+                        throw new com.pegasus.backend.exception.BadRequestException(
+                                        "Tipo de operación no permitido para Kardex: " + operationType);
+                }
+
+                Page<Movement> movements = movementRepository.searchMovementsAllowed(
+                                KARDEx_ALLOWED_TYPES,
+                                warehouseId,
+                                variantId,
+                                operationType,
+                                fromDate,
+                                toDate,
+                                pageable);
 
                 return movements.map(movementMapper::toResponse);
         }
@@ -65,7 +84,11 @@ public class MovementService {
         public Page<MovementResponse> getMovementsByVariant(Long variantId, Pageable pageable) {
                 log.debug("Getting movements for variant: {}", variantId);
 
-                Page<Movement> movements = movementRepository.findByVariantIdOrderByCreatedAtDesc(variantId, pageable);
+                Page<Movement> movements = movementRepository
+                                .findByVariantIdAndOperationTypeInOrderByCreatedAtDesc(
+                                                variantId,
+                                                KARDEx_ALLOWED_TYPES,
+                                                pageable);
                 return movements.map(movementMapper::toResponse);
         }
 
@@ -75,8 +98,11 @@ public class MovementService {
         public Page<MovementResponse> getMovementsByWarehouse(Long warehouseId, Pageable pageable) {
                 log.debug("Getting movements for warehouse: {}", warehouseId);
 
-                Page<Movement> movements = movementRepository.findByWarehouseIdOrderByCreatedAtDesc(warehouseId,
-                                pageable);
+                Page<Movement> movements = movementRepository
+                                .findByWarehouseIdAndOperationTypeInOrderByCreatedAtDesc(
+                                                warehouseId,
+                                                KARDEx_ALLOWED_TYPES,
+                                                pageable);
                 return movements.map(movementMapper::toResponse);
         }
 
@@ -90,8 +116,11 @@ public class MovementService {
 
                 log.debug("Getting movements for reference: {} - {}", referenceTable, referenceId);
 
-                Page<Movement> movements = movementRepository.findByReferenceIdAndReferenceTable(
-                                referenceId, referenceTable, pageable);
+                Page<Movement> movements = movementRepository.findByReferenceTableAndReferenceIdAndOperationTypeIn(
+                                referenceTable,
+                                referenceId,
+                                KARDEx_ALLOWED_TYPES,
+                                pageable);
 
                 return movements.map(movementMapper::toResponse);
         }
