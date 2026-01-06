@@ -37,7 +37,7 @@ public class OrderStatusHistory {
     @Column(name = "comments", columnDefinition = "TEXT")
     private String comments;
 
-    @Column(name = "created_by", nullable = false)
+    @Column(name = "created_by")
     private Long createdBy;
 
     @CreationTimestamp

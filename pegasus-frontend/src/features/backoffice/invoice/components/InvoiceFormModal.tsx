@@ -1,4 +1,4 @@
-import { Alert, Button, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, message } from 'antd';
+import { Button, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, message } from 'antd';
 import { useMemo, useState } from 'react';
 import type { CreateInvoiceRequest, DocumentSeriesResponse, InvoiceType, OrderSummaryResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -10,9 +10,10 @@ import { useBillingDocumentSeries } from '../hooks/useBillingDocumentSeries';
 interface InvoiceFormModalProps {
   open: boolean;
   onCancel: () => void;
+  onCreated?: (invoiceId: number) => void;
 }
 
-export const InvoiceFormModal = ({ open, onCancel }: InvoiceFormModalProps) => {
+export const InvoiceFormModal = ({ open, onCancel, onCreated }: InvoiceFormModalProps) => {
   const [form] = Form.useForm();
   const createInvoice = useCreateBillingInvoice();
 
@@ -28,7 +29,7 @@ export const InvoiceFormModal = ({ open, onCancel }: InvoiceFormModalProps) => {
   const { data: documentSeriesData, isLoading: isLoadingSeries } = useBillingDocumentSeries(0, 200);
 
   const ordersOptions = useMemo(() => {
-    const orders = ordersData?.content || [];
+    const orders = (ordersData?.content || []).filter((o: OrderSummaryResponse) => o.status === 'PAID');
     return orders.map((o: OrderSummaryResponse) => ({
       value: o.id,
       label: `${o.orderNumber} - ${o.customerName}`,
@@ -37,13 +38,11 @@ export const InvoiceFormModal = ({ open, onCancel }: InvoiceFormModalProps) => {
 
   const ordersById = useMemo(() => {
     const map = new Map<number, OrderSummaryResponse>();
-    for (const o of (ordersData?.content || [])) {
+    for (const o of (ordersData?.content || []).filter((o: OrderSummaryResponse) => o.status === 'PAID')) {
       map.set(o.id, o);
     }
     return map;
   }, [ordersData]);
-
-  const isOrderPaid = selectedOrder?.status === 'PAID';
 
   const activeSeriesList = useMemo(() => {
     return (documentSeriesData?.content || []).filter((s: DocumentSeriesResponse) => s.isActive);
@@ -76,24 +75,15 @@ export const InvoiceFormModal = ({ open, onCancel }: InvoiceFormModalProps) => {
 
   const padInvoiceNumber = (value: number): string => String(value).padStart(8, '0');
   const selectedSeries = typeof seriesId === 'number' ? seriesById.get(seriesId) : undefined;
-  const autoSeriesPreview = selectedSeries?.series;
   const autoNumberPreview = selectedSeries ? padInvoiceNumber((selectedSeries.currentNumber || 0) + 1) : undefined;
 
   const handleSubmit = async () => {
-    if (selectedOrder && !isOrderPaid) {
-      message.warning('No se puede emitir un comprobante si el pedido no está pagado');
-      return;
-    }
-
     const values = await form.validateFields();
 
     const request: CreateInvoiceRequest = {
       orderId: Number(values.orderId),
       invoiceType: values.invoiceType,
-      ...(values.seriesId ? { seriesId: Number(values.seriesId) } : {
-        series: String(values.series).trim(),
-        number: String(values.number).trim(),
-      }),
+      seriesId: Number(values.seriesId),
       receiverTaxId: String(values.receiverTaxId).trim(),
       receiverName: String(values.receiverName).trim(),
       subtotal: Number(values.subtotal),
@@ -103,8 +93,9 @@ export const InvoiceFormModal = ({ open, onCancel }: InvoiceFormModalProps) => {
     };
 
     try {
-      await createInvoice.mutateAsync(request);
+      const created = await createInvoice.mutateAsync(request);
       onCancel();
+      onCreated?.(created.id);
     } catch {
       message.error('No se pudo crear el comprobante');
     }
@@ -122,7 +113,6 @@ export const InvoiceFormModal = ({ open, onCancel }: InvoiceFormModalProps) => {
             type="primary"
             loading={createInvoice.isPending}
             onClick={handleSubmit}
-            disabled={!!selectedOrder && !isOrderPaid}
           >
             Crear
           </Button>
@@ -189,67 +179,27 @@ export const InvoiceFormModal = ({ open, onCancel }: InvoiceFormModalProps) => {
 
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="seriesId" label="Serie configurada">
+            <Form.Item
+              name="seriesId"
+              label="Serie"
+              rules={[{ required: true, message: 'Selecciona una serie' }]}
+            >
               <Select
-                placeholder="Opcional"
-                allowClear
+                placeholder="Seleccione"
                 loading={isLoadingSeries}
                 disabled={!invoiceType}
                 options={(invoiceType ? seriesOptionsByType.get(invoiceType) : []) || []}
-                onChange={(value) => {
-                  if (value) {
-                    form.setFieldsValue({ series: undefined, number: undefined });
-                  }
-                }}
                 showSearch
                 optionFilterProp="label"
               />
             </Form.Item>
           </Col>
           <Col span={12}>
-            {selectedSeries ? (
-              <Form.Item label="Serie">
-                <Input value={autoSeriesPreview} disabled />
-              </Form.Item>
-            ) : (
-              <Form.Item
-                name="series"
-                label="Serie"
-                rules={[{ required: !seriesId, message: 'Ingresa la serie' }]}
-              >
-                <Input placeholder="F001" maxLength={4} />
-              </Form.Item>
-            )}
+            <Form.Item label="Correlativo">
+              <Input value={autoNumberPreview} placeholder="Seleccione una serie" disabled />
+            </Form.Item>
           </Col>
         </Row>
-
-        <Row gutter={16}>
-          <Col span={12}>
-            {selectedSeries ? (
-              <Form.Item label="Número">
-                <Input value={autoNumberPreview} disabled />
-              </Form.Item>
-            ) : (
-              <Form.Item
-                name="number"
-                label="Número"
-                rules={[{ required: !seriesId, message: 'Ingresa el número' }]}
-              >
-                <Input placeholder="00000001" maxLength={8} />
-              </Form.Item>
-            )}
-          </Col>
-        </Row>
-
-        {!!selectedOrder && !isOrderPaid && (
-          <Alert
-            type="warning"
-            showIcon
-            message="El pedido seleccionado no está pagado"
-            description="Registra el pago antes de emitir el comprobante."
-            style={{ marginBottom: 16 }}
-          />
-        )}
 
         <Row gutter={16}>
           <Col span={12}>

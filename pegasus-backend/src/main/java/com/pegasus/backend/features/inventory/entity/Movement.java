@@ -58,7 +58,7 @@ public class Movement {
     @Column(name = "reference_table", nullable = false, length = 50)
     private String referenceTable; // Nombre de la tabla relacionada
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private Long userId;
 
     @CreationTimestamp

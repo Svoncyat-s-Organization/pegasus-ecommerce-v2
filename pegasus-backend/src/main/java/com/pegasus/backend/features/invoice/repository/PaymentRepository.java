@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
+    boolean existsByOrderId(Long orderId);
+
     Page<Payment> findByOrderId(Long orderId, Pageable pageable);
 
     Page<Payment> findByPaymentMethodId(Long paymentMethodId, Pageable pageable);
