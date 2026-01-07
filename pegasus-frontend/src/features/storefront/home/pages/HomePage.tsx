@@ -23,17 +23,19 @@ import { useFeaturedProducts } from '@features/storefront/catalog';
 import { ProductGrid } from '@features/storefront/catalog/components/ProductGrid';
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { useCategories } from '@features/storefront/catalog/hooks/useCategories';
-import type { CategoryResponse } from '@types';
+import { useBrands } from '@features/storefront/catalog/hooks/useBrands';
+import type { BrandResponse, CategoryResponse } from '@types';
+import logoSvg from '@assets/logo/inverted.svg';
 
 export const HomePage = () => {
   const navigate = useNavigate();
   const { data: featuredProducts, isLoading } = useFeaturedProducts(0, 8);
-  const { getPrimaryColor, getStoreName, getHeroImageUrl } = useStorefrontConfigStore();
+  const { getPrimaryColor, getStoreName } = useStorefrontConfigStore();
   const { data: categories } = useCategories();
-  
+  const { data: brands } = useBrands();
+
   const primaryColor = getPrimaryColor();
   const storeName = getStoreName();
-  const heroImageUrl = getHeroImageUrl();
 
   const features = [
     {
@@ -158,41 +160,43 @@ export const HomePage = () => {
             </Grid.Col>
             
             <Grid.Col span={{ base: 12, md: 5 }} visibleFrom="md">
-              {heroImageUrl ? (
-                <Box
-                  style={{
-                    borderRadius: 24,
-                    overflow: 'hidden',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                  }}
+              <Box
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 320,
+                }}
+              >
+                <Image
+                  src={logoSvg}
+                  alt={`${storeName} logo`}
+                  fit="contain"
+                  h={220}
+                  w={320}
+                />
+                <Title
+                  order={2}
+                  size={52}
+                  tt="uppercase"
+                  mt="md"
+                  style={{ lineHeight: 1, letterSpacing: 4 }}
                 >
-                  <Image
-                    src={heroImageUrl}
-                    alt="Promoción destacada"
-                    radius="lg"
-                    fit="cover"
-                    h={320}
-                  />
-                </Box>
-              ) : (
-                <Box
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: 24,
-                    padding: 48,
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: 320,
-                  }}
-                >
-                  <Text size="lg" c="white" ta="center" style={{ opacity: 0.7 }}>
-                    Imagen promocional
+                  <Text
+                    component="span"
+                    inherit
+                    style={{
+                      background:
+                        'linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    PEGASUS
                   </Text>
-                </Box>
-              )}
+                </Title>
+              </Box>
             </Grid.Col>
           </Grid>
         </Container>
@@ -297,7 +301,7 @@ export const HomePage = () => {
                       transition: 'all 0.2s ease',
                       textAlign: 'center',
                     }}
-                    onClick={() => navigate(`/products?category=${category.id}`)}
+                    onClick={() => navigate(`/products?categoryIds=${category.id}`)}
                     className="category-card"
                   >
                     <Stack gap="xs" align="center">
@@ -352,6 +356,86 @@ export const HomePage = () => {
                   Ver todas las categorías
                 </Button>
               </Box>
+
+              {brands && brands.length > 0 && (
+                <>
+                  <Box ta="center" mt="xl">
+                    <Text
+                      size="xs"
+                      tt="uppercase"
+                      fw={600}
+                      c={primaryColor}
+                      style={{ letterSpacing: 1 }}
+                      mb={4}
+                    >
+                      Explora por marca
+                    </Text>
+                    <Title order={3} size={28}>
+                      Nuestras Marcas
+                    </Title>
+                  </Box>
+
+                  <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 6 }} spacing="md">
+                    {brands.map((brand: BrandResponse) => (
+                      <Card
+                        key={brand.id}
+                        padding="lg"
+                        radius="md"
+                        withBorder
+                        style={{
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'center',
+                        }}
+                        onClick={() => navigate(`/products?brandIds=${brand.id}`)}
+                      >
+                        <Stack gap="xs" align="center">
+                          {brand.imageUrl ? (
+                            <Box
+                              style={{
+                                width: 96,
+                                height: 56,
+                                borderRadius: 8,
+                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Image
+                                src={brand.imageUrl}
+                                alt={brand.name}
+                                fit="contain"
+                                h={56}
+                                w={96}
+                              />
+                            </Box>
+                          ) : (
+                            <Box
+                              style={{
+                                width: 60,
+                                height: 60,
+                                borderRadius: '50%',
+                                background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}10 100%)`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Text size="xl" fw={700} c={primaryColor}>
+                                {brand.name.charAt(0)}
+                              </Text>
+                            </Box>
+                          )}
+                          <Text size="sm" fw={500}>
+                            {brand.name}
+                          </Text>
+                        </Stack>
+                      </Card>
+                    ))}
+                  </SimpleGrid>
+                </>
+              )}
             </Stack>
           </Container>
         </Box>

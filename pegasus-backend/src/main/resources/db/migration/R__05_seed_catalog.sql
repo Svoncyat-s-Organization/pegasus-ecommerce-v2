@@ -12,38 +12,39 @@ DELETE FROM brands;
 
 -- Brands
 INSERT INTO brands (name, slug, image_url, is_active) VALUES
-('Apple', 'apple', 'https://placehold.co/200x200?text=Apple', true),
-('Samsung', 'samsung', 'https://placehold.co/200x200?text=Samsung', true),
-('Sony', 'sony', 'https://placehold.co/200x200?text=Sony', true),
-('LG', 'lg', 'https://placehold.co/200x200?text=LG', true),
-('Xiaomi', 'xiaomi', 'https://placehold.co/200x200?text=Xiaomi', true),
-('HP', 'hp', 'https://placehold.co/200x200?text=HP', true),
-('Dell', 'dell', 'https://placehold.co/200x200?text=Dell', true),
-('Lenovo', 'lenovo', 'https://placehold.co/200x200?text=Lenovo', true);
+('Apple', 'apple', 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg', true),
+('Samsung', 'samsung', 'https://images.samsung.com/is/image/samsung/assets/global/about-us/brand/logo/360_197_1.png?$720_N_PNG$', true),
+('Sony', 'sony', 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg', true),
+('LG', 'lg', 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/LG_logo_%282014%29.svg/1280px-LG_logo_%282014%29.svg.png', true),
+('Xiaomi', 'xiaomi', 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Xiaomi_logo_%282021-%29.svg/1200px-Xiaomi_logo_%282021-%29.svg.png', true),
+('HP', 'hp', 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/HP_logo_2012.svg/1200px-HP_logo_2012.svg.png', true),
+('Dell', 'dell', 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Dell_Logo.svg/2048px-Dell_Logo.svg.png', true),
+('Lenovo', 'lenovo', 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Lenovo_Global_Corporate_Logo.png/1280px-Lenovo_Global_Corporate_Logo.png', true);
 
 -- Categories (hierarchical)
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active) VALUES
-('Electrónica', 'electronica', 'Dispositivos electrónicos', 'https://placehold.co/400x300?text=Electronica', NULL, true),
-('Computadoras', 'computadoras', 'Laptops y PCs', 'https://placehold.co/400x300?text=Computadoras', NULL, true),
-('Accesorios', 'accesorios', 'Accesorios tecnológicos', 'https://placehold.co/400x300?text=Accesorios', NULL, true);
+('Electrónica', 'electronica', 'Dispositivos electrónicos', 'https://www.shutterstock.com/image-vector/consumer-electronics-vector-solid-icon-600nw-2100486643.jpg', NULL, true),
+('Computadoras', 'computadoras', 'Laptops y PCs', 'https://img.freepik.com/vector-premium/icono-computadora_268104-5248.jpg', NULL, true),
+('Accesorios', 'accesorios', 'Accesorios tecnológicos', 'https://static.vecteezy.com/system/resources/previews/005/653/088/non_2x/phones-and-accessories-glyph-icon-smartphone-and-headphones-electronic-devices-e-commerce-department-online-shopping-categories-silhouette-symbol-negative-space-isolated-illustration-vector.jpg', NULL, true);
 
 -- Subcategories
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
-SELECT 'Smartphones', 'smartphones', 'Teléfonos inteligentes', 'https://placehold.co/400x300?text=Smartphones', id, true FROM categories WHERE slug = 'electronica';
+SELECT 'Smartphones', 'smartphones', 'Teléfonos inteligentes', 'https://static.vecteezy.com/system/resources/thumbnails/006/795/445/small/smartphone-icon-cellphone-mobile-phone-sign-symbol-vector.jpg', id, true FROM categories WHERE slug = 'electronica';
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
-SELECT 'Tablets', 'tablets', 'Tabletas electrónicas', 'https://placehold.co/400x300?text=Tablets', id, true FROM categories WHERE slug = 'electronica';
+SELECT 'Tablets', 'tablets', 'Tabletas electrónicas', 'https://img.freepik.com/vector-premium/icono-tableta_1076610-54215.jpg?semt=ais_hybrid&w=740&q=80', id, true FROM categories WHERE slug = 'electronica';
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
-SELECT 'Televisores', 'televisores', 'Smart TVs y monitores', 'https://placehold.co/400x300?text=Televisores', id, true FROM categories WHERE slug = 'electronica';
+SELECT 'Televisores', 'televisores', 'Smart TVs y monitores', 'https://static.vecteezy.com/system/resources/thumbnails/010/451/460/small/tv-monitor-icon-isolated-on-white-background-free-vector.jpg', id, true FROM categories WHERE slug = 'electronica';
 
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
-SELECT 'Laptops', 'laptops', 'Computadoras portátiles', 'https://placehold.co/400x300?text=Laptops', id, true FROM categories WHERE slug = 'computadoras';
+SELECT 'Laptops', 'laptops', 'Computadoras portátiles', 'https://img.freepik.com/vector-premium/plantilla-diseno-vectorial-iconos-portatiles-simple-limpia_1309366-977.jpg?semt=ais_hybrid&w=740&q=80', id, true FROM categories WHERE slug = 'computadoras';
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
 SELECT 'PCs de Escritorio', 'pcs-escritorio', 'Computadoras de escritorio', 'https://placehold.co/400x300?text=PCs', id, true FROM categories WHERE slug = 'computadoras';
 
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
-SELECT 'Audífonos', 'audifonos', 'Auriculares y headsets', 'https://placehold.co/400x300?text=Audifonos', id, true FROM categories WHERE slug = 'accesorios';
+SELECT 'Audífonos', 'audifonos', 'Auriculares y headsets', 'https://img.freepik.com/vector-premium/icono-auriculares-png_564384-696.jpg', id, true FROM categories WHERE slug = 'accesorios';
+
 INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
-SELECT 'Cargadores', 'cargadores', 'Cargadores y cables', 'https://placehold.co/400x300?text=Cargadores', id, true FROM categories WHERE slug = 'accesorios';
+SELECT 'Cargadores', 'cargadores', 'Cargadores y cables', 'https://img.freepik.com/vector-premium/icono-cargador-telefono_861234-1868.jpg', id, true FROM categories WHERE slug = 'accesorios';
 
 -- Products with variants
 -- Product 1: iPhone 15 Pro
@@ -133,21 +134,21 @@ FROM products p WHERE p.slug = 'samsung-tv-55-qled';
 
 -- Images for products
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://placehold.co/600x600?text=iPhone+15+Pro', p.id, NULL, true, 0
+SELECT 'https://www.efe.com.pe/media/catalog/product/m/u/mu773bea_1.jpg?quality=80&bg-color=255,255,255&fit=bounds&height=700&width=700&canvas=700:700', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'iphone-15-pro';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://placehold.co/600x600?text=Galaxy+S24+Ultra', p.id, NULL, true, 0
+SELECT 'https://movilcity.pe/cdn/shop/files/Samsung-Galaxy-S24-Ultra-1_a4d20ea6-35bd-444a-a1f6-0807907ec053.webp?v=1716681330&width=1445', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'galaxy-s24-ultra';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://placehold.co/600x600?text=MacBook+Pro+14', p.id, NULL, true, 0
+SELECT 'https://mac-center.com.pe/cdn/shop/files/MacBook_Pro_16-inch_M4_Pro_or_Max_chip_Space_Black_PDP_Image_Position_1__COES_533x.jpg?v=1730313598', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'macbook-pro-14';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://placehold.co/600x600?text=Sony+WH-1000XM5', p.id, NULL, true, 0
+SELECT 'https://coolboxpe.vtexassets.com/arquivos/ids/277259-800-800?v=638795997486230000&width=800&height=800&aspect=true', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'sony-wh-1000xm5';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://placehold.co/600x600?text=Samsung+TV+55', p.id, NULL, true, 0
+SELECT 'https://plazavea.vteximg.com.br/arquivos/ids/32962656-418-418/20566878-1.jpg', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'samsung-tv-55-qled';

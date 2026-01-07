@@ -3,7 +3,7 @@ import { IconShoppingCart } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import type { ProductResponse } from '@types';
-import { useProductVariants } from '../hooks/useProductVariants';
+import { useProductImages, useProductVariants } from '../hooks/useProductVariants';
 import { useCartStore } from '@features/storefront/cart';
 
 interface ProductCardProps {
@@ -13,6 +13,7 @@ interface ProductCardProps {
 export const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
   const { data: variants } = useProductVariants(product.id);
+  const { data: images } = useProductImages(product.id);
   const addItem = useCartStore((state) => state.addItem);
 
   const handleCardClick = () => {
@@ -39,7 +40,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       brandName: product.brandName,
       price: firstVariant.price,
       quantity: 1,
-      imageUrl: undefined, // TODO: Get from images API
+      imageUrl: mainImage,
       attributes: firstVariant.attributes as Record<string, string>,
     });
 
@@ -51,8 +52,17 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     ? Math.min(...variants.map((v) => v.price))
     : null;
 
-  // TODO: Get image from variants/images API
-  const mainImage = '/placeholder-product.jpg';
+  const mainImage = (() => {
+    if (!images || images.length === 0) return '/placeholder-product.jpg';
+
+    const sorted = [...images].sort((a, b) => {
+      if (a.isPrimary && !b.isPrimary) return -1;
+      if (!a.isPrimary && b.isPrimary) return 1;
+      return a.displayOrder - b.displayOrder;
+    });
+
+    return sorted[0]?.imageUrl || '/placeholder-product.jpg';
+  })();
 
   return (
     <Card

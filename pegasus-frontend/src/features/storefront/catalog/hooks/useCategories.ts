@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getRootCategories, getSubcategories, getCategoryById } from '../api/catalogApi';
+import { getRootCategories, getSubcategories, getCategoryById, getCategoriesTree } from '../api/catalogApi';
 
 /**
  * Hook para obtener categorías raíz (nivel superior)
@@ -32,6 +32,17 @@ export const useCategoryDetail = (categoryId: number) => {
     queryKey: ['category-detail', categoryId],
     queryFn: () => getCategoryById(categoryId),
     enabled: !!categoryId,
+    staleTime: 1000 * 60 * 10,
+  });
+};
+
+/**
+ * Hook para obtener categorías en estructura jerárquica (árbol)
+ */
+export const useCategoryTree = () => {
+  return useQuery({
+    queryKey: ['categories-tree'],
+    queryFn: getCategoriesTree,
     staleTime: 1000 * 60 * 10,
   });
 };
