@@ -53,7 +53,7 @@ export const ShippingMethodSelector = ({ form }: ShippingMethodSelectorProps) =>
       </Text>
 
       <Radio.Group
-        {...form.getInputProps('shippingMethodId')}
+        value={form.values.shippingMethodId ? String(form.values.shippingMethodId) : ''}
         onChange={(value) => form.setFieldValue('shippingMethodId', Number(value))}
       >
         <Stack gap="sm">
@@ -69,9 +69,9 @@ export const ShippingMethodSelector = ({ form }: ShippingMethodSelectorProps) =>
                 padding="md"
                 style={{
                   cursor: 'pointer',
-                  borderColor: isSelected ? primaryColor : undefined,
+                  borderColor: isSelected ? 'var(--mantine-color-blue-6)' : undefined,
                   borderWidth: isSelected ? 2 : 1,
-                  backgroundColor: isSelected ? `${primaryColor}08` : undefined,
+                  backgroundColor: isSelected ? 'var(--mantine-color-blue-0)' : undefined,
                 }}
                 onClick={() => form.setFieldValue('shippingMethodId', method.id)}
               >
