@@ -19,6 +19,7 @@ export const useCustomerAuth = () => {
       const user = {
         userId: response.userId,
         email: response.email,
+        username: response.username,
         userType: response.userType,
       };
       setAuth(user, response.token);
@@ -42,6 +43,7 @@ export const useCustomerAuth = () => {
       const user = {
         userId: response.userId,
         email: response.email,
+        username: response.username,
         userType: response.userType,
       };
       setAuth(user, response.token);

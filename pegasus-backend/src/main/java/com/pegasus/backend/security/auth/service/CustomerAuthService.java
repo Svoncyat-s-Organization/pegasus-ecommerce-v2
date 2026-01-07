@@ -54,6 +54,7 @@ public class CustomerAuthService {
                 .userType("CUSTOMER")
                 .userId(customer.getId())
                 .email(customer.getEmail())
+                .username(customer.getUsername())
                 .expiresIn(jwtExpirationMs)
                 .build();
     }
@@ -81,7 +82,7 @@ public class CustomerAuthService {
                 .lastName(request.lastName())
                 .phone(request.phone())
                 .build();
-        
+
         customer.setIsActive(true);
 
         customer = customerRepository.save(customer);
@@ -93,6 +94,7 @@ public class CustomerAuthService {
                 .userType("CUSTOMER")
                 .userId(customer.getId())
                 .email(customer.getEmail())
+                .username(customer.getUsername())
                 .expiresIn(jwtExpirationMs)
                 .build();
     }

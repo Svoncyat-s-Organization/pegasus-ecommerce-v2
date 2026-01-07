@@ -22,12 +22,14 @@ export interface AuthResponse {
   userType: 'ADMIN' | 'CUSTOMER';
   userId: number;
   email: string;
+  username: string;
   expiresIn: number;
 }
 
 export interface User {
   userId: number;
   email: string;
+  username: string;
   userType: 'ADMIN' | 'CUSTOMER';
 }
 
