@@ -66,4 +66,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     long countByCategoryId(Long categoryId);
 
     long countByBrandId(Long brandId);
+
+    /**
+     * Find all active products.
+     * Used for recommendation embeddings generation.
+     */
+    @Query("SELECT p FROM Product p WHERE p.isActive = true")
+    List<Product> findAllActiveProducts();
 }

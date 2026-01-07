@@ -48,6 +48,9 @@ public class SecurityConfig {
                         // Endpoints públicos - Storefront (sin autenticación)
                         .requestMatchers("/api/public/**").permitAll()
                         
+                        // Recomendaciones de productos (AI) - público
+                        .requestMatchers("/api/recommendations/**").permitAll()
+                        
                         // Catálogo público (storefront sin autenticación)
                         .requestMatchers("/api/admin/products/**").permitAll()
                         .requestMatchers("/api/admin/categories/**").permitAll()

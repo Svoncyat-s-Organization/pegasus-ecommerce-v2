@@ -43,6 +43,7 @@ import { useCartStore } from '@features/storefront/cart';
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { formatCurrency } from '@shared/utils/formatters';
 import { notifications } from '@mantine/notifications';
+import { ProductRecommendations } from '../components/ProductRecommendations';
 
 export const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -561,6 +562,9 @@ export const ProductDetailPage = () => {
           </Paper>
         </Grid.Col>
       </Grid>
+
+      {/* Product Recommendations - AI-powered similar products */}
+      <ProductRecommendations productId={productId} limit={6} />
     </Container>
   );
 };

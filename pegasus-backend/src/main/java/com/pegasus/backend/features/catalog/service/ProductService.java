@@ -186,6 +186,7 @@ public class ProductService {
         }
 
         Product product = productMapper.toEntity(request);
+        
         Product saved = productRepository.save(product);
 
         log.info("Product created successfully: {}", saved.getName());
@@ -224,6 +225,7 @@ public class ProductService {
         }
 
         productMapper.updateEntityFromDto(request, product);
+        
         Product updated = productRepository.save(product);
 
         log.info("Product updated successfully: {}", updated.getName());
