@@ -31,7 +31,7 @@ import { LoginPage as CustomerLoginPage, RegisterPage } from '@features/storefro
 import { ProductListPage, ProductDetailPage } from '@features/storefront/catalog';
 import { CartPage } from '@features/storefront/cart';
 import { CheckoutPage, OrderConfirmationPage } from '@features/storefront/checkout';
-import { ProfilePage, OrdersPage } from '@features/storefront/profile';
+import { ProfilePage, OrdersPage, AddressesPage } from '@features/storefront/profile';
 import {
   TermsPage,
   PrivacyPage,
@@ -130,14 +130,14 @@ export const AppRoutes = () => {
         <Route path="register" element={<RegisterPage />} />
         <Route path="products" element={<ProductListPage />} />
         <Route path="products/:id" element={<ProductDetailPage />} />
-        
+
         {/* Legal Pages (Public) */}
         <Route path="legal/terms" element={<TermsPage />} />
         <Route path="legal/privacy" element={<PrivacyPage />} />
         <Route path="legal/returns" element={<ReturnsPage />} />
         <Route path="legal/shipping" element={<ShippingPolicyPage />} />
         <Route path="contact" element={<ContactPage />} />
-        
+
         {/* Protected storefront routes (nested within same layout) */}
         <Route path="cart" element={
           <StorefrontProtectedRoute>
@@ -162,6 +162,11 @@ export const AppRoutes = () => {
         <Route path="orders" element={
           <StorefrontProtectedRoute>
             <OrdersPage />
+          </StorefrontProtectedRoute>
+        } />
+        <Route path="profile/addresses" element={
+          <StorefrontProtectedRoute>
+            <AddressesPage />
           </StorefrontProtectedRoute>
         } />
       </Route>

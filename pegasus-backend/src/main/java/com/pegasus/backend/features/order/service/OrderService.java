@@ -9,7 +9,11 @@ import com.pegasus.backend.features.customer.repository.CustomerRepository;
 import com.pegasus.backend.features.inventory.service.StockService;
 import com.pegasus.backend.features.logistic.dto.CreateShipmentRequest;
 import com.pegasus.backend.features.logistic.dto.ShipmentResponse;
+import com.pegasus.backend.features.logistic.entity.ShippingMethod;
+import com.pegasus.backend.features.logistic.repository.ShippingMethodRepository;
+import com.pegasus.backend.features.logistic.repository.ShipmentRepository;
 import com.pegasus.backend.features.logistic.service.ShipmentService;
+import com.pegasus.backend.shared.enums.ShipmentType;
 import com.pegasus.backend.features.order.dto.*;
 import com.pegasus.backend.features.order.entity.Order;
 import com.pegasus.backend.features.order.entity.OrderItem;
@@ -47,6 +51,8 @@ public class OrderService {
         private final StockService stockService;
         private final OrderMapper orderMapper;
         private final ShipmentService shipmentService;
+        private final ShippingMethodRepository shippingMethodRepository;
+        private final ShipmentRepository shipmentRepository;
 
         /**
          * Obtener todos los pedidos con filtros opcionales y paginación
@@ -98,7 +104,46 @@ public class OrderService {
         public OrderResponse getOrderById(Long id) {
                 log.debug("Getting order by id: {}", id);
                 Order order = findOrderById(id);
-                return orderMapper.toResponse(order);
+                OrderResponse response = orderMapper.toResponse(order);
+                return enrichWithShippingMethod(response);
+        }
+
+        private OrderResponse enrichWithShippingMethod(OrderResponse response) {
+                // Buscar si existe un envío asociado (tomamos el primero que sea OUTBOUND)
+                return shipmentRepository.findByOrderId(response.id(), Pageable.unpaged())
+                                .stream()
+                                .filter(s -> s.getShipmentType() == ShipmentType.OUTBOUND)
+                                .findFirst()
+                                .map(s -> new OrderResponse(
+                                                response.id(),
+                                                response.orderNumber(),
+                                                response.customerId(),
+                                                response.customerName(),
+                                                response.customerEmail(),
+                                                response.status(),
+                                                response.total(),
+                                                response.shippingAddress(),
+                                                response.billingAddress(),
+                                                response.items(),
+                                                response.statusHistories(),
+                                                s.getShippingMethod().getId(),
+                                                response.createdAt(),
+                                                response.updatedAt()))
+                                .orElse(new OrderResponse(
+                                                response.id(),
+                                                response.orderNumber(),
+                                                response.customerId(),
+                                                response.customerName(),
+                                                response.customerEmail(),
+                                                response.status(),
+                                                response.total(),
+                                                response.shippingAddress(),
+                                                response.billingAddress(),
+                                                response.items(),
+                                                response.statusHistories(),
+                                                null,
+                                                response.createdAt(),
+                                                response.updatedAt()));
         }
 
         /**
@@ -152,6 +197,19 @@ public class OrderService {
                         throw new BadRequestException("El cliente no está activo");
                 }
 
+                // Validar Método de Envío
+                ShippingMethod shippingMethod = null;
+                if (request.shippingMethodId() != null) {
+                        shippingMethod = shippingMethodRepository.findById(request.shippingMethodId())
+                                        .orElseThrow(() -> new ResourceNotFoundException(
+                                                        "Método de envío no encontrado con ID: "
+                                                                        + request.shippingMethodId()));
+
+                        if (!Boolean.TRUE.equals(shippingMethod.getIsActive())) {
+                                throw new BadRequestException("El método de envío seleccionado no está activo");
+                        }
+                }
+
                 // Validar y preparar items
                 List<OrderItem> orderItems = new ArrayList<>();
                 BigDecimal totalAmount = BigDecimal.ZERO;
@@ -197,6 +255,11 @@ public class OrderService {
                         orderItems.add(orderItem);
                 }
 
+                // Sumar costo de envío al total
+                if (shippingMethod != null) {
+                        totalAmount = totalAmount.add(shippingMethod.getBaseCost());
+                }
+
                 // Generar número de orden único
                 String orderNumber = generateOrderNumber();
 
@@ -239,6 +302,33 @@ public class OrderService {
                                 .build();
 
                 orderStatusHistoryRepository.save(initialHistory);
+
+                // Crear envío inicial automáticamente si se seleccionó método
+                if (shippingMethod != null) {
+                        try {
+                                CreateShipmentRequest shipmentReq = new CreateShipmentRequest();
+                                shipmentReq.setShipmentType(ShipmentType.OUTBOUND);
+                                shipmentReq.setOrderId(savedOrder.getId());
+                                shipmentReq.setShippingMethodId(shippingMethod.getId());
+                                shipmentReq.setTrackingNumber("PENDING");
+                                shipmentReq.setShippingCost(shippingMethod.getBaseCost());
+                                shipmentReq.setWeightKg(BigDecimal.ONE); // Default weight
+                                shipmentReq.setEstimatedDeliveryDate(
+                                                OffsetDateTime.now().plusDays(shippingMethod.getEstimatedDaysMax()));
+                                shipmentReq.setShippingAddress(savedOrder.getShippingAddress());
+                                shipmentReq.setRecipientName(
+                                                extractRecipientNameFromAddress(savedOrder.getShippingAddress()));
+                                shipmentReq.setRecipientPhone(
+                                                extractRecipientPhoneFromAddress(savedOrder.getShippingAddress()));
+                                shipmentReq.setNotes("Envío creado automáticamente desde storefront");
+
+                                shipmentService.createShipment(shipmentReq);
+                                log.info("Auto-created shipment for order {}", savedOrder.getOrderNumber());
+                        } catch (Exception e) {
+                                log.error("Failed to auto-create shipment for order {}", savedOrder.getOrderNumber(),
+                                                e);
+                        }
+                }
 
                 log.info("Order created successfully: {} - Stock reserved", orderNumber);
                 return orderMapper.toResponse(savedOrder);

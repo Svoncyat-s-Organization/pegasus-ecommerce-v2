@@ -47,7 +47,7 @@ import type { CheckoutFormValues } from '../types/checkout.types';
 export const CheckoutPage = () => {
   const navigate = useNavigate();
   const [active, setActive] = useState(0);
-  
+
   const { items, getSubtotal, getIGV, clearCart } = useCartStore();
   const { user } = useStorefrontAuthStore();
   const { getPrimaryColor, getSecondaryColor } = useStorefrontConfigStore();
@@ -79,8 +79,8 @@ export const CheckoutPage = () => {
           'shippingAddress.recipientPhone': !values.shippingAddress.recipientPhone
             ? 'Teléfono requerido'
             : !/^9\d{8}$/.test(values.shippingAddress.recipientPhone)
-            ? 'Debe ser 9 dígitos e iniciar con 9'
-            : null,
+              ? 'Debe ser 9 dígitos e iniciar con 9'
+              : null,
           'shippingAddress.address': !values.shippingAddress.address ? 'Dirección requerida' : null,
           'shippingAddress.ubigeoId': !values.shippingAddress.ubigeoId ? 'Distrito requerido' : null,
         };
@@ -142,6 +142,7 @@ export const CheckoutPage = () => {
           recipientName: form.values.shippingAddress.recipientName,
           recipientPhone: form.values.shippingAddress.recipientPhone,
         },
+        shippingMethodId: form.values.shippingMethodId || undefined,
       });
 
       // Clear cart and navigate to confirmation
