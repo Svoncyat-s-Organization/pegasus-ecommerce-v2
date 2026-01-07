@@ -34,6 +34,7 @@ export const CategoryFormModal = ({
           name: initialValues.name,
           slug: initialValues.slug,
           description: initialValues.description,
+          imageUrl: initialValues.imageUrl,
           parentId: initialValues.parentId,
         });
         setSlugModifiedManually(true); // En modo edición, no auto-generar
@@ -139,6 +140,14 @@ export const CategoryFormModal = ({
             maxLength={500}
             showCount
           />
+        </Form.Item>
+
+        <Form.Item
+          name="imageUrl"
+          label="URL de Imagen"
+          tooltip="Imagen de la categoría que se mostrará en el storefront"
+        >
+          <Input placeholder="https://..." />
         </Form.Item>
 
         <Form.Item

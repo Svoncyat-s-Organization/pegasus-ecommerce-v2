@@ -28,6 +28,9 @@ public class StorefrontSettings extends BaseEntity {
     @Column(name = "favicon_url", columnDefinition = "text")
     private String faviconUrl;
 
+    @Column(name = "hero_image_url", columnDefinition = "text")
+    private String heroImageUrl;
+
     @Column(name = "primary_color", nullable = false, length = 7)
     private String primaryColor = "#04213b";
 

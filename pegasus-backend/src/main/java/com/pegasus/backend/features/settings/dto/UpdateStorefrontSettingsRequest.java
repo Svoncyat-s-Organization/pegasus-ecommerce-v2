@@ -17,6 +17,8 @@ public record UpdateStorefrontSettingsRequest(
 
         String faviconUrl,
 
+        String heroImageUrl,
+
         @NotBlank(message = "El color primario es requerido")
         @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Color primario inválido (formato: #RRGGBB)")
         String primaryColor,

@@ -21,6 +21,7 @@ export const StorefrontSettingsForm = () => {
         storefrontName: data.storefrontName,
         logoUrl: data.logoUrl || '',
         faviconUrl: data.faviconUrl || '',
+        heroImageUrl: data.heroImageUrl || '',
         primaryColor: data.primaryColor,
         secondaryColor: data.secondaryColor,
         termsAndConditions: data.termsAndConditions || '',
@@ -168,6 +169,18 @@ export const StorefrontSettingsForm = () => {
               label="URL del Favicon"
               name="faviconUrl"
               extra="Icono pequeño que aparece en la pestaña del navegador"
+            >
+              <Input placeholder="https://..." />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col xs={24}>
+            <Form.Item
+              label="URL de la Imagen Hero"
+              name="heroImageUrl"
+              extra="Imagen promocional que se mostrará en la sección principal del inicio del storefront"
             >
               <Input placeholder="https://..." />
             </Form.Item>

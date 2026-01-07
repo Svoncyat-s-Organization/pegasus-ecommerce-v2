@@ -22,28 +22,28 @@ INSERT INTO brands (name, slug, image_url, is_active) VALUES
 ('Lenovo', 'lenovo', 'https://placehold.co/200x200?text=Lenovo', true);
 
 -- Categories (hierarchical)
-INSERT INTO categories (name, slug, description, parent_id, is_active) VALUES
-('Electrónica', 'electronica', 'Dispositivos electrónicos', NULL, true),
-('Computadoras', 'computadoras', 'Laptops y PCs', NULL, true),
-('Accesorios', 'accesorios', 'Accesorios tecnológicos', NULL, true);
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active) VALUES
+('Electrónica', 'electronica', 'Dispositivos electrónicos', 'https://placehold.co/400x300?text=Electronica', NULL, true),
+('Computadoras', 'computadoras', 'Laptops y PCs', 'https://placehold.co/400x300?text=Computadoras', NULL, true),
+('Accesorios', 'accesorios', 'Accesorios tecnológicos', 'https://placehold.co/400x300?text=Accesorios', NULL, true);
 
 -- Subcategories
-INSERT INTO categories (name, slug, description, parent_id, is_active)
-SELECT 'Smartphones', 'smartphones', 'Teléfonos inteligentes', id, true FROM categories WHERE slug = 'electronica';
-INSERT INTO categories (name, slug, description, parent_id, is_active)
-SELECT 'Tablets', 'tablets', 'Tabletas electrónicas', id, true FROM categories WHERE slug = 'electronica';
-INSERT INTO categories (name, slug, description, parent_id, is_active)
-SELECT 'Televisores', 'televisores', 'Smart TVs y monitores', id, true FROM categories WHERE slug = 'electronica';
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
+SELECT 'Smartphones', 'smartphones', 'Teléfonos inteligentes', 'https://placehold.co/400x300?text=Smartphones', id, true FROM categories WHERE slug = 'electronica';
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
+SELECT 'Tablets', 'tablets', 'Tabletas electrónicas', 'https://placehold.co/400x300?text=Tablets', id, true FROM categories WHERE slug = 'electronica';
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
+SELECT 'Televisores', 'televisores', 'Smart TVs y monitores', 'https://placehold.co/400x300?text=Televisores', id, true FROM categories WHERE slug = 'electronica';
 
-INSERT INTO categories (name, slug, description, parent_id, is_active)
-SELECT 'Laptops', 'laptops', 'Computadoras portátiles', id, true FROM categories WHERE slug = 'computadoras';
-INSERT INTO categories (name, slug, description, parent_id, is_active)
-SELECT 'PCs de Escritorio', 'pcs-escritorio', 'Computadoras de escritorio', id, true FROM categories WHERE slug = 'computadoras';
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
+SELECT 'Laptops', 'laptops', 'Computadoras portátiles', 'https://placehold.co/400x300?text=Laptops', id, true FROM categories WHERE slug = 'computadoras';
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
+SELECT 'PCs de Escritorio', 'pcs-escritorio', 'Computadoras de escritorio', 'https://placehold.co/400x300?text=PCs', id, true FROM categories WHERE slug = 'computadoras';
 
-INSERT INTO categories (name, slug, description, parent_id, is_active)
-SELECT 'Audífonos', 'audifonos', 'Auriculares y headsets', id, true FROM categories WHERE slug = 'accesorios';
-INSERT INTO categories (name, slug, description, parent_id, is_active)
-SELECT 'Cargadores', 'cargadores', 'Cargadores y cables', id, true FROM categories WHERE slug = 'accesorios';
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
+SELECT 'Audífonos', 'audifonos', 'Auriculares y headsets', 'https://placehold.co/400x300?text=Audifonos', id, true FROM categories WHERE slug = 'accesorios';
+INSERT INTO categories (name, slug, description, image_url, parent_id, is_active)
+SELECT 'Cargadores', 'cargadores', 'Cargadores y cables', 'https://placehold.co/400x300?text=Cargadores', id, true FROM categories WHERE slug = 'accesorios';
 
 -- Products with variants
 -- Product 1: iPhone 15 Pro
