@@ -1,5 +1,5 @@
 import { api } from '@config/api';
-import type { VariantResponse, CreateVariantRequest, UpdateVariantRequest, PageResponse } from '@types';
+import type { VariantResponse, VariantWithStockResponse, CreateVariantRequest, UpdateVariantRequest, PageResponse } from '@types';
 
 /**
  * Obtener todas las variantes con paginación y búsqueda
@@ -37,6 +37,21 @@ export const getVariantsByProductId = async (productId: number): Promise<Variant
  */
 export const getActiveVariantsByProductId = async (productId: number): Promise<VariantResponse[]> => {
   const { data } = await api.get(`/admin/variants/by-product/${productId}/active`);
+  return data;
+};
+
+/**
+ * Obtener variantes con stock disponible
+ */
+export const getVariantsWithStock = async (
+  page = 0,
+  size = 1000,
+  search?: string
+): Promise<PageResponse<VariantWithStockResponse>> => {
+  const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+  if (search) params.append('search', search);
+  
+  const { data } = await api.get(`/admin/variants/with-stock?${params.toString()}`);
   return data;
 };
 
