@@ -5,8 +5,8 @@ import type { OrderStatus } from '@types';
  */
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING: 'Pendiente',
-  AWAIT_PAYMENT: 'Esperando Pago',
-  PAID: 'Pagado',
+  AWAIT_PAYMENT: 'Pago',
+  PAID: 'Comprobante',
   PROCESSING: 'En Proceso',
   SHIPPED: 'Enviado',
   DELIVERED: 'Entregado',

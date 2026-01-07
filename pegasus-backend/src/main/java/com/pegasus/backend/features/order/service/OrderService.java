@@ -72,6 +72,27 @@ public class OrderService {
         }
 
         /**
+         * Obtener pedidos pagados con comprobante emitido (listos para envío).
+         * Nota: la creación de envíos requiere comprobante, por eso este endpoint
+         * filtra.
+         */
+        public PageResponse<OrderSummaryResponse> getPaidOrdersWithInvoice(Pageable pageable) {
+                log.debug("Getting PAID orders with invoice, page: {}", pageable.getPageNumber());
+
+                Page<Order> page = orderRepository.findByStatusWithInvoice(OrderStatus.PAID, pageable);
+                List<OrderSummaryResponse> content = orderMapper.toSummaryResponseList(page.getContent());
+
+                return new PageResponse<>(
+                                content,
+                                page.getNumber(),
+                                page.getSize(),
+                                page.getTotalElements(),
+                                page.getTotalPages(),
+                                page.isFirst(),
+                                page.isLast());
+        }
+
+        /**
          * Obtener pedido por ID
          */
         public OrderResponse getOrderById(Long id) {

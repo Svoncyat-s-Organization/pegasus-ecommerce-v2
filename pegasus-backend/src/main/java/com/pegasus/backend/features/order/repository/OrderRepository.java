@@ -18,57 +18,66 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    /**
-     * Buscar pedido por número de orden
-     */
-    Optional<Order> findByOrderNumber(String orderNumber);
+        /**
+         * Buscar pedido por número de orden
+         */
+        Optional<Order> findByOrderNumber(String orderNumber);
 
-    /**
-     * Buscar pedidos por cliente con paginación
-     */
-    Page<Order> findByCustomerId(Long customerId, Pageable pageable);
+        /**
+         * Buscar pedidos por cliente con paginación
+         */
+        Page<Order> findByCustomerId(Long customerId, Pageable pageable);
 
-    /**
-     * Buscar pedidos por estado con paginación
-     */
-    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
+        /**
+         * Buscar pedidos por estado con paginación
+         */
+        Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
-    /**
-     * Buscar pedidos por rango de fecha
-     */
-    Page<Order> findByCreatedAtBetween(
-            OffsetDateTime startDate,
-            OffsetDateTime endDate,
-            Pageable pageable
-    );
+        /**
+         * Buscar pedidos por estado que tengan comprobante emitido (invoice).
+         * Se usa principalmente para filtrar pedidos listos para crear envíos.
+         */
+        @Query("""
+                        SELECT o FROM Order o
+                        WHERE o.status = :status
+                                AND EXISTS (SELECT 1 FROM Invoice i WHERE i.orderId = o.id)
+                        """)
+        Page<Order> findByStatusWithInvoice(@Param("status") OrderStatus status, Pageable pageable);
 
-    /**
-     * Búsqueda compleja con filtros opcionales
-     * Busca por número de orden, nombre del cliente o email
-     */
-    @Query("""
-            SELECT o FROM Order o
-            LEFT JOIN o.customer c
-            WHERE (:search IS NULL OR :search = '' OR
-                   LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR
-                   LOWER(c.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR
-                   LOWER(c.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR
-                   LOWER(c.email) LIKE LOWER(CONCAT('%', :search, '%')))
-            AND (:status IS NULL OR o.status = :status)
-            """)
-    Page<Order> searchOrders(
-            @Param("search") String search,
-            @Param("status") OrderStatus status,
-            Pageable pageable
-    );
+        /**
+         * Buscar pedidos por rango de fecha
+         */
+        Page<Order> findByCreatedAtBetween(
+                        OffsetDateTime startDate,
+                        OffsetDateTime endDate,
+                        Pageable pageable);
 
-    /**
-     * Contar pedidos por cliente
-     */
-    long countByCustomerId(Long customerId);
+        /**
+         * Búsqueda compleja con filtros opcionales
+         * Busca por número de orden, nombre del cliente o email
+         */
+        @Query("""
+                        SELECT o FROM Order o
+                        LEFT JOIN o.customer c
+                        WHERE (:search IS NULL OR :search = '' OR
+                               LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                               LOWER(c.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                               LOWER(c.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                               LOWER(c.email) LIKE LOWER(CONCAT('%', :search, '%')))
+                        AND (:status IS NULL OR o.status = :status)
+                        """)
+        Page<Order> searchOrders(
+                        @Param("search") String search,
+                        @Param("status") OrderStatus status,
+                        Pageable pageable);
 
-    /**
-     * Verificar si existe un order_number
-     */
-    boolean existsByOrderNumber(String orderNumber);
+        /**
+         * Contar pedidos por cliente
+         */
+        long countByCustomerId(Long customerId);
+
+        /**
+         * Verificar si existe un order_number
+         */
+        boolean existsByOrderNumber(String orderNumber);
 }

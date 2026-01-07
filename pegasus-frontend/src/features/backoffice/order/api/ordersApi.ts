@@ -75,6 +75,19 @@ export const getPaidOrders = async (
 };
 
 /**
+ * Obtener pedidos pagados con comprobante emitido (listos para crear envío)
+ */
+export const getPaidOrdersWithInvoice = async (
+  page = 0,
+  size = 100
+): Promise<PageResponse<OrderSummaryResponse>> => {
+  const { data } = await api.get('/admin/orders/paid-with-invoice', {
+    params: { page, size },
+  });
+  return data;
+};
+
+/**
  * Crear un nuevo pedido manualmente desde el backoffice
  */
 export const createOrder = async (request: CreateOrderRequest): Promise<OrderResponse> => {

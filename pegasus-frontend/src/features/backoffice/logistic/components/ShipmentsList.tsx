@@ -84,7 +84,10 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
       dataIndex: 'shipmentType',
       key: 'shipmentType',
       width: 180,
-      render: (type: string) => <Tag>{SHIPMENT_TYPES[type as keyof typeof SHIPMENT_TYPES] || type}</Tag>,
+      render: (type: string) => {
+        const isOutbound = type === 'OUTBOUND';
+        return <Tag color={isOutbound ? 'green' : 'red'}>{isOutbound ? 'Pedido' : 'Devolución'}</Tag>;
+      },
     },
     {
       title: 'Método de Envío',
@@ -145,7 +148,7 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
               onClick={() => onView(record.id)}
             />
           </Tooltip>
-          {record.status === 'PENDING' && (
+          {record.status === 'PENDING' && record.shipmentType === 'OUTBOUND' && (
             <Popconfirm
               title="¿Confirmar envío?"
               description="Esto marcará el envío como en tránsito y actualizará el pedido."

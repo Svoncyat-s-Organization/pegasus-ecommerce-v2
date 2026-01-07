@@ -159,12 +159,17 @@ public class ShipmentService {
 
                 Shipment saved = shipmentRepository.save(shipment);
 
-                // AUTOMÁTICO: Actualizar estado del pedido a PROCESSING (preparando envío)
-                log.info("Auto-updating order {} status to PROCESSING after shipment creation", request.getOrderId());
-                orderService.updateOrderStatus(
-                                request.getOrderId(),
-                                OrderStatus.PROCESSING,
-                                "Envío creado - preparando pedido para despacho");
+                // AUTOMÁTICO: Solo para envíos SALIENTES (pedido). Para envíos ENTRANTES
+                // (devolución/RMA)
+                // no se debe afectar el estado del pedido.
+                if (request.getShipmentType() == ShipmentType.OUTBOUND) {
+                        log.info("Auto-updating order {} status to PROCESSING after OUTBOUND shipment creation",
+                                        request.getOrderId());
+                        orderService.updateOrderStatus(
+                                        request.getOrderId(),
+                                        OrderStatus.PROCESSING,
+                                        "Envío creado - preparando pedido para despacho");
+                }
 
                 log.info("Shipment created successfully with tracking number: {} - Order status: PROCESSING",
                                 saved.getTrackingNumber());
@@ -181,6 +186,13 @@ public class ShipmentService {
 
                 Shipment shipment = shipmentRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
+
+                // Solo envíos SALIENTES deben impactar stock/estado del pedido.
+                if (shipment.getShipmentType() != ShipmentType.OUTBOUND) {
+                        throw new BadRequestException(
+                                        "Solo los envíos SALIENTES (pedido) pueden marcarse como enviados. Tipo actual: "
+                                                        + shipment.getShipmentType());
+                }
 
                 // Validar que el envío está en estado PENDING
                 if (shipment.getStatus() != ShipmentStatus.PENDING) {

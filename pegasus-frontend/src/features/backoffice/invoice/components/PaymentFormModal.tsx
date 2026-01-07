@@ -6,12 +6,22 @@ import { useBillingPaymentMethods } from '../hooks/useBillingPaymentMethods';
 import { useCreateBillingPayment } from '../hooks/useBillingMutations';
 import { useAdminOrders } from '../hooks/useAdminOrders';
 
+type InitialOrderInfo = {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  total: number;
+};
+
 interface PaymentFormModalProps {
   open: boolean;
   onCancel: () => void;
+  onCreated?: () => void;
+  initialOrder?: InitialOrderInfo;
+  lockOrder?: boolean;
 }
 
-export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
+export const PaymentFormModal = ({ open, onCancel, onCreated, initialOrder, lockOrder }: PaymentFormModalProps) => {
   const [form] = Form.useForm();
   const createPayment = useCreateBillingPayment();
   const { data: paymentMethodsData, isLoading: isLoadingPaymentMethods } = useBillingPaymentMethods(0, 200);
@@ -20,9 +30,25 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
   const debouncedOrderSearch = useDebounce(orderSearchTerm, 500);
   const { data: ordersData, isLoading: isLoadingOrders } = useAdminOrders(0, 20, debouncedOrderSearch || undefined);
 
+  const isOrderLocked = !!initialOrder && lockOrder !== false;
+
   const ordersById = useMemo(() => {
-    return new Map<number, OrderSummaryResponse>((ordersData?.content || []).map((o: OrderSummaryResponse) => [o.id, o]));
-  }, [ordersData]);
+    const map = new Map<number, OrderSummaryResponse>((ordersData?.content || []).map((o: OrderSummaryResponse) => [o.id, o]));
+    if (initialOrder) {
+      map.set(initialOrder.id, {
+        id: initialOrder.id,
+        orderNumber: initialOrder.orderNumber,
+        customerId: 0,
+        customerName: initialOrder.customerName,
+        customerEmail: '',
+        status: 'PENDING',
+        total: initialOrder.total,
+        createdAt: '',
+        updatedAt: '',
+      } satisfies OrderSummaryResponse);
+    }
+    return map;
+  }, [ordersData, initialOrder]);
 
   const selectedOrderId = Form.useWatch('orderId', form);
 
@@ -43,11 +69,23 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
   const ordersOptions = useMemo(() => {
     const eligibleStatuses = new Set(['PENDING', 'AWAIT_PAYMENT']);
     const orders = (ordersData?.content || []).filter((o: OrderSummaryResponse) => eligibleStatuses.has(o.status));
-    return orders.map((o: OrderSummaryResponse) => ({
+    const options = orders.map((o: OrderSummaryResponse) => ({
       value: o.id,
       label: `${o.orderNumber} - ${o.customerName}`,
     }));
-  }, [ordersData]);
+
+    if (initialOrder && eligibleStatuses.has('PENDING')) {
+      const exists = options.some((o) => o.value === initialOrder.id);
+      if (!exists) {
+        options.unshift({
+          value: initialOrder.id,
+          label: `${initialOrder.orderNumber} - ${initialOrder.customerName}`,
+        });
+      }
+    }
+
+    return options;
+  }, [ordersData, initialOrder]);
 
   const paymentMethodOptions = useMemo(() => {
     return (paymentMethodsData?.content || [])
@@ -69,6 +107,7 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
 
     try {
       await createPayment.mutateAsync(request);
+      onCreated?.();
       onCancel();
     } catch {
       message.error('No se pudo registrar el pago');
@@ -91,6 +130,10 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
       afterOpenChange={(isOpen) => {
         if (!isOpen) return;
         form.resetFields();
+        setOrderSearchTerm(initialOrder?.orderNumber ?? '');
+        if (initialOrder) {
+          form.setFieldsValue({ orderId: initialOrder.id, amount: Number(initialOrder.total) });
+        }
       }}
       width={860}
       destroyOnClose
@@ -103,11 +146,15 @@ export const PaymentFormModal = ({ open, onCancel }: PaymentFormModalProps) => {
                 placeholder="Buscar pedido..."
                 showSearch
                 filterOption={false}
-                onSearch={(value) => setOrderSearchTerm(value)}
+                onSearch={(value) => {
+                  if (isOrderLocked) return;
+                  setOrderSearchTerm(value);
+                }}
                 options={ordersOptions}
                 loading={isLoadingOrders}
                 allowClear
                 optionFilterProp="label"
+                disabled={isOrderLocked}
               />
             </Form.Item>
           </Col>
