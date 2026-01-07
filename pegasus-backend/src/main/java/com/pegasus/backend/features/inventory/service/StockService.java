@@ -146,6 +146,14 @@ public class StockService {
                 log.info("Adjusting stock - variant: {}, warehouse: {}, change: {}",
                                 request.variantId(), request.warehouseId(), request.quantityChange());
 
+                if (request.warehouseId() == null) {
+                        throw new BadRequestException("warehouseId es requerido");
+                }
+
+                if (request.variantId() == null) {
+                        throw new BadRequestException("variantId es requerido");
+                }
+
                 // Validar entidades
                 Warehouse warehouse = warehouseRepository.findById(request.warehouseId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -159,8 +167,8 @@ public class StockService {
                 Stock stock = stockRepository.findByWarehouseIdAndVariantId(request.warehouseId(), request.variantId())
                                 .orElseGet(() -> {
                                         Stock newStock = Stock.builder()
-                                                        .warehouse(warehouse)
-                                                        .variant(variant)
+                                                        .warehouseId(warehouse.getId())
+                                                        .variantId(variant.getId())
                                                         .quantity(0)
                                                         .reservedQuantity(0)
                                                         .build();
@@ -205,6 +213,14 @@ public class StockService {
                                 request.variantId(), request.fromWarehouseId(), request.toWarehouseId(),
                                 request.quantity());
 
+                if (request.fromWarehouseId() == null || request.toWarehouseId() == null) {
+                        throw new BadRequestException("Los almacenes de origen y destino son requeridos");
+                }
+
+                if (request.variantId() == null) {
+                        throw new BadRequestException("variantId es requerido");
+                }
+
                 if (request.fromWarehouseId().equals(request.toWarehouseId())) {
                         throw new BadRequestException("Los almacenes de origen y destino no pueden ser los mismos");
                 }
@@ -241,8 +257,8 @@ public class StockService {
                                 .findByWarehouseIdAndVariantId(request.toWarehouseId(), request.variantId())
                                 .orElseGet(() -> {
                                         Stock newStock = Stock.builder()
-                                                        .warehouse(toWarehouse)
-                                                        .variant(variant)
+                                                        .warehouseId(toWarehouse.getId())
+                                                        .variantId(variant.getId())
                                                         .quantity(0)
                                                         .reservedQuantity(0)
                                                         .build();
@@ -389,6 +405,14 @@ public class StockService {
                 log.info("Increasing stock - warehouse: {}, variant: {}, quantity: {}, purchase: {}",
                                 warehouseId, variantId, quantity, purchaseId);
 
+                if (warehouseId == null) {
+                        throw new BadRequestException("warehouseId es requerido");
+                }
+
+                if (variantId == null) {
+                        throw new BadRequestException("variantId es requerido");
+                }
+
                 Warehouse warehouse = warehouseRepository.findById(warehouseId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Almacén no encontrado con ID: " + warehouseId));
@@ -401,8 +425,8 @@ public class StockService {
                 Stock stock = stockRepository.findByWarehouseIdAndVariantId(warehouseId, variantId)
                                 .orElseGet(() -> {
                                         Stock newStock = Stock.builder()
-                                                        .warehouse(warehouse)
-                                                        .variant(variant)
+                                                        .warehouseId(warehouse.getId())
+                                                        .variantId(variant.getId())
                                                         .quantity(0)
                                                         .reservedQuantity(0)
                                                         .build();
@@ -436,6 +460,14 @@ public class StockService {
                 log.info("Returning stock - warehouse: {}, variant: {}, quantity: {}, rma: {}",
                                 warehouseId, variantId, quantity, rmaId);
 
+                if (warehouseId == null) {
+                        throw new BadRequestException("warehouseId es requerido");
+                }
+
+                if (variantId == null) {
+                        throw new BadRequestException("variantId es requerido");
+                }
+
                 Warehouse warehouse = warehouseRepository.findById(warehouseId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Almacén no encontrado con ID: " + warehouseId));
@@ -447,8 +479,8 @@ public class StockService {
                 Stock stock = stockRepository.findByWarehouseIdAndVariantId(warehouseId, variantId)
                                 .orElseGet(() -> {
                                         Stock newStock = Stock.builder()
-                                                        .warehouse(warehouse)
-                                                        .variant(variant)
+                                                        .warehouseId(warehouse.getId())
+                                                        .variantId(variant.getId())
                                                         .quantity(0)
                                                         .reservedQuantity(0)
                                                         .build();
