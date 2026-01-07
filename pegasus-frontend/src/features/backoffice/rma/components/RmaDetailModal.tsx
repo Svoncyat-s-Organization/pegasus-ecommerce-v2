@@ -5,6 +5,7 @@ import type { RmaItemResponse, RefundMethod } from '@types';
 import { useRmaDetail } from '../hooks/useRmaDetail';
 import { useRmaMutations } from '../hooks/useRmaMutations';
 import { ApprovalModal } from './ApprovalModal';
+import { CreateReturnShipmentModal } from './CreateReturnShipmentModal';
 import { InspectionModal } from './InspectionModal';
 import { RmaStatusTimeline } from './RmaStatusTimeline';
 import {
@@ -48,7 +49,7 @@ export const RmaDetailModal = ({
 
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
 
-  const [markInTransitOpen, setMarkInTransitOpen] = useState(false);
+  const [createReturnShipmentOpen, setCreateReturnShipmentOpen] = useState(false);
   const [markReceivedOpen, setMarkReceivedOpen] = useState(false);
   const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
   const [refundDecisionOpen, setRefundDecisionOpen] = useState(false);
@@ -86,7 +87,7 @@ export const RmaDetailModal = ({
         setApprovalModalOpen(true);
         return;
       case 'APPROVED':
-        setMarkInTransitOpen(true);
+        setCreateReturnShipmentOpen(true);
         return;
       case 'IN_TRANSIT':
         setMarkReceivedOpen(true);
@@ -178,17 +179,6 @@ export const RmaDetailModal = ({
       },
     },
   ];
-
-  const confirmMarkInTransit = async () => {
-    if (!rma) return;
-    try {
-      await markInTransit({ rmaId: rma.id, comments });
-      setMarkInTransitOpen(false);
-      resetActionState();
-    } catch {
-      // handled in hook
-    }
-  };
 
   const confirmMarkReceived = async () => {
     if (!rma) return;
@@ -351,23 +341,20 @@ export const RmaDetailModal = ({
         onClose={() => setApprovalModalOpen(false)}
       />
 
-      <Modal
-        title="Cliente envió el paquete"
-        open={markInTransitOpen}
-        onOk={confirmMarkInTransit}
-        onCancel={() => {
-          setMarkInTransitOpen(false);
-          resetActionState();
-        }}
-        confirmLoading={isMarkingInTransit}
-      >
-        <Input.TextArea
-          rows={4}
-          placeholder="Comentarios opcionales..."
-          value={comments}
-          onChange={(e) => setComments(e.target.value)}
+      {rma && (
+        <CreateReturnShipmentModal
+          open={createReturnShipmentOpen}
+          rma={rma}
+          onClose={() => {
+            setCreateReturnShipmentOpen(false);
+            resetActionState();
+          }}
+          onMarkInTransit={(shipmentComments) =>
+            markInTransit({ rmaId: rma.id, comments: shipmentComments })
+          }
+          isMarkingInTransit={isMarkingInTransit}
         />
-      </Modal>
+      )}
 
       <Modal
         title="Marcar como recibido"

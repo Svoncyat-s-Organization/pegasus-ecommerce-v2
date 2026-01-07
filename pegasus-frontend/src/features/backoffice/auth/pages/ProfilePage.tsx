@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Form, Input, Button, Typography, Select, Divider, Space, Spin } from 'antd';
+import { Card, Form, Input, Button, Typography, Select, Space, Spin } from 'antd';
 import { IconUser, IconLock, IconDeviceFloppy } from '@tabler/icons-react';
 import { useProfile } from '../hooks/useProfile';
 import { useUpdateProfile, useChangePassword } from '../hooks/useUpdateProfile';

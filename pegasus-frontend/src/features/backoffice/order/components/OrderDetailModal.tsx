@@ -1,5 +1,5 @@
-import { Modal, Descriptions, Table, Tag, Timeline, Spin, Alert, Button, Divider } from 'antd';
-import type { OrderItemResponse, OrderStatusHistoryResponse } from '@types';
+import { Modal, Descriptions, Table, Tag, Spin, Alert, Button, Divider } from 'antd';
+import type { OrderItemResponse } from '@types';
 import { useOrderDetail } from '../hooks/useOrderDetail';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../constants/orderStatus';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -82,8 +82,7 @@ export const OrderDetailModal = ({ orderId, open, onClose }: OrderDetailModalPro
         <div>
           {/* Timeline de Estado del Pedido */}
           <OrderStatusTimeline
-            currentStatus={order.status}
-            orderId={order.id}
+            order={order}
             onStatusChange={() => refetch()}
           />
 

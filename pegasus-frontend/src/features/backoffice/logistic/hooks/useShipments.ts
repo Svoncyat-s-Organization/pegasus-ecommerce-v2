@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { message } from 'antd';
 import type { CreateShipmentRequest, UpdateShipmentRequest } from '@types';
 import {
   getShipments,
@@ -11,17 +10,6 @@ import {
   markAsShipped,
   deleteShipment,
 } from '../api/shipmentsApi';
-
-type ApiErrorShape = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-};
-
-const getApiErrorMessage = (error: unknown): string | undefined =>
-  (error as ApiErrorShape).response?.data?.message;
 
 export const useShipments = (
   page: number,
@@ -67,6 +55,8 @@ export const useCreateShipment = () => {
     mutationFn: (request: CreateShipmentRequest) => createShipment(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
     },
   });
 };

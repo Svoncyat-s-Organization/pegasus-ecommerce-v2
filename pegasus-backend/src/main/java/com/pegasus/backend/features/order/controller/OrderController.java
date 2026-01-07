@@ -80,6 +80,15 @@ public class OrderController {
                 return ResponseEntity.ok(response);
         }
 
+        @GetMapping("/paid-with-invoice")
+        @Operation(summary = "Obtener pedidos pagados con comprobante emitido", description = "Listar pedidos con estado PAID que ya tienen comprobante emitido (requisito para crear envíos)")
+        @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
+        public ResponseEntity<PageResponse<OrderSummaryResponse>> getPaidOrdersWithInvoice(
+                        @PageableDefault(size = 100, sort = "createdAt") Pageable pageable) {
+                PageResponse<OrderSummaryResponse> response = orderService.getPaidOrdersWithInvoice(pageable);
+                return ResponseEntity.ok(response);
+        }
+
         @PostMapping
         @Operation(summary = "Crear pedido", description = "Crear un nuevo pedido manualmente desde el backoffice")
         @ApiResponse(responseCode = "201", description = "Pedido creado exitosamente")

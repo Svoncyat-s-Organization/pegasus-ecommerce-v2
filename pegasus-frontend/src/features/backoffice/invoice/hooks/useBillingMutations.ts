@@ -19,6 +19,9 @@ export const useCreateBillingInvoice = () => {
     onSuccess: () => {
       message.success('Comprobante creado');
       queryClient.invalidateQueries({ queryKey: ['billing-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-invoices', 'invoiced-order-ids'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
@@ -53,6 +56,8 @@ export const useCreateBillingPayment = () => {
     onSuccess: () => {
       message.success('Pago registrado');
       queryClient.invalidateQueries({ queryKey: ['billing-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
