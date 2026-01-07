@@ -128,15 +128,15 @@ export const OrdersPage = () => {
     });
   };
 
-  const getStepperActiveStep = (status: OrderStatus): number => {
+  const getStepperActiveStep = (status: OrderStatus, invoice?: any): number => {
     switch (status) {
       case 'PENDING':
       case 'AWAIT_PAYMENT':
         return 0; // Pendiente
       case 'PAID':
-        return 1; // Pago
+        return invoice ? 2 : 1; // Pago
       case 'PROCESSING':
-        return 3; // En Proceso (assume Comprobante done)
+        return 3; // En Proceso
       case 'SHIPPED':
         return 4; // Enviado
       case 'DELIVERED':
@@ -202,13 +202,19 @@ export const OrdersPage = () => {
                       <Text size="sm">{formatDate(order.createdAt)}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Badge
-                        color={ORDER_STATUS_COLORS[order.status] || 'gray'}
-                        variant="light"
-                        radius="sm"
-                      >
-                        {ORDER_STATUS_LABELS[order.status] || order.status}
-                      </Badge>
+                      {order.invoice && order.status === 'PAID' ? (
+                        <Badge color="blue" variant="light" radius="sm">
+                          Comprobante Emitido
+                        </Badge>
+                      ) : (
+                        <Badge
+                          color={ORDER_STATUS_COLORS[order.status] || 'gray'}
+                          variant="light"
+                          radius="sm"
+                        >
+                          {ORDER_STATUS_LABELS[order.status] || order.status}
+                        </Badge>
+                      )}
                     </Table.Td>
                     <Table.Td>
                       <Text fw={700} style={{ color: primaryColor }}>
@@ -318,7 +324,7 @@ export const OrdersPage = () => {
               <Text fw={600} mb="xl" size="lg">Estado del Pedido</Text>
               <Box style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
                 <Stepper
-                  active={getStepperActiveStep(orderDetail.status)}
+                  active={getStepperActiveStep(orderDetail.status, orderDetail.invoice)}
                   size="sm"
                   allowNextStepsSelect={false}
                   iconSize={50}
@@ -361,7 +367,7 @@ export const OrdersPage = () => {
                     { label: 'Enviado', desc: 'En camino', icon: IconTruck, color: 'indigo' },
                     { label: 'Entregado', desc: 'Pedido completado', icon: IconCheck, color: 'green' },
                   ].map((step, index) => {
-                    const activeStep = getStepperActiveStep(orderDetail.status);
+                    const activeStep = getStepperActiveStep(orderDetail.status, orderDetail.invoice);
                     const isActive = activeStep === index;
                     const isInactive = activeStep < index;
 

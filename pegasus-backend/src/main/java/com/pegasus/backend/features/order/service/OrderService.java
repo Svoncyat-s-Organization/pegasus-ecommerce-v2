@@ -41,6 +41,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service para gestión de pedidos
@@ -77,9 +78,10 @@ public class OrderService {
 
         Page<Order> page = orderRepository.searchOrders(search, status, pageable);
         List<OrderSummaryResponse> content = orderMapper.toSummaryResponseList(page.getContent());
+        List<OrderSummaryResponse> enrichedContent = enrichWithInvoices(content);
 
         return new PageResponse<>(
-                content,
+                enrichedContent,
                 page.getNumber(),
                 page.getSize(),
                 page.getTotalElements(),
@@ -98,9 +100,10 @@ public class OrderService {
 
         Page<Order> page = orderRepository.findByStatusWithInvoice(OrderStatus.PAID, pageable);
         List<OrderSummaryResponse> content = orderMapper.toSummaryResponseList(page.getContent());
+        List<OrderSummaryResponse> enrichedContent = enrichWithInvoices(content);
 
         return new PageResponse<>(
-                content,
+                enrichedContent,
                 content.size() > 0 ? 0 : 0, // Mock pagination properties if needed or implement properly
                 page.getSize(),
                 page.getTotalElements(),
@@ -190,9 +193,10 @@ public class OrderService {
 
         Page<Order> page = orderRepository.findByCustomerId(customerId, pageable);
         List<OrderSummaryResponse> content = orderMapper.toSummaryResponseList(page.getContent());
+        List<OrderSummaryResponse> enrichedContent = enrichWithInvoices(content);
 
         return new PageResponse<>(
-                content,
+                enrichedContent,
                 page.getNumber(),
                 page.getSize(),
                 page.getTotalElements(),
@@ -682,5 +686,32 @@ public class OrderService {
         return status == OrderStatus.PENDING ||
                 status == OrderStatus.AWAIT_PAYMENT ||
                 status == OrderStatus.PROCESSING;
+    }
+
+    private List<OrderSummaryResponse> enrichWithInvoices(List<OrderSummaryResponse> orders) {
+        if (orders.isEmpty()) {
+            return orders;
+        }
+        List<Long> orderIds = orders.stream().map(OrderSummaryResponse::id).toList();
+        Map<Long, InvoiceSummaryResponse> invoiceMap = invoiceRepository.findByOrderIdIn(orderIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        inv -> inv.getOrderId(),
+                        invoiceMapper::toSummaryResponse,
+                        (existing, replacement) -> existing));
+
+        return orders.stream().map(order -> new OrderSummaryResponse(
+                order.id(),
+                order.orderNumber(),
+                order.customerId(),
+                order.customerName(),
+                order.customerEmail(),
+                order.customerDocType(),
+                order.customerDocNumber(),
+                order.status(),
+                order.total(),
+                order.createdAt(),
+                order.updatedAt(),
+                invoiceMap.get(order.id()))).toList();
     }
 }

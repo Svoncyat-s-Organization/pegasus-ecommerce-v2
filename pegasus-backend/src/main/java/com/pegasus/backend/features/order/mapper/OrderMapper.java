@@ -24,6 +24,7 @@ public interface OrderMapper {
     @Mapping(target = "customerEmail", source = "customer.email")
     @Mapping(target = "customerDocType", source = "customer.docType")
     @Mapping(target = "customerDocNumber", source = "customer.docNumber")
+    @Mapping(target = "invoice", ignore = true)
     OrderSummaryResponse toSummaryResponse(Order entity);
 
     List<OrderResponse> toResponseList(List<Order> entities);

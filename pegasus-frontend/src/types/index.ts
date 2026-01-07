@@ -237,6 +237,7 @@ export interface OrderSummaryResponse {
   total: number;
   createdAt: string;
   updatedAt: string;
+  invoice?: InvoiceSummaryResponse;
 }
 
 export interface InvoiceSummaryResponse {

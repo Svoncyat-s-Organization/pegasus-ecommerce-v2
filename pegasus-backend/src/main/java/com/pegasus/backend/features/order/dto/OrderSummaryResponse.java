@@ -11,15 +11,16 @@ import java.time.OffsetDateTime;
  * Usado en listados (sin items ni historial)
  */
 public record OrderSummaryResponse(
-                Long id,
-                String orderNumber,
-                Long customerId,
-                String customerName,
-                String customerEmail,
-                DocumentType customerDocType,
-                String customerDocNumber,
-                OrderStatus status,
-                BigDecimal total,
-                OffsetDateTime createdAt,
-                OffsetDateTime updatedAt) {
+        Long id,
+        String orderNumber,
+        Long customerId,
+        String customerName,
+        String customerEmail,
+        DocumentType customerDocType,
+        String customerDocNumber,
+        OrderStatus status,
+        BigDecimal total,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt,
+        com.pegasus.backend.features.invoice.dto.InvoiceSummaryResponse invoice) {
 }
