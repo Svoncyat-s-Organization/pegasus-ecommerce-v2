@@ -58,6 +58,12 @@ export interface CreateOrderRequest {
 
   /** ID del método de envío */
   shippingMethodId?: number;
+
+  /** Método de pago seleccionado */
+  paymentMethod?: string;
+
+  /** ID de transacción (si aplica) */
+  paymentTransactionId?: string;
 }
 
 export interface OrderItemRequest {

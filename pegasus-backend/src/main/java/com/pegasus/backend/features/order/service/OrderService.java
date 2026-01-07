@@ -13,6 +13,10 @@ import com.pegasus.backend.features.logistic.entity.ShippingMethod;
 import com.pegasus.backend.features.logistic.repository.ShippingMethodRepository;
 import com.pegasus.backend.features.logistic.repository.ShipmentRepository;
 import com.pegasus.backend.features.logistic.service.ShipmentService;
+import com.pegasus.backend.features.invoice.entity.Payment;
+import com.pegasus.backend.features.invoice.entity.PaymentMethod;
+import com.pegasus.backend.features.invoice.repository.PaymentRepository;
+import com.pegasus.backend.features.invoice.repository.PaymentMethodRepository;
 import com.pegasus.backend.shared.enums.ShipmentType;
 import com.pegasus.backend.features.order.dto.*;
 import com.pegasus.backend.features.order.entity.Order;
@@ -53,6 +57,8 @@ public class OrderService {
         private final ShipmentService shipmentService;
         private final ShippingMethodRepository shippingMethodRepository;
         private final ShipmentRepository shipmentRepository;
+        private final PaymentRepository paymentRepository;
+        private final PaymentMethodRepository paymentMethodRepository;
 
         /**
          * Obtener todos los pedidos con filtros opcionales y paginación
@@ -327,6 +333,48 @@ public class OrderService {
                         } catch (Exception e) {
                                 log.error("Failed to auto-create shipment for order {}", savedOrder.getOrderNumber(),
                                                 e);
+                        }
+                }
+
+                // Create initial payment if provided
+                if (request.paymentMethod() != null && !request.paymentMethod().isEmpty()) {
+                        String methodName = switch (request.paymentMethod()) {
+                                case "card" -> "Credit Card";
+                                case "yape" -> "Yape";
+                                case "plin" -> "Plin";
+                                default -> request.paymentMethod();
+                        };
+
+                        PaymentMethod pm = paymentMethodRepository.findByName(methodName)
+                                        .orElseGet(() -> {
+                                                PaymentMethod newPm = new PaymentMethod();
+                                                newPm.setName(methodName);
+                                                return paymentMethodRepository.save(newPm);
+                                        });
+
+                        Payment payment = Payment.builder()
+                                        .orderId(savedOrder.getId())
+                                        .paymentMethodId(pm.getId())
+                                        .amount(savedOrder.getTotal())
+                                        .transactionId(request.paymentTransactionId())
+                                        .paymentDate(OffsetDateTime.now())
+                                        .notes("Pago registrado al crear pedido")
+                                        .build();
+
+                        paymentRepository.save(payment);
+
+                        // Update status to PAID if transaction ID is present
+                        if (request.paymentTransactionId() != null && !request.paymentTransactionId().isEmpty()) {
+                                savedOrder.setStatus(OrderStatus.PAID);
+                                orderRepository.save(savedOrder);
+
+                                OrderStatusHistory paymentHistory = OrderStatusHistory.builder()
+                                                .orderId(savedOrder.getId())
+                                                .status(OrderStatus.PAID)
+                                                .comments("Pago confirmado: " + request.paymentTransactionId())
+                                                .createdBy(createdByUserId)
+                                                .build();
+                                orderStatusHistoryRepository.save(paymentHistory);
                         }
                 }
 

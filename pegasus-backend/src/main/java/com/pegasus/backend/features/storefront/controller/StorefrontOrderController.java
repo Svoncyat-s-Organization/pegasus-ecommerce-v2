@@ -74,7 +74,9 @@ public class StorefrontOrderController {
                                 request.items(),
                                 request.shippingAddress(),
                                 request.billingAddress(),
-                                request.shippingMethodId());
+                                request.shippingMethodId(),
+                                request.paymentMethod(),
+                                request.paymentTransactionId());
 
                 // Storefront actions are performed by a Customer, not a backoffice User.
                 // Pass null to avoid referencing a non-existent users.id in audit/FK columns.

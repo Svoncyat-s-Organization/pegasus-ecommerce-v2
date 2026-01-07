@@ -13,6 +13,8 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Lo
 
     boolean existsByName(String name);
 
+    java.util.Optional<PaymentMethod> findByName(String name);
+
     @Query("SELECT pm FROM PaymentMethod pm WHERE LOWER(pm.name) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<PaymentMethod> search(@Param("search") String search, Pageable pageable);
 }
