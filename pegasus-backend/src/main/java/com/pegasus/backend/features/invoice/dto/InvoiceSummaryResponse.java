@@ -7,13 +7,17 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 public record InvoiceSummaryResponse(
-        Long id,
-        Long orderId,
-        Long seriesId,
-        InvoiceType invoiceType,
-        String series,
-        String number,
-        BigDecimal totalAmount,
-        InvoiceStatus status,
-        OffsetDateTime issuedAt) {
+                Long id,
+                Long orderId,
+                Long seriesId,
+                InvoiceType invoiceType,
+                String series,
+                String number,
+                String receiverName,
+                String receiverTaxId,
+                BigDecimal subtotal,
+                BigDecimal taxAmount,
+                BigDecimal totalAmount,
+                InvoiceStatus status,
+                OffsetDateTime issuedAt) {
 }

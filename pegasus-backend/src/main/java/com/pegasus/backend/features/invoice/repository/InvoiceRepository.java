@@ -41,6 +41,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
         Page<Invoice> searchByStatus(@Param("search") String search, @Param("status") InvoiceStatus status,
                         Pageable pageable);
 
+        List<Invoice> findByOrderIdIn(Collection<Long> orderIds);
+
         @Query("SELECT DISTINCT i.orderId FROM Invoice i WHERE i.orderId IN :orderIds")
         List<Long> findInvoicedOrderIds(@Param("orderIds") Collection<Long> orderIds);
 }

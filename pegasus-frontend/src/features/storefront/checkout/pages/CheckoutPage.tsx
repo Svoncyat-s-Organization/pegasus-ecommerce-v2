@@ -17,6 +17,7 @@ import {
   Divider,
   Badge,
   TextInput,
+  Select,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +42,7 @@ import { ShippingMethodSelector } from '../components/ShippingMethodSelector';
 import { CheckoutSummary } from '../components/CheckoutSummary';
 import { formatCurrency } from '@shared/utils/formatters';
 import type { CheckoutFormValues } from '../types/checkout.types';
+import { useDepartments, useProvinces, useDistricts } from '@shared/hooks/useLocations';
 
 /**
  * CheckoutPage - Página de checkout con stepper multi-paso
@@ -59,6 +61,60 @@ export const CheckoutPage = () => {
   const { getPrimaryColor } = useStorefrontConfigStore();
   const { data: shippingMethods } = useShippingMethods();
   const createOrderMutation = useCreateOrder();
+
+  // Invoice State
+  const [invoiceRazonSocial, setInvoiceRazonSocial] = useState('');
+  const [invoiceRuc, setInvoiceRuc] = useState('');
+  const [invoiceAddress, setInvoiceAddress] = useState('');
+  const [invoicePhone, setInvoicePhone] = useState('902875868'); // Default from requirement
+  const [invoiceDepartment, setInvoiceDepartment] = useState<string | undefined>(undefined);
+  const [invoiceProvince, setInvoiceProvince] = useState<string | undefined>(undefined);
+  const [invoiceDistrict, setInvoiceDistrict] = useState<string | undefined>(undefined);
+
+  const { data: departments } = useDepartments();
+  const { data: provinces } = useProvinces(invoiceDepartment);
+  const { data: districts } = useDistricts(invoiceProvince);
+
+  const [invoiceConfirmed, setInvoiceConfirmed] = useState(false);
+  const [invoiceErrors, setInvoiceErrors] = useState<Record<string, string>>({});
+
+  const validateInvoice = () => {
+    const errors: Record<string, string> = {};
+    if (!invoiceRazonSocial) errors.razonSocial = 'La razón social es requerida';
+
+    if (!invoiceRuc) errors.ruc = 'El RUC es requerido';
+    else if (!/^\d{11}$/.test(invoiceRuc)) errors.ruc = 'El RUC debe tener 11 números';
+
+    if (!invoiceDepartment) errors.department = 'Requerido';
+    if (!invoiceProvince) errors.province = 'Requerido';
+    if (!invoiceDistrict) errors.district = 'Requerido';
+
+    if (!invoiceAddress) errors.address = 'La dirección es requerida';
+
+    if (!invoicePhone) errors.phone = 'El celular es requerido';
+    else if (!/^\d{9}$/.test(invoicePhone)) errors.phone = 'El celular debe tener 9 dígitos';
+
+    setInvoiceErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInvoiceConfirm = () => {
+    if (!validateInvoice()) {
+      notifications.show({
+        title: 'Error en facturación',
+        message: 'Por favor completa correctamente todos los campos obligatorios',
+        color: 'red',
+      });
+      return;
+    }
+    setInvoiceConfirmed(true);
+    setInvoiceErrors({});
+    notifications.show({
+      title: 'Datos guardados',
+      message: 'Los datos de facturación se han guardado correctamente',
+      color: 'green',
+    });
+  };
 
   const primaryColor = getPrimaryColor();
   const subtotal = getSubtotal();
@@ -122,6 +178,10 @@ export const CheckoutPage = () => {
   const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current));
 
   const [paymentPhone, setPaymentPhone] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiration, setCardExpiration] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardHolderName, setCardHolderName] = useState('');
 
   // ...
 
@@ -133,7 +193,16 @@ export const CheckoutPage = () => {
     }
 
     // Validar método de pago
-    if (paymentMethod === 'yape' || paymentMethod === 'plin') {
+    if (paymentMethod === 'card') {
+      if (!cardNumber || !cardExpiration || !cardCvv || !cardHolderName) {
+        notifications.show({
+          title: 'Información incompleta',
+          message: 'Por favor completa todos los datos de la tarjeta',
+          color: 'red',
+        });
+        return;
+      }
+    } else if (paymentMethod === 'yape' || paymentMethod === 'plin') {
       if (!paymentTransactionId || !paymentPhone) {
         notifications.show({
           title: 'Información incompleta',
@@ -142,10 +211,52 @@ export const CheckoutPage = () => {
         });
         return;
       }
+
+      if (!/^\d{9}$/.test(paymentPhone)) {
+        notifications.show({
+          title: 'Celular inválido',
+          message: 'El número de celular debe tener 9 dígitos',
+          color: 'red'
+        });
+        return;
+      }
+
+      if (!/^\d{4}$/.test(paymentTransactionId)) {
+        notifications.show({
+          title: 'Código inválido',
+          message: 'El código de aprobación debe tener 4 dígitos',
+          color: 'red'
+        });
+        return;
+      }
+    }
+
+    // Validar Factura si está seleccionada
+    const isFactura = form.values.notes?.includes('FACTURA');
+    if (isFactura) {
+      // Always validate on submit to ensure data is correct even if user didn't click confirm
+      if (!validateInvoice()) {
+        notifications.show({
+          title: 'Factura incompleta',
+          message: 'Por favor corrige los campos de facturación marcados en rojo',
+          color: 'red'
+        });
+        return;
+      }
     }
 
     // Validar tarjeta (simulada)
     // En un caso real, Stripe/Culqi manejaría esto. Aquí asumimos valida si el form se ve.
+
+    const generateTransactionId = () => {
+      // Generar 2 letras aleatorias
+      const l1 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      const l2 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      // Generar 5 números aleatorios
+      const n = Math.floor(10000 + Math.random() * 90000);
+      // Formato: XX-12345 (Total 8 caracteres)
+      return `${l1}${l2}-${n}`;
+    };
 
     try {
       const response = await createOrderMutation.mutateAsync({
@@ -164,9 +275,14 @@ export const CheckoutPage = () => {
         },
         shippingMethodId: form.values.shippingMethodId || undefined,
         paymentMethod: paymentMethod,
-        paymentTransactionId: paymentMethod === 'card'
-          ? `CARD-${Date.now()}`
-          : paymentTransactionId,
+        paymentTransactionId: generateTransactionId(),
+        billingAddress: form.values.notes?.includes('FACTURA') ? {
+          ubigeoId: invoiceDistrict || '',
+          address: invoiceAddress,
+          reference: `RUC: ${invoiceRuc}`,
+          recipientName: invoiceRazonSocial,
+          recipientPhone: invoicePhone
+        } : undefined
       });
 
       // Clear cart and navigate to confirmation
@@ -299,6 +415,129 @@ export const CheckoutPage = () => {
                         <Radio value="factura" label="Factura" color={primaryColor} />
                       </Group>
                     </Radio.Group>
+
+                    {form.values.notes?.includes('FACTURA') && (
+                      <Paper withBorder p="md" radius="md" bg="gray.0" mt="sm">
+                        <Grid>
+                          <Grid.Col span={6}>
+                            <TextInput
+                              label="Razón social"
+                              placeholder=""
+                              required
+                              value={invoiceRazonSocial}
+                              onChange={(e) => {
+                                setInvoiceRazonSocial(e.currentTarget.value);
+                                if (invoiceErrors.razonSocial) setInvoiceErrors({ ...invoiceErrors, razonSocial: '' });
+                              }}
+                              error={invoiceErrors.razonSocial}
+                            />
+                          </Grid.Col>
+                          <Grid.Col span={6}>
+                            <TextInput
+                              label="RUC"
+                              placeholder=""
+                              required
+                              value={invoiceRuc}
+                              maxLength={11}
+                              onChange={(e) => {
+                                const val = e.currentTarget.value.replace(/\D/g, ''); // Numeric only
+                                setInvoiceRuc(val);
+                                if (invoiceErrors.ruc) setInvoiceErrors({ ...invoiceErrors, ruc: '' });
+                              }}
+                              error={invoiceErrors.ruc}
+                            />
+                          </Grid.Col>
+
+                          <Grid.Col span={6}>
+                            <Select
+                              label="Departamento"
+                              placeholder="Selecciona"
+                              data={departments?.map(d => ({ value: d.id, label: d.name })) || []}
+                              value={invoiceDepartment}
+                              onChange={(val) => {
+                                setInvoiceDepartment(val || undefined);
+                                setInvoiceProvince(undefined);
+                                setInvoiceDistrict(undefined);
+                                if (invoiceErrors.department && val) setInvoiceErrors({ ...invoiceErrors, department: '' });
+                              }}
+                              required
+                              searchable
+                              error={invoiceErrors.department}
+                            />
+                          </Grid.Col>
+                          <Grid.Col span={6}>
+                            <Select
+                              label="Provincia"
+                              placeholder="Selecciona"
+                              data={provinces?.map(p => ({ value: p.id, label: p.name })) || []}
+                              value={invoiceProvince}
+                              onChange={(val) => {
+                                setInvoiceProvince(val || undefined);
+                                setInvoiceDistrict(undefined);
+                                if (invoiceErrors.province && val) setInvoiceErrors({ ...invoiceErrors, province: '' });
+                              }}
+                              disabled={!invoiceDepartment}
+                              required
+                              searchable
+                              error={invoiceErrors.province}
+                            />
+                          </Grid.Col>
+
+                          <Grid.Col span={6}>
+                            <Select
+                              label="Distrito"
+                              placeholder="Selecciona"
+                              data={districts?.map(d => ({ value: d.id, label: d.name })) || []}
+                              value={invoiceDistrict}
+                              onChange={(val) => {
+                                setInvoiceDistrict(val || undefined);
+                                if (invoiceErrors.district && val) setInvoiceErrors({ ...invoiceErrors, district: '' });
+                              }}
+                              disabled={!invoiceProvince}
+                              required
+                              searchable
+                              error={invoiceErrors.district}
+                            />
+                          </Grid.Col>
+                          <Grid.Col span={6}>
+                            <TextInput
+                              label="Dirección"
+                              description="Tipo y nombre de vía, número, manzana/lote"
+                              required
+                              value={invoiceAddress}
+                              onChange={(e) => {
+                                setInvoiceAddress(e.currentTarget.value);
+                                if (invoiceErrors.address) setInvoiceErrors({ ...invoiceErrors, address: '' });
+                              }}
+                              error={invoiceErrors.address}
+                            />
+                          </Grid.Col>
+
+                          <Grid.Col span={12}>
+                            <TextInput
+                              label="Celular"
+                              required
+                              value={invoicePhone}
+                              maxLength={9}
+                              onChange={(e) => {
+                                const val = e.currentTarget.value.replace(/\D/g, ''); // Numeric only
+                                setInvoicePhone(val);
+                                if (invoiceErrors.phone) setInvoiceErrors({ ...invoiceErrors, phone: '' });
+                              }}
+                              error={invoiceErrors.phone}
+                            />
+                          </Grid.Col>
+
+                          <Grid.Col span={12}>
+                            <Group justify="flex-end">
+                              <Button onClick={handleInvoiceConfirm} color={primaryColor}>
+                                Confirmar
+                              </Button>
+                            </Group>
+                          </Grid.Col>
+                        </Grid>
+                      </Paper>
+                    )}
                   </Stack>
 
                   <Divider my="xl" />
@@ -335,12 +574,32 @@ export const CheckoutPage = () => {
                                   placeholder="0000 0000 0000 0000"
                                   required
                                   leftSection={<IconCreditCard size={16} />}
+                                  value={cardNumber}
+                                  onChange={(e) => setCardNumber(e.currentTarget.value)}
                                 />
                                 <Group grow>
-                                  <TextInput label="Expiración (mes/año)" placeholder="MM/AA" required />
-                                  <TextInput label="CVV" placeholder="123" required />
+                                  <TextInput
+                                    label="Expiración (mes/año)"
+                                    placeholder="MM/AA"
+                                    required
+                                    value={cardExpiration}
+                                    onChange={(e) => setCardExpiration(e.currentTarget.value)}
+                                  />
+                                  <TextInput
+                                    label="CVV"
+                                    placeholder="123"
+                                    required
+                                    value={cardCvv}
+                                    onChange={(e) => setCardCvv(e.currentTarget.value)}
+                                  />
                                 </Group>
-                                <TextInput label="Titular de la Tarjeta" placeholder="Como figura en la tarjeta" required />
+                                <TextInput
+                                  label="Titular de la Tarjeta"
+                                  placeholder="Como figura en la tarjeta"
+                                  required
+                                  value={cardHolderName}
+                                  onChange={(e) => setCardHolderName(e.currentTarget.value)}
+                                />
 
                                 <Button
                                   size="xl"
