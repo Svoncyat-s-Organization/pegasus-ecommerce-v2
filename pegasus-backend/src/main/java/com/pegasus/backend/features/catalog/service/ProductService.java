@@ -52,8 +52,49 @@ public class ProductService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
+    }
+
+    /**
+     * Obtener productos activos para storefront con filtros opcionales.
+     * Nota: Este método NO debe afectar el comportamiento del backoffice.
+     */
+    public PageResponse<ProductResponse> getPublicProducts(
+            String search,
+            List<Long> categoryIds,
+            List<Long> brandIds,
+            Pageable pageable) {
+        String normalizedSearch = (search != null && !search.isBlank()) ? search.trim() : null;
+        boolean filterByCategory = categoryIds != null && !categoryIds.isEmpty();
+        boolean filterByBrand = brandIds != null && !brandIds.isEmpty();
+        List<Long> normalizedCategoryIds = filterByCategory ? categoryIds : List.of(-1L);
+        List<Long> normalizedBrandIds = filterByBrand ? brandIds : List.of(-1L);
+
+        log.debug(
+                "Getting public products with search: {}, categories: {}, brands: {}, page: {}",
+                normalizedSearch,
+                normalizedCategoryIds,
+                normalizedBrandIds,
+                pageable.getPageNumber());
+
+        Page<Product> page = productRepository.searchActiveProducts(
+                normalizedSearch,
+                filterByCategory,
+                normalizedCategoryIds,
+                filterByBrand,
+                normalizedBrandIds,
+                pageable);
+
+        List<ProductResponse> content = productMapper.toResponseList(page.getContent());
+
+        return new PageResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast());
     }
 
     /**
@@ -80,8 +121,7 @@ public class ProductService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**
@@ -99,8 +139,7 @@ public class ProductService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**
@@ -118,8 +157,7 @@ public class ProductService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**

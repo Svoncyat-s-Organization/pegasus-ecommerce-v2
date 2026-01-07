@@ -32,9 +32,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findByIsFeaturedTrue(Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE " +
-           "LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(p.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(p.description) LIKE LOWER(CONCAT('%', :search, '%'))")
+            "LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(p.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(p.description) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<Product> searchProducts(@Param("search") String search, Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE p.categoryId = :categoryId AND p.isActive = true")
@@ -42,6 +42,26 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p WHERE p.brandId = :brandId AND p.isActive = true")
     Page<Product> findActiveByBrandId(@Param("brandId") Long brandId, Pageable pageable);
+
+    @Query("""
+            SELECT p FROM Product p
+            WHERE p.isActive = true
+                AND (:filterByCategory = false OR p.categoryId IN :categoryIds)
+                AND (:filterByBrand = false OR p.brandId IN :brandIds)
+                AND (
+                    :search IS NULL OR :search = '' OR
+                    LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                    LOWER(p.code) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                    LOWER(p.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                )
+            """)
+    Page<Product> searchActiveProducts(
+            @Param("search") String search,
+            @Param("filterByCategory") boolean filterByCategory,
+            @Param("categoryIds") List<Long> categoryIds,
+            @Param("filterByBrand") boolean filterByBrand,
+            @Param("brandIds") List<Long> brandIds,
+            Pageable pageable);
 
     long countByCategoryId(Long categoryId);
 

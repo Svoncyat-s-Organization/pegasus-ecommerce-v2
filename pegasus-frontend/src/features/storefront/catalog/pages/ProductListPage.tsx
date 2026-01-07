@@ -1,25 +1,64 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Container, Grid, TextInput, Group, Select, Pagination, Stack, Text } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
-import { useProducts } from '../hooks/useProducts';
+import { useSearchParams } from 'react-router-dom';
+import { useFeaturedProducts, useFilteredProducts } from '../hooks/useProducts';
 import { ProductGrid } from '../components/ProductGrid';
 import { ProductFilters } from '../components/ProductFilters';
 import { useDebounce } from '@shared/hooks/useDebounce';
 
 export const ProductListPage = () => {
-  const [page, setPage] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [pageSize] = useState(20);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<string>('name');
+
+  const featuredFromUrl = searchParams.get('featured') === 'true';
+
+  const page = useMemo(() => {
+    const raw = searchParams.get('page');
+    const parsed = raw ? Number(raw) : 0;
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  }, [searchParams]);
+
+  const searchTerm = useMemo(() => searchParams.get('search') ?? '', [searchParams]);
+
+  const selectedCategories = useMemo(() => {
+    const multi = searchParams.getAll('categoryIds').map((v) => Number(v)).filter((n) => !Number.isNaN(n));
+    if (multi.length > 0) return Array.from(new Set(multi));
+
+    const legacy = searchParams.get('category');
+    const legacyNum = legacy ? Number(legacy) : NaN;
+    return !Number.isNaN(legacyNum) ? [legacyNum] : [];
+  }, [searchParams]);
+
+  const selectedBrands = useMemo(() => {
+    const multi = searchParams.getAll('brandIds').map((v) => Number(v)).filter((n) => !Number.isNaN(n));
+    if (multi.length > 0) return Array.from(new Set(multi));
+
+    const legacy = searchParams.get('brand');
+    const legacyNum = legacy ? Number(legacy) : NaN;
+    return !Number.isNaN(legacyNum) ? [legacyNum] : [];
+  }, [searchParams]);
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const { data, isLoading } = useProducts(page, pageSize, debouncedSearch || undefined);
+  const { data: filteredData, isLoading: isFilteredLoading } = useFilteredProducts(
+    page,
+    pageSize,
+    debouncedSearch || undefined,
+    selectedCategories,
+    selectedBrands
+  );
+
+  const { data: featuredData, isLoading: isFeaturedLoading } = useFeaturedProducts(page, pageSize);
+
+  const data = featuredFromUrl ? featuredData : filteredData;
+  const isLoading = featuredFromUrl ? isFeaturedLoading : isFilteredLoading;
 
   const handlePageChange = (newPage: number) => {
-    setPage(newPage - 1); // Mantine uses 1-based, backend uses 0-based
+    const next = new URLSearchParams(searchParams);
+    next.set('page', String(newPage - 1)); // Mantine uses 1-based, backend uses 0-based
+    setSearchParams(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -45,8 +84,15 @@ export const ProductListPage = () => {
             leftSection={<IconSearch size={16} />}
             value={searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(0);
+              const next = new URLSearchParams(searchParams);
+              const value = e.target.value;
+              if (value.trim().length === 0) {
+                next.delete('search');
+              } else {
+                next.set('search', value);
+              }
+              next.set('page', '0');
+              setSearchParams(next);
             }}
             style={{ flex: 1 }}
           />
@@ -70,8 +116,22 @@ export const ProductListPage = () => {
             <ProductFilters
               selectedCategories={selectedCategories}
               selectedBrands={selectedBrands}
-              onCategoryChange={setSelectedCategories}
-              onBrandChange={setSelectedBrands}
+              onCategoryChange={(ids) => {
+                const next = new URLSearchParams(searchParams);
+                next.delete('category');
+                next.delete('categoryIds');
+                ids.forEach((id) => next.append('categoryIds', String(id)));
+                next.set('page', '0');
+                setSearchParams(next);
+              }}
+              onBrandChange={(ids) => {
+                const next = new URLSearchParams(searchParams);
+                next.delete('brand');
+                next.delete('brandIds');
+                ids.forEach((id) => next.append('brandIds', String(id)));
+                next.set('page', '0');
+                setSearchParams(next);
+              }}
             />
           </Grid.Col>
 

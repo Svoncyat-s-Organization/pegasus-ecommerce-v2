@@ -8,13 +8,19 @@ import type { PageResponse, ProductResponse, CategoryResponse, BrandResponse } f
 export const getProducts = async (
   page = 0,
   size = 20,
-  search?: string
+  search?: string,
+  categoryIds?: number[],
+  brandIds?: number[]
 ): Promise<PageResponse<ProductResponse>> => {
   const params = new URLSearchParams({
     page: page.toString(),
     size: size.toString(),
     ...(search && { search }),
   });
+
+  categoryIds?.forEach((id) => params.append('categoryIds', id.toString()));
+  brandIds?.forEach((id) => params.append('brandIds', id.toString()));
+
   const { data } = await api.get<PageResponse<ProductResponse>>(`/public/catalog/products?${params}`);
   return data;
 };
@@ -58,7 +64,7 @@ export const getProductsByCategory = async (
 
 /**
  * Get products by brand
- * GET /api/admin/products/by-brand/{brandId}
+ * GET /api/public/catalog/products/by-brand/{brandId}
  */
 export const getProductsByBrand = async (
   brandId: number,
@@ -70,7 +76,7 @@ export const getProductsByBrand = async (
     size: size.toString(),
   });
   const { data } = await api.get<PageResponse<ProductResponse>>(
-    `/admin/products/by-brand/${brandId}?${params}`
+    `/public/catalog/products/by-brand/${brandId}?${params}`
   );
   return data;
 };
@@ -90,6 +96,15 @@ export const getProductById = async (id: number): Promise<ProductResponse> => {
  */
 export const getRootCategories = async (): Promise<CategoryResponse[]> => {
   const { data } = await api.get<CategoryResponse[]>('/public/catalog/categories/root');
+  return data;
+};
+
+/**
+ * Get categories as tree structure
+ * GET /api/public/catalog/categories/tree
+ */
+export const getCategoriesTree = async (): Promise<CategoryResponse[]> => {
+  const { data } = await api.get<CategoryResponse[]>('/public/catalog/categories/tree');
   return data;
 };
 

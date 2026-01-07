@@ -12,6 +12,23 @@ export const useProducts = (page = 0, size = 20, search?: string) => {
   });
 };
 
+export const useFilteredProducts = (
+  page = 0,
+  size = 20,
+  search?: string,
+  categoryIds?: number[],
+  brandIds?: number[]
+) => {
+  const normalizedCategoryIds = categoryIds && categoryIds.length > 0 ? categoryIds : undefined;
+  const normalizedBrandIds = brandIds && brandIds.length > 0 ? brandIds : undefined;
+
+  return useQuery({
+    queryKey: ['products', page, size, search, normalizedCategoryIds, normalizedBrandIds],
+    queryFn: () => getProducts(page, size, search, normalizedCategoryIds, normalizedBrandIds),
+    staleTime: 1000 * 60 * 2,
+  });
+};
+
 /**
  * Hook para obtener productos destacados
  */

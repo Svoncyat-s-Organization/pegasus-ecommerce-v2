@@ -49,8 +49,7 @@ public class PublicCatalogController {
     @GetMapping("/products/featured")
     public ResponseEntity<PageResponse<ProductResponse>> getFeaturedProducts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size
-    ) {
+            @RequestParam(defaultValue = "12") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<ProductResponse> response = productService.getFeaturedProducts(pageable);
         return ResponseEntity.ok(response);
@@ -63,11 +62,13 @@ public class PublicCatalogController {
     @GetMapping("/products")
     public ResponseEntity<PageResponse<ProductResponse>> getProducts(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) List<Long> categoryIds,
+            @RequestParam(required = false) List<Long> brandIds,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size
-    ) {
+            @RequestParam(defaultValue = "12") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        PageResponse<ProductResponse> response = productService.getAllProducts(search, pageable);
+        PageResponse<ProductResponse> response = productService.getPublicProducts(search, categoryIds, brandIds,
+                pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -89,10 +90,23 @@ public class PublicCatalogController {
     public ResponseEntity<PageResponse<ProductResponse>> getProductsByCategory(
             @PathVariable Long categoryId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size
-    ) {
+            @RequestParam(defaultValue = "12") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<ProductResponse> response = productService.getProductsByCategory(categoryId, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/public/catalog/products/by-brand/{brandId}
+     * Obtiene productos de una marca (públicamente accesible)
+     */
+    @GetMapping("/products/by-brand/{brandId}")
+    public ResponseEntity<PageResponse<ProductResponse>> getProductsByBrand(
+            @PathVariable Long brandId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        PageResponse<ProductResponse> response = productService.getProductsByBrand(brandId, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -107,6 +121,16 @@ public class PublicCatalogController {
     @GetMapping("/categories/root")
     public ResponseEntity<List<CategoryResponse>> getRootCategories() {
         List<CategoryResponse> response = categoryService.getRootCategories();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /api/public/catalog/categories/tree
+     * Obtiene categorías en estructura jerárquica (árbol)
+     */
+    @GetMapping("/categories/tree")
+    public ResponseEntity<List<CategoryResponse>> getCategoriesTree() {
+        List<CategoryResponse> response = categoryService.getCategoriesTree();
         return ResponseEntity.ok(response);
     }
 
@@ -141,8 +165,7 @@ public class PublicCatalogController {
     @GetMapping("/brands")
     public ResponseEntity<PageResponse<BrandResponse>> getAllBrands(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "100") int size
-    ) {
+            @RequestParam(defaultValue = "100") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<BrandResponse> response = brandService.getAllBrands(null, pageable);
         return ResponseEntity.ok(response);
