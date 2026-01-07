@@ -77,8 +77,11 @@ public class ShipmentController {
 
     @PostMapping("/{id}/mark-as-shipped")
     @Operation(summary = "Marcar envío como enviado")
-    public ResponseEntity<ShipmentResponse> markAsShipped(@PathVariable Long id) {
-        return ResponseEntity.ok(shipmentService.markAsShipped(id));
+    public ResponseEntity<ShipmentResponse> markAsShipped(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = extractUserId(authentication);
+        return ResponseEntity.ok(shipmentService.markAsShipped(id, userId));
     }
 
     @DeleteMapping("/{id}")
