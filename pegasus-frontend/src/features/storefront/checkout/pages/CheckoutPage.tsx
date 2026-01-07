@@ -142,10 +142,38 @@ export const CheckoutPage = () => {
         });
         return;
       }
+
+      if (!/^\d{9}$/.test(paymentPhone)) {
+        notifications.show({
+          title: 'Celular inválido',
+          message: 'El número de celular debe tener 9 dígitos',
+          color: 'red'
+        });
+        return;
+      }
+
+      if (!/^\d{4}$/.test(paymentTransactionId)) {
+        notifications.show({
+          title: 'Código inválido',
+          message: 'El código de aprobación debe tener 4 dígitos',
+          color: 'red'
+        });
+        return;
+      }
     }
 
     // Validar tarjeta (simulada)
     // En un caso real, Stripe/Culqi manejaría esto. Aquí asumimos valida si el form se ve.
+
+    const generateTransactionId = () => {
+      // Generar 2 letras aleatorias
+      const l1 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      const l2 = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      // Generar 5 números aleatorios
+      const n = Math.floor(10000 + Math.random() * 90000);
+      // Formato: XX-12345 (Total 8 caracteres)
+      return `${l1}${l2}-${n}`;
+    };
 
     try {
       const response = await createOrderMutation.mutateAsync({
@@ -164,9 +192,7 @@ export const CheckoutPage = () => {
         },
         shippingMethodId: form.values.shippingMethodId || undefined,
         paymentMethod: paymentMethod,
-        paymentTransactionId: paymentMethod === 'card'
-          ? `CARD-${Date.now()}`
-          : paymentTransactionId,
+        paymentTransactionId: generateTransactionId(),
       });
 
       // Clear cart and navigate to confirmation

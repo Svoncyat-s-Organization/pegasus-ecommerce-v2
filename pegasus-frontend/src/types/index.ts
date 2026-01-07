@@ -246,6 +246,10 @@ export interface InvoiceSummaryResponse {
   invoiceType: InvoiceType;
   series: string;
   number: string;
+  receiverName?: string;
+  receiverTaxId?: string;
+  subtotal?: number;
+  taxAmount?: number;
   totalAmount: number;
   status: InvoiceStatus;
   issuedAt?: string;
@@ -874,6 +878,7 @@ export interface OrderResponse {
   shippingMethodId?: number;
   createdAt: string;
   updatedAt: string;
+  invoice?: InvoiceSummaryResponse;
 }
 
 export interface OrderItemRequest {

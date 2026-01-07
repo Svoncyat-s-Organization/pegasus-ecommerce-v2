@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Container,
   Title,
@@ -15,12 +15,14 @@ import {
   Divider,
   Box,
   Pagination,
-  Timeline,
   ThemeIcon,
-  Grid,
   SimpleGrid,
   ActionIcon,
+  Stepper,
+  Alert,
 } from '@mantine/core';
+import { StorefrontInvoicePrint } from '../components/StorefrontInvoicePrint';
+import { useReactToPrint } from 'react-to-print';
 import {
   IconPackage,
   IconEye,
@@ -29,10 +31,10 @@ import {
   IconTruck,
   IconCheck,
   IconClock,
-  IconCurrencyDollar,
-  IconCreditCard,
   IconMapPin,
   IconBuildingStore,
+  IconReceipt,
+  IconCash,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { modals } from '@mantine/modals';
@@ -64,29 +66,15 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   REFUNDED: 'Reembolsado',
 };
 
-// Helper to get icon for timeline
-const getStatusIcon = (status: OrderStatus) => {
-  switch (status) {
-    case 'PENDING':
-    case 'AWAIT_PAYMENT':
-      return <IconClock size={16} />;
-    case 'PAID':
-    case 'PROCESSING':
-      return <IconCurrencyDollar size={16} />;
-    case 'SHIPPED':
-      return <IconTruck size={16} />;
-    case 'DELIVERED':
-      return <IconCheck size={16} />;
-    case 'CANCELLED':
-    case 'REFUNDED':
-      return <IconX size={16} />;
-    default:
-      return <IconPackage size={16} />;
-  }
-};
+
 
 export const OrdersPage = () => {
   const navigate = useNavigate();
+  const componentRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: 'Comprobante',
+  });
   const [page, setPage] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
@@ -138,6 +126,27 @@ export const OrdersPage = () => {
         }
       },
     });
+  };
+
+  const getStepperActiveStep = (status: OrderStatus): number => {
+    switch (status) {
+      case 'PENDING':
+      case 'AWAIT_PAYMENT':
+        return 0; // Pendiente
+      case 'PAID':
+        return 1; // Pago
+      case 'PROCESSING':
+        return 3; // En Proceso (assume Comprobante done)
+      case 'SHIPPED':
+        return 4; // Enviado
+      case 'DELIVERED':
+        return 5; // Entregado
+      case 'CANCELLED':
+      case 'REFUNDED':
+        return 0; // Cancelado
+      default:
+        return 0;
+    }
   };
 
   if (isLoading) {
@@ -288,7 +297,7 @@ export const OrdersPage = () => {
             <Text fw={700} size="lg">Pedido #{orderDetail?.orderNumber || ''}</Text>
           </Group>
         }
-        size="xl"
+        size="55%"
         padding="xl"
         radius="md"
         centered
@@ -296,27 +305,108 @@ export const OrdersPage = () => {
           backgroundOpacity: 0.55,
           blur: 3,
         }}
+        styles={{ title: { fontSize: '1.2rem' } }}
       >
         {detailLoading ? (
           <Center py={60}>
             <Loader color={primaryColor} />
           </Center>
         ) : orderDetail ? (
-          <Grid gutter="xl">
-            {/* Left Column: Details */}
-            <Grid.Col span={{ base: 12, md: 8 }}>
+          <Stack gap="xl">
+            {/* Status Stepper */}
+            <Box py="md">
+              <Text fw={600} mb="xl" size="lg">Estado del Pedido</Text>
+              <Box style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
+                <Stepper
+                  active={getStepperActiveStep(orderDetail.status)}
+                  size="sm"
+                  allowNextStepsSelect={false}
+                  iconSize={50}
+                  styles={{
+                    steps: {
+                      flexWrap: 'nowrap',
+                      alignItems: 'flex-start',
+                      justifyContent: 'center',
+                    },
+                    step: {
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      padding: 0,
+                    },
+                    stepBody: {
+                      marginLeft: 0,
+                      marginTop: 12,
+                    },
+                    separator: {
+                      height: 4,
+                      minWidth: 20,
+                      flex: 1,
+                      marginTop: 23,
+                      marginLeft: -45, // Pull separator under the wide text label to touch the icon
+                      marginRight: -45, // Pull separator under the wide text label to touch the icon
+                    },
+                    stepIcon: {
+                      borderWidth: 0,
+                      position: 'relative',
+                      zIndex: 1,
+                    },
+                  }}
+                >
+                  {[
+                    { label: 'Pendiente', desc: 'Pedido creado', icon: IconClock, color: 'yellow' },
+                    { label: 'Pago', desc: 'Pago registrado', icon: IconCash, color: 'green' },
+                    { label: 'Comprobante', desc: 'Comprobante emitido', icon: IconReceipt, color: 'blue' },
+                    { label: 'En Proceso', desc: 'Preparando pedido', icon: IconPackage, color: 'gray' }, // Using gray/cyan
+                    { label: 'Enviado', desc: 'En camino', icon: IconTruck, color: 'indigo' },
+                    { label: 'Entregado', desc: 'Pedido completado', icon: IconCheck, color: 'green' },
+                  ].map((step, index) => {
+                    const activeStep = getStepperActiveStep(orderDetail.status);
+                    const isActive = activeStep === index;
+                    const isInactive = activeStep < index;
+
+                    let stepColor = step.color;
+                    if (step.label === 'En Proceso' && !isInactive) stepColor = 'cyan';
+                    if (step.label === 'Enviado' && !isInactive) stepColor = 'indigo';
+                    if (step.label === 'Entregado' && !isInactive) stepColor = 'green';
+                    if (isInactive) stepColor = 'gray';
+
+                    return (
+                      <Stepper.Step
+                        key={index}
+                        label={step.label}
+                        description={step.desc}
+                        icon={
+                          <ThemeIcon
+                            size={50}
+                            radius="100%"
+                            color={stepColor}
+                            variant={isInactive ? 'light' : 'filled'}
+                            style={isActive ? { boxShadow: `0 0 0 4px var(--mantine-color-${stepColor}-2)` } : undefined}
+                          >
+                            <step.icon size={26} />
+                          </ThemeIcon>
+                        }
+                      />
+                    );
+                  })}
+                </Stepper>
+              </Box>
+              {orderDetail.status === 'CANCELLED' && (
+                <Alert color="red" mt="md" variant="light" icon={<IconX size={16} />}>
+                  Este pedido ha sido cancelado.
+                </Alert>
+              )}
+            </Box>
+
+            <Divider />
+
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
+              {/* Left Column: Products */}
               <Stack gap="lg">
                 <Card withBorder radius="md" padding="md">
                   <Group justify="space-between" mb="sm">
                     <Text fw={600} size="lg">Productos</Text>
-                    <Badge
-                      color={ORDER_STATUS_COLORS[orderDetail.status]}
-                      variant="filled"
-                      size="lg"
-                      radius="md"
-                    >
-                      {ORDER_STATUS_LABELS[orderDetail.status]}
-                    </Badge>
                   </Group>
                   <Divider mb="md" />
                   <Stack gap="md">
@@ -356,8 +446,11 @@ export const OrdersPage = () => {
                     </Text>
                   </Group>
                 </Card>
+              </Stack>
 
-                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              {/* Right Column: Addresses & Actions */}
+              <Stack gap="lg">
+                <SimpleGrid cols={1} spacing="md">
                   {/* Shipping Address */}
                   <Card withBorder radius="md" padding="md">
                     <Group mb="xs" gap="xs">
@@ -377,7 +470,6 @@ export const OrdersPage = () => {
                         {orderDetail.shippingAddress.recipientPhone ? ` - ${orderDetail.shippingAddress.recipientPhone}` : ''}
                       </Text>
                     )}
-
                   </Card>
 
                   {/* Billing Address */}
@@ -391,40 +483,48 @@ export const OrdersPage = () => {
                     </Card>
                   )}
                 </SimpleGrid>
-              </Stack>
-            </Grid.Col>
 
-            {/* Right Column: Timeline */}
-            <Grid.Col span={{ base: 12, md: 4 }}>
-              <Card withBorder radius="md" padding="md" h="100%">
-                <Title order={5} mb="xl">Historial del Pedido</Title>
-                <Timeline active={orderDetail.statusHistories.length - 1} bulletSize={24} lineWidth={2}>
-                  {orderDetail.statusHistories.map((history) => (
-                    <Timeline.Item
-                      key={history.id}
-                      bullet={getStatusIcon(history.status)}
-                      title={ORDER_STATUS_LABELS[history.status]}
-                      color={ORDER_STATUS_COLORS[history.status]}
-                    >
-                      <Text c="dimmed" size="xs">
-                        {formatDate(history.changedAt, true)}
+                {/* Invoice Download */}
+                {orderDetail.invoice && (
+                  <Card withBorder radius="md" padding="md">
+                    <Group mb="xs" gap="xs">
+                      <IconReceipt size={18} color={primaryColor} />
+                      <Text fw={600}>Comprobante de Pago</Text>
+                    </Group>
+                    <Group justify="space-between" align="center" mb="xs">
+                      <Text size="sm" c="dimmed">
+                        {orderDetail.invoice.invoiceType === 'INVOICE' ? 'Factura' : 'Boleta'}
                       </Text>
-                      {history.notes && (
-                        <Text size="xs" mt={4}>
-                          {history.notes}
-                        </Text>
-                      )}
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
+                      <Badge variant="light" color="green">Emitido</Badge>
+                    </Group>
+                    <Text size="lg" fw={700} mb="md">
+                      {orderDetail.invoice.series}-{orderDetail.invoice.number}
+                    </Text>
+                    <Button
+                      fullWidth
+                      variant="light"
+                      color="blue"
+                      leftSection={<IconReceipt size={16} />}
+                      onClick={handlePrint}
+                    >
+                      Imprimir Comprobante
+                    </Button>
+                    <div style={{ display: 'none' }}>
+                      <StorefrontInvoicePrint
+                        ref={componentRef}
+                        invoice={orderDetail.invoice}
+                        items={orderDetail.items}
+                      />
+                    </div>
+                  </Card>
+                )}
 
-                {/* Cancel Action in Details if possible */}
+                {/* Cancel Button */}
                 {['PENDING', 'AWAIT_PAYMENT'].includes(orderDetail.status) && (
                   <Button
                     fullWidth
                     color="red"
                     variant="light"
-                    mt="xl"
                     leftSection={<IconX size={16} />}
                     onClick={() => {
                       handleCancelOrder(orderDetail as any);
@@ -434,9 +534,9 @@ export const OrdersPage = () => {
                     Cancelar Pedido
                   </Button>
                 )}
-              </Card>
-            </Grid.Col>
-          </Grid>
+              </Stack>
+            </SimpleGrid>
+          </Stack>
         ) : null}
       </Modal>
     </Container>

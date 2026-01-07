@@ -16,6 +16,8 @@ public interface OrderMapper {
 
     @Mapping(target = "customerName", expression = "java(getCustomerFullName(entity))")
     @Mapping(target = "customerEmail", source = "customer.email")
+    @Mapping(target = "invoice", ignore = true)
+    @Mapping(target = "shippingMethodId", ignore = true)
     OrderResponse toResponse(Order entity);
 
     @Mapping(target = "customerName", expression = "java(getCustomerFullName(entity))")
