@@ -18,12 +18,12 @@ import { IconTrash, IconPlus } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { customersApi } from '@features/backoffice/customer/api/customersApi';
-import { getVariants } from '@features/backoffice/catalog/api/variantsApi';
+import { getVariantsWithStock } from '@features/backoffice/catalog/api/variantsApi';
 import { getProducts } from '@features/backoffice/catalog/api/productsApi';
 import { locationsApi } from '@shared/api/locationsApi';
 import { useDepartments, useProvinces, useDistricts } from '@shared/hooks/useLocations';
 import { formatCurrency } from '@shared/utils/formatters';
-import type { CreateOrderRequest, VariantResponse, ProductResponse, CustomerResponse } from '@types';
+import type { CreateOrderRequest, VariantWithStockResponse, ProductResponse, CustomerResponse } from '@types';
 
 const { Text } = Typography;
 
@@ -63,10 +63,10 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
     enabled: !!selectedCustomerId,
   });
 
-  // Fetch variants para los items
+  // Fetch variants con stock disponible
   const { data: variantsData } = useQuery({
-    queryKey: ['variants', 0, 1000],
-    queryFn: () => getVariants(0, 1000),
+    queryKey: ['variantsWithStock', 0, 1000],
+    queryFn: () => getVariantsWithStock(0, 1000),
   });
 
   // Fetch products para obtener nombres
@@ -216,7 +216,7 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
   };
 
   const handleVariantChange = (variantId: number, index: number) => {
-    const variant = variantsData?.content.find((v: VariantResponse) => v.id === variantId);
+    const variant = variantsData?.content.find((v: VariantWithStockResponse) => v.id === variantId);
     const product = productsData?.content.find((p: ProductResponse) => p.id === variant?.productId);
     const items = form.getFieldValue('items');
     items[index] = {
@@ -363,11 +363,11 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
                                   const label = (option?.label ?? '').toLowerCase();
                                   return label.includes(searchText);
                                 }}
-                                options={variantsData?.content.map((variant: VariantResponse) => {
+                                options={variantsData?.content.map((variant: VariantWithStockResponse) => {
                                   const productName =
                                     productsMap.get(variant.productId) || 'Producto sin nombre';
                                   return {
-                                    label: `${productName} - SKU: ${variant.sku} - ${formatCurrency(variant.price)}`,
+                                    label: `${productName} - SKU: ${variant.sku} - ${formatCurrency(variant.price)} (Stock: ${variant.availableStock})`,
                                     value: variant.id,
                                   };
                                 })}

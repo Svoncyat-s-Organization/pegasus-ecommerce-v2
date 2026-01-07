@@ -189,12 +189,19 @@ export const CustomerFormModal = ({ mode, customerId, visible, onClose }: Custom
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item
-              label="Número de Documento"
-              name="docNumber"
-              rules={[{ required: true, validator: validateDocNumber }]}
-            >
-              <Input placeholder="12345678" />
+            <Form.Item noStyle shouldUpdate={(prev, curr) => prev.docType !== curr.docType}>
+              {() => (
+                <Form.Item
+                  label="Número de Documento"
+                  name="docNumber"
+                  rules={[{ required: true, validator: validateDocNumber }]}
+                >
+                  <Input
+                    placeholder="12345678"
+                    maxLength={form.getFieldValue('docType') === 'DNI' ? 8 : 12}
+                  />
+                </Form.Item>
+              )}
             </Form.Item>
           </Col>
           <Col span={8}>

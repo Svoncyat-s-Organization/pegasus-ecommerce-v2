@@ -4,6 +4,7 @@ import com.pegasus.backend.exception.ResourceNotFoundException;
 import com.pegasus.backend.features.catalog.dto.CreateVariantRequest;
 import com.pegasus.backend.features.catalog.dto.UpdateVariantRequest;
 import com.pegasus.backend.features.catalog.dto.VariantResponse;
+import com.pegasus.backend.features.catalog.dto.VariantWithStockResponse;
 import com.pegasus.backend.features.catalog.entity.Variant;
 import com.pegasus.backend.features.catalog.mapper.VariantMapper;
 import com.pegasus.backend.features.catalog.repository.ProductRepository;
@@ -155,6 +156,47 @@ public class VariantService {
         Variant updated = variantRepository.save(variant);
         log.info("Variant status toggled: {} -> {}", id, updated.getIsActive());
         return variantMapper.toResponse(updated);
+    }
+
+    /**
+     * Obtener variantes con stock disponible
+     */
+    public PageResponse<VariantWithStockResponse> getVariantsWithStock(String search, Pageable pageable) {
+        log.debug("Getting variants with stock - search: {}, page: {}", search, pageable.getPageNumber());
+
+        Page<Variant> page = (search != null && !search.isBlank())
+                ? variantRepository.searchVariants(search.trim(), pageable)
+                : variantRepository.findAll(pageable);
+
+        List<VariantWithStockResponse> content = page.getContent().stream()
+                .filter(Variant::getIsActive)
+                .map(variant -> {
+                    Integer availableStock = stockRepository.getTotalAvailableStockByVariant(variant.getId());
+                    if (availableStock == null) {
+                        availableStock = 0;
+                    }
+                    return new VariantWithStockResponse(
+                            variant.getId(),
+                            variant.getProductId(),
+                            variant.getSku(),
+                            variant.getPrice(),
+                            variant.getAttributes(),
+                            variant.getIsActive(),
+                            availableStock,
+                            variant.getCreatedAt(),
+                            variant.getUpdatedAt());
+                })
+                .filter(v -> v.availableStock() > 0)
+                .toList();
+
+        return new PageResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                (long) content.size(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast());
     }
 
     /**

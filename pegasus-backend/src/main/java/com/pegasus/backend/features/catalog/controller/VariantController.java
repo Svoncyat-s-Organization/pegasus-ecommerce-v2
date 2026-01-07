@@ -3,6 +3,7 @@ package com.pegasus.backend.features.catalog.controller;
 import com.pegasus.backend.features.catalog.dto.CreateVariantRequest;
 import com.pegasus.backend.features.catalog.dto.UpdateVariantRequest;
 import com.pegasus.backend.features.catalog.dto.VariantResponse;
+import com.pegasus.backend.features.catalog.dto.VariantWithStockResponse;
 import com.pegasus.backend.features.catalog.service.VariantService;
 import com.pegasus.backend.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -98,6 +99,16 @@ public class VariantController {
     @ApiResponse(responseCode = "200", description = "Estado actualizado exitosamente")
     public ResponseEntity<VariantResponse> toggleVariantStatus(@PathVariable Long id) {
         VariantResponse response = variantService.toggleVariantStatus(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/with-stock")
+    @Operation(summary = "Obtener variantes con stock disponible", description = "Retorna solo variantes activas que tienen stock disponible")
+    @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
+    public ResponseEntity<PageResponse<VariantWithStockResponse>> getVariantsWithStock(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20) Pageable pageable) {
+        PageResponse<VariantWithStockResponse> response = variantService.getVariantsWithStock(search, pageable);
         return ResponseEntity.ok(response);
     }
 }
