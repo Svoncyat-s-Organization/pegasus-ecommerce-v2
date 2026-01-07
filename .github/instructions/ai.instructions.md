@@ -1,332 +1,360 @@
 ---
-applyTo: "pegasus-backend/**/ai/**/*.java, pegasus-backend/**/search/**/*.java, pegasus-frontend/**/search/**/*.ts, pegasus-frontend/**/search/**/*.tsx"
+applyTo: "pegasus-backend/**/ai/**/*.java, pegasus-backend/**/recommendation/**/*.java, pegasus-frontend/**/recommendation/**/*.ts, pegasus-frontend/**/recommendation/**/*.tsx"
 ---
 
-# AI Context: Semantic Search with pgvector
+# AI Context: Product Recommendations System
 
-## CRITICAL: Implementation Timing
+## Overview
 
-**DO NOT implement AI features until:**
-1. Storefront is fully functional (catalog browsing, cart, checkout, orders work end-to-end)
-2. Core modules are complete: Catalog, Orders, Inventory, Customers, Auth
+This project implements **AI-powered product recommendations** for the Pegasus E-commerce platform.
+The AI suggests "Similar Products" and "You might also like" based on product content similarity.
 
-**AI is an enhancement layer, NOT a core feature.** The e-commerce MUST work without AI.
-
-**Implementation Order:**
-```
-Phase 1: Core MVP (NO AI)
-├── Backend: Auth, Catalog, Orders, Inventory, Customers
-├── Frontend Storefront: Browse, Cart, Checkout, Orders
-├── Frontend Backoffice: Basic CRUD for all modules
-└── MILESTONE: User can complete a purchase end-to-end
-
-Phase 2: AI Enhancement (AFTER Phase 1)
-├── Enable pgvector extension
-├── Add embedding column to products
-├── Implement embedding service
-├── Add semantic search endpoint
-└── Integrate in Storefront search bar
-```
-
-**Rule:** If asked to implement AI before Phase 1 is complete, REFUSE and explain the dependency.
+**Why Recommendations over Chatbot/Search:**
+- Academic requirement: Must integrate AI but NOT as chatbot
+- Highly visible feature (shown on every product page)
+- Easy to demonstrate with screenshots for documentation
+- Provides clear business value for e-commerce
 
 ---
 
-## 1. Architecture Overview
+## CRITICAL: Implementation Status
+
+**Current State:** Product recommendations using content-based filtering with HuggingFace embeddings.
+
+**What's Implemented:**
+- `/api/recommendations/similar/{productId}` - Get similar products
+- `RecommendationService` - Core recommendation logic
+- `EmbeddingService` - Generate text embeddings via HuggingFace API
+- Frontend component showing "Productos similares" on product detail page
+
+**Fallback Behavior:**
+If AI is disabled or fails, recommendations fall back to:
+1. Products in the same category
+2. Products from the same brand
+3. Featured products
+
+---
+
+## 1. Architecture
 
 **Technology Stack:**
-- PostgreSQL + pgvector extension
-- Embedding API: HuggingFace Inference (free tier) or OpenAI Embeddings
-- Vector dimension: 384 (all-MiniLM-L6-v2 model)
+- HuggingFace Inference API (all-MiniLM-L6-v2 model)
+- PostgreSQL for product storage
+- Spring Boot backend
+- React frontend with Mantine UI
 
 **Flow:**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        INDEXING (Write)                         │
+│                    RECOMMENDATION FLOW                          │
 ├─────────────────────────────────────────────────────────────────┤
-│  ProductService.save()                                          │
+│  User views Product A (iPhone 15 Pro)                          │
 │       │                                                         │
 │       ▼                                                         │
-│  EmbeddingService.generateEmbedding(product.name + description) │
+│  Frontend calls: GET /api/recommendations/similar/1             │
 │       │                                                         │
 │       ▼                                                         │
-│  HuggingFace API → returns float[384]                          │
+│  RecommendationService.getSimilarProducts(productId)           │
 │       │                                                         │
 │       ▼                                                         │
-│  product.setEmbedding(vector) → save to PostgreSQL             │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                        SEARCH (Read)                            │
-├─────────────────────────────────────────────────────────────────┤
-│  User types: "algo para gaming"                                 │
+│  IF embeddings exist:                                          │
+│    → Calculate cosine similarity with all products             │
+│    → Return top N most similar                                 │
+│  ELSE (fallback):                                              │
+│    → Return products from same category/brand                  │
 │       │                                                         │
 │       ▼                                                         │
-│  SemanticSearchService.search(query)                           │
-│       │                                                         │
-│       ▼                                                         │
-│  EmbeddingService.generateEmbedding(query) → float[384]        │
-│       │                                                         │
-│       ▼                                                         │
-│  SELECT * FROM products ORDER BY embedding <-> $1 LIMIT 10     │
-│       │                                                         │
-│       ▼                                                         │
-│  Returns: "Silla Gamer", "Teclado RGB", "Monitor 144Hz"        │
+│  Response: [Samsung Galaxy, AirPods Pro, iPhone Case...]       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Database Schema
+## 2. Backend Structure
 
-**Migration file:** `V{next}__add_semantic_search.sql`
-
-```sql
--- Enable pgvector extension (requires superuser or cloud provider support)
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- Add embedding column to products
-ALTER TABLE public.products 
-ADD COLUMN embedding vector(384);
-
--- Create index for fast similarity search (IVFFlat for large datasets)
-CREATE INDEX idx_products_embedding ON public.products 
-USING ivfflat (embedding vector_cosine_ops)
-WITH (lists = 100);
-
--- Alternative: HNSW index (faster queries, slower builds)
--- CREATE INDEX idx_products_embedding ON public.products 
--- USING hnsw (embedding vector_cosine_ops);
-```
-
-**Update `pegasus_v2_db.sql`** to include the embedding column after applying migration.
-
----
-
-## 3. Backend Structure
-
-**Package:** `com.pegasus.backend.features.search/`
+**Package:** `com.pegasus.backend.features.recommendation/`
 
 ```
-search/
+recommendation/
 ├── controller/
-│   └── SemanticSearchController.java
+│   └── RecommendationController.java      # Public API endpoints
 ├── service/
-│   ├── SemanticSearchService.java
-│   └── EmbeddingService.java
+│   ├── RecommendationService.java         # Core recommendation logic
+│   └── EmbeddingService.java              # HuggingFace API integration
 ├── dto/
-│   └── SearchResultResponse.java
-├── config/
-│   └── EmbeddingConfig.java
-└── client/
-    └── HuggingFaceClient.java
+│   └── RecommendationResponse.java        # API response DTO
+└── config/
+    └── EmbeddingConfig.java               # Configuration properties
 ```
 
 ---
 
-## 4. Implementation Patterns
+## 3. API Endpoints
 
-### EmbeddingService (Core)
-```java
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class EmbeddingService {
-    
-    private final HuggingFaceClient huggingFaceClient;
-    
-    /**
-     * Generate embedding vector for text
-     * @param text Product name + description combined
-     * @return float array of 384 dimensions
-     */
-    public float[] generateEmbedding(String text) {
-        if (text == null || text.isBlank()) {
-            return new float[384]; // Zero vector for empty text
-        }
-        
-        String cleanText = text.trim().substring(0, Math.min(text.length(), 512));
-        log.debug("Generating embedding for: {}", cleanText.substring(0, Math.min(50, cleanText.length())));
-        
-        return huggingFaceClient.embed(cleanText);
-    }
-}
+### Get Similar Products
 ```
+GET /api/recommendations/similar/{productId}?limit={limit}
 
-### SemanticSearchService
-```java
-@Service
-@RequiredArgsConstructor
-public class SemanticSearchService {
-    
-    private final EmbeddingService embeddingService;
-    private final ProductRepository productRepository;
-    
-    public List<ProductResponse> search(String query, int limit) {
-        float[] queryVector = embeddingService.generateEmbedding(query);
-        
-        // Native query with pgvector
-        return productRepository.findBySemanticSimilarity(queryVector, limit);
-    }
-}
-```
-
-### Repository Query
-```java
-@Query(value = """
-    SELECT p.* FROM products p 
-    WHERE p.embedding IS NOT NULL AND p.is_active = true
-    ORDER BY p.embedding <-> CAST(:embedding AS vector)
-    LIMIT :limit
-    """, nativeQuery = true)
-List<Product> findBySemanticSimilarity(
-    @Param("embedding") float[] embedding, 
-    @Param("limit") int limit
-);
-```
-
----
-
-## 5. API Endpoints
-
-**Semantic Search:**
-```
-GET /api/search/semantic?q={query}&limit={limit}
+Parameters:
+- productId: ID of the product to find recommendations for
+- limit: Maximum number of recommendations (default: 6, max: 12)
 
 Response:
 {
-  "query": "algo para gaming",
-  "results": [
-    { "id": 1, "name": "Silla Gamer Pro", "score": 0.89 },
-    { "id": 2, "name": "Teclado Mecánico RGB", "score": 0.85 }
+  "productId": 1,
+  "productName": "iPhone 15 Pro",
+  "recommendations": [
+    {
+      "id": 2,
+      "code": "PROD-002",
+      "name": "Samsung Galaxy S24 Ultra",
+      "slug": "galaxy-s24-ultra",
+      "description": "Galaxy S24 Ultra con Galaxy AI...",
+      "categoryId": 4,
+      "categoryName": "Smartphones",
+      "brandId": 2,
+      "brandName": "Samsung",
+      "minPrice": 4999.00,
+      "primaryImageUrl": "/images/galaxy-s24.jpg",
+      "similarityScore": 0.87,
+      "reason": "CONTENT_SIMILARITY"
+    }
   ],
-  "totalResults": 2
+  "totalRecommendations": 6,
+  "method": "AI_EMBEDDING"  // or "CATEGORY_FALLBACK", "BRAND_FALLBACK"
 }
 ```
 
-**Trigger Re-indexing (Admin only):**
+### Admin: Regenerate Embeddings
 ```
-POST /api/admin/search/reindex
-```
+POST /api/admin/recommendations/reindex
+Authorization: Bearer {token}
 
----
-
-## 6. Frontend Integration
-
-**Location:** `features/storefront/search/`
-
-```
-search/
-├── api/
-│   └── searchApi.ts
-├── hooks/
-│   └── useSemanticSearch.ts
-├── components/
-│   └── SearchBar.tsx
-└── index.ts
+Response:
+{
+  "message": "Reindexing started",
+  "productsProcessed": 50,
+  "productsWithEmbeddings": 48,
+  "errors": 2
+}
 ```
 
-**SearchBar Enhancement:**
-```tsx
-// When user types, debounce and call semantic search
-const { data, isLoading } = useSemanticSearch(debouncedQuery);
+### Admin: Get Recommendation Status
+```
+GET /api/admin/recommendations/status
+Authorization: Bearer {token}
 
-// Display results with relevance indicator
-{data?.results.map(product => (
-  <SearchResult key={product.id} product={product} />
-))}
+Response:
+{
+  "enabled": true,
+  "provider": "huggingface",
+  "totalProducts": 50,
+  "productsWithEmbeddings": 48,
+  "embeddingDimension": 384,
+  "lastReindexAt": "2026-01-07T10:30:00Z"
+}
 ```
 
 ---
 
-## 7. Configuration
+## 4. Configuration
 
-**Environment Variables:**
+**Environment Variables (.env):**
 ```properties
-# application.properties
-ai.embedding.provider=huggingface
-ai.embedding.api-url=https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2
-ai.embedding.api-key=${HUGGINGFACE_API_KEY}
-ai.embedding.enabled=true
+# AI Recommendations Configuration
+AI_EMBEDDING_ENABLED=true
+HUGGINGFACE_API_KEY=hf_xxxxxxxxxxxxx
+
+# Optional: Use OpenAI instead
+# AI_EMBEDDING_PROVIDER=openai
+# OPENAI_API_KEY=sk-xxxxxxxxxxxxx
 ```
 
-**Feature Flag:**
-```java
-@Value("${ai.embedding.enabled:false}")
-private boolean embeddingEnabled;
-
-// In ProductService.save()
-if (embeddingEnabled) {
-    float[] embedding = embeddingService.generateEmbedding(product.getName() + " " + product.getDescription());
-    product.setEmbedding(embedding);
-}
+**application.properties:**
+```properties
+# AI Embedding Configuration
+ai.embedding.enabled=${AI_EMBEDDING_ENABLED:false}
+ai.embedding.provider=${AI_EMBEDDING_PROVIDER:huggingface}
+ai.embedding.huggingface.api-url=https://router.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2
+ai.embedding.huggingface.api-key=${HUGGINGFACE_API_KEY:}
+ai.embedding.dimension=384
+ai.embedding.max-text-length=512
 ```
 
 ---
 
-## 8. Graceful Degradation
+## 5. Frontend Integration
+
+**Location:** `features/storefront/catalog/components/`
+
+**ProductRecommendations.tsx:**
+- Displayed on ProductDetail page
+- Shows grid of 4-6 recommended products
+- Each card links to the recommended product
+- Loading skeleton while fetching
+- Graceful handling if no recommendations
+
+**Usage in ProductDetail:**
+```tsx
+<ProductRecommendations 
+  productId={product.id} 
+  limit={6} 
+/>
+```
+
+---
+
+## 6. Fallback Strategy (CRITICAL)
 
 **Rule:** AI failure MUST NOT break the application.
 
-```java
-public float[] generateEmbedding(String text) {
-    try {
-        return huggingFaceClient.embed(text);
-    } catch (Exception e) {
-        log.error("Embedding generation failed, returning null: {}", e.getMessage());
-        return null; // Product saved without embedding, still searchable via traditional search
-    }
-}
-```
+**Fallback Order:**
+1. **AI Embeddings:** If available and working, use cosine similarity
+2. **Same Category:** Products in the same category as the viewed product
+3. **Same Brand:** Products from the same brand
+4. **Featured Products:** General featured products as last resort
 
-**Search Fallback:**
 ```java
-public List<ProductResponse> search(String query, int limit) {
-    if (!embeddingEnabled) {
-        return traditionalSearch(query, limit); // LIKE-based search
+public List<RecommendationItem> getRecommendations(Long productId, int limit) {
+    // Try AI-based recommendations first
+    if (embeddingService.isEnabled()) {
+        try {
+            List<RecommendationItem> aiResults = getAIRecommendations(productId, limit);
+            if (!aiResults.isEmpty()) {
+                return aiResults;
+            }
+        } catch (Exception e) {
+            log.warn("AI recommendations failed: {}", e.getMessage());
+        }
     }
     
-    try {
-        return semanticSearch(query, limit);
-    } catch (Exception e) {
-        log.warn("Semantic search failed, falling back to traditional: {}", e.getMessage());
-        return traditionalSearch(query, limit);
+    // Fallback chain
+    return getFallbackRecommendations(productId, limit);
+}
+```
+
+---
+
+## 7. Implementation Rules
+
+### DO:
+- Always provide fallback when AI is unavailable
+- Log AI failures but don't expose errors to users
+- Cache embeddings in database to reduce API calls
+- Limit API calls with rate limiting
+- Show loading states in frontend
+
+### DON'T:
+- Don't block page load waiting for recommendations
+- Don't fail silently without fallback
+- Don't store API keys in code
+- Don't call embedding API on every request (cache results)
+- Don't show error messages to end users
+
+---
+
+## 8. Testing & Demonstration
+
+**For Academic Documentation:**
+
+1. **Screenshot 1:** Product detail page showing "Productos similares" section
+2. **Screenshot 2:** API response in Swagger/Postman showing similarity scores
+3. **Screenshot 3:** Admin panel showing recommendation status
+4. **Screenshot 4:** Comparison - AI recommendations vs category fallback
+
+**Test Scenarios:**
+- View iPhone → Should recommend other smartphones, accessories
+- View laptop → Should recommend monitors, keyboards, mice
+- Disable AI → Should fallback to category-based recommendations
+
+---
+
+## 9. Files Changed/Created
+
+**Backend (new):**
+- `features/recommendation/controller/RecommendationController.java`
+- `features/recommendation/service/RecommendationService.java`
+- `features/recommendation/service/EmbeddingService.java`
+- `features/recommendation/dto/RecommendationResponse.java`
+- `features/recommendation/config/EmbeddingConfig.java`
+
+**Backend (modified):**
+- `application.properties` - AI config properties
+- `SecurityConfig.java` - Public endpoint for recommendations
+
+**Frontend (new):**
+- `features/storefront/catalog/components/ProductRecommendations.tsx`
+- `features/storefront/catalog/api/recommendationApi.ts`
+- `features/storefront/catalog/hooks/useRecommendations.ts`
+
+**Frontend (modified):**
+- `features/storefront/catalog/pages/ProductDetail.tsx` - Add recommendations component
+
+---
+
+## 10. Embedding Storage Strategy
+
+**Embeddings are stored in-memory** (not in database) for simplicity:
+- Generated on application startup or first request
+- Cached in a ConcurrentHashMap
+- No pgvector dependency required
+- Reindex endpoint refreshes the cache
+
+```java
+@Service
+public class EmbeddingService {
+    private final Map<Long, float[]> embeddingCache = new ConcurrentHashMap<>();
+    
+    public float[] getEmbedding(Long productId) {
+        return embeddingCache.get(productId);
+    }
+    
+    public void cacheEmbedding(Long productId, float[] embedding) {
+        embeddingCache.put(productId, embedding);
     }
 }
 ```
 
 ---
 
-## 9. Testing Strategy
+## 11. Similarity Calculation
 
-**Unit Tests:**
-- Mock HuggingFace responses
-- Test embedding dimension validation (must be 384)
-- Test null/empty text handling
+**Cosine Similarity** between two vectors:
 
-**Integration Tests:**
-- Verify pgvector extension is available
-- Test actual similarity queries
-- Verify fallback behavior
-
----
-
-## 10. Cost Considerations
-
-| Provider | Cost | Rate Limit | Notes |
-|----------|------|------------|-------|
-| HuggingFace (free) | $0 | 30k tokens/month | Good for MVP |
-| OpenAI text-embedding-3-small | $0.02/1M tokens | High | Production-ready |
-| Local (sentence-transformers) | $0 | Unlimited | Requires more setup |
-
-**Recommendation for MVP:** Start with HuggingFace free tier. Switch to OpenAI or local if limits are hit.
+```java
+public double cosineSimilarity(float[] a, float[] b) {
+    double dotProduct = 0.0;
+    double normA = 0.0;
+    double normB = 0.0;
+    
+    for (int i = 0; i < a.length; i++) {
+        dotProduct += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
+    }
+    
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+```
 
 ---
 
-## 11. Checklist Before Implementation
+## 12. Cost & Limits
 
-- [ ] Phase 1 complete (storefront functional end-to-end)
-- [ ] pgvector extension available in your PostgreSQL
-- [ ] HuggingFace API key obtained (free account)
-- [ ] Products have meaningful names and descriptions
-- [ ] Traditional search (LIKE) already works as fallback
+| Provider | Cost | Rate Limit | Recommendation |
+|----------|------|------------|----------------|
+| HuggingFace (free) | $0 | ~30k requests/month | Good for MVP/Academic |
+| OpenAI text-embedding-3-small | $0.02/1M tokens | High | Production |
+
+**For academic project:** HuggingFace free tier is sufficient.
+
+---
+
+## 13. Quick Start Checklist
+
+- [ ] Obtain HuggingFace API key (free: https://huggingface.co/settings/tokens)
+- [ ] Set `AI_EMBEDDING_ENABLED=true` in .env
+- [ ] Set `HUGGINGFACE_API_KEY=hf_xxx` in .env
+- [ ] Restart backend
+- [ ] Call `POST /api/admin/recommendations/reindex` to generate embeddings
+- [ ] View any product page to see recommendations

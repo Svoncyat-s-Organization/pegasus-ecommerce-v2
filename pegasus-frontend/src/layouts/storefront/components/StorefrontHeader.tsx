@@ -166,26 +166,26 @@ export const StorefrontHeader = ({
 
             {/* Search Bar */}
             <Box
-              component="form"
-              onSubmit={handleSearch}
               style={{ flex: 1, maxWidth: 400 }}
               visibleFrom="sm"
             >
-              <TextInput
-                placeholder="Buscar productos..."
-                leftSection={<IconSearch size={16} />}
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                radius="xl"
-                styles={{
-                  input: {
-                    border: '1px solid #e9ecef',
-                    '&:focus': {
-                      borderColor: primaryColor,
+              <form onSubmit={handleSearch}>
+                <TextInput
+                  placeholder="Buscar productos..."
+                  leftSection={<IconSearch size={16} />}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  radius="xl"
+                  styles={{
+                    input: {
+                      border: '1px solid #e9ecef',
+                      '&:focus': {
+                        borderColor: primaryColor,
+                      },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
+              </form>
             </Box>
 
             {/* Action Icons */}

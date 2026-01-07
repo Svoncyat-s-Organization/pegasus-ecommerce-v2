@@ -6,6 +6,9 @@
 
 SET search_path TO pg_catalog, public;
 
+-- Enable pgvector extension for semantic search
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- ============================================
 -- RBAC: Users, Roles, Modules
 -- ============================================
@@ -116,6 +119,7 @@ CREATE TABLE public.products (
     specs jsonb NOT NULL DEFAULT '{}',
     is_featured boolean DEFAULT false,
     is_active boolean NOT NULL DEFAULT true,
+    embedding vector(384),
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT products_pk PRIMARY KEY (id),
@@ -128,8 +132,10 @@ CREATE TABLE public.products (
         REFERENCES public.categories (id) MATCH SIMPLE
         ON DELETE RESTRICT ON UPDATE CASCADE
 );
+COMMENT ON COLUMN public.products.embedding IS 'Vector embedding (384 dims) for semantic search using all-MiniLM-L6-v2 model';
 
 CREATE INDEX idx_products_spec ON public.products USING gin (specs);
+CREATE INDEX idx_products_embedding ON public.products USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 CREATE TABLE public.variants (
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
