@@ -8,6 +8,7 @@ import com.pegasus.backend.features.catalog.entity.Variant;
 import com.pegasus.backend.features.catalog.mapper.VariantMapper;
 import com.pegasus.backend.features.catalog.repository.ProductRepository;
 import com.pegasus.backend.features.catalog.repository.VariantRepository;
+import com.pegasus.backend.features.inventory.service.StockService;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class VariantService {
     private final VariantRepository variantRepository;
     private final ProductRepository productRepository;
     private final VariantMapper variantMapper;
+    private final StockService stockService;
 
     /**
      * Obtener todas las variantes con paginación y búsqueda opcional
@@ -50,8 +52,7 @@ public class VariantService {
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.isFirst(),
-                page.isLast()
-        );
+                page.isLast());
     }
 
     /**
@@ -100,6 +101,9 @@ public class VariantService {
 
         Variant variant = variantMapper.toEntity(request);
         Variant saved = variantRepository.save(variant);
+
+        // Ensure this new variant appears in all active warehouses with stock 0
+        stockService.initializeZeroStockForVariantAcrossActiveWarehouses(saved.getId());
 
         log.info("Variant created successfully: {}", saved.getSku());
         return variantMapper.toResponse(saved);

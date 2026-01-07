@@ -19,7 +19,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Servicio para gestión de stock de inventario
@@ -504,5 +507,55 @@ public class StockService {
 
                 log.info("Stock returned successfully - variant: {}, quantity: {}, rma: {}", variantId, quantity,
                                 rmaId);
+        }
+
+        /**
+         * Inicializa registros de stock (0) para una variante en todos los almacenes
+         * activos.
+         *
+         * Se usa al crear una variante nueva, para que aparezca con stock 0 en todos
+         * los almacenes.
+         */
+        @Transactional
+        public void initializeZeroStockForVariantAcrossActiveWarehouses(Long variantId) {
+                if (variantId == null) {
+                        throw new BadRequestException("variantId es requerido");
+                }
+
+                if (!variantRepository.existsById(variantId)) {
+                        throw new ResourceNotFoundException("Variante no encontrada con ID: " + variantId);
+                }
+
+                List<Warehouse> activeWarehouses = warehouseRepository.findByIsActiveTrue();
+                if (activeWarehouses.isEmpty()) {
+                        return;
+                }
+
+                List<Stock> existingStocks = stockRepository.findByVariantId(variantId);
+                Set<Long> existingWarehouseIds = new HashSet<>();
+                for (Stock s : existingStocks) {
+                        if (s.getWarehouseId() != null) {
+                                existingWarehouseIds.add(s.getWarehouseId());
+                        }
+                }
+
+                List<Stock> toCreate = new ArrayList<>();
+                for (Warehouse w : activeWarehouses) {
+                        if (existingWarehouseIds.contains(w.getId())) {
+                                continue;
+                        }
+
+                        Stock newStock = Stock.builder()
+                                        .warehouseId(w.getId())
+                                        .variantId(variantId)
+                                        .quantity(0)
+                                        .reservedQuantity(0)
+                                        .build();
+                        toCreate.add(newStock);
+                }
+
+                if (!toCreate.isEmpty()) {
+                        stockRepository.saveAll(toCreate);
+                }
         }
 }
