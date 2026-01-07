@@ -12,17 +12,18 @@ import java.util.Map;
  * Incluye items, historial y datos del cliente
  */
 public record OrderResponse(
-        Long id,
-        String orderNumber,
-        Long customerId,
-        String customerName,
-        String customerEmail,
-        OrderStatus status,
-        BigDecimal total,
-        Map<String, Object> shippingAddress,
-        Map<String, Object> billingAddress,
-        List<OrderItemResponse> items,
-        List<OrderStatusHistoryResponse> statusHistories,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {}
+                Long id,
+                String orderNumber,
+                Long customerId,
+                String customerName,
+                String customerEmail,
+                OrderStatus status,
+                BigDecimal total,
+                Map<String, Object> shippingAddress,
+                Map<String, Object> billingAddress,
+                List<OrderItemResponse> items,
+                List<OrderStatusHistoryResponse> statusHistories,
+                Long shippingMethodId,
+                OffsetDateTime createdAt,
+                OffsetDateTime updatedAt) {
+}

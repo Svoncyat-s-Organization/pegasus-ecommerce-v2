@@ -1,4 +1,4 @@
-import { Stack, Text, Group, Divider, Image, Card, Badge, Box, ThemeIcon } from '@mantine/core';
+import { Stack, Text, Group, Divider, Image, Card, Badge, Box, ThemeIcon, TextInput, Button } from '@mantine/core';
 import { IconShieldCheck, IconTruck, IconPackage } from '@tabler/icons-react';
 import type { CartItem } from '@features/storefront/cart';
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
@@ -10,20 +10,21 @@ interface CheckoutSummaryProps {
   igv: number;
   shippingCost: number;
   total: number;
+  backgroundColor?: string;
 }
 
 /**
  * CheckoutSummary Component
  * Resumen del pedido con items, precios y totales
  */
-export const CheckoutSummary = ({ items, subtotal, igv, shippingCost, total }: CheckoutSummaryProps) => {
+export const CheckoutSummary = ({ items, subtotal, igv, shippingCost, total, backgroundColor }: CheckoutSummaryProps) => {
   const { getPrimaryColor } = useStorefrontConfigStore();
   const primaryColor = getPrimaryColor();
 
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <Card withBorder padding="lg" radius="md">
+    <Card withBorder padding="lg" radius="md" style={{ backgroundColor: backgroundColor || 'white' }}>
       <Stack gap="md">
         <Group justify="space-between" align="center">
           <Text size="lg" fw={700}>
@@ -83,7 +84,16 @@ export const CheckoutSummary = ({ items, subtotal, igv, shippingCost, total }: C
               </Text>
             </Group>
           ))}
+
         </Stack>
+
+        <Divider />
+
+        {/* Cupón */}
+        <Group>
+          <TextInput placeholder="Cupón de descuento" style={{ flex: 1 }} />
+          <Button variant="filled" color={primaryColor}>Aplicar</Button>
+        </Group>
 
         <Divider />
 

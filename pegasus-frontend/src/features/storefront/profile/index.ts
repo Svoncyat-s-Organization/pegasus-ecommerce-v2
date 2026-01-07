@@ -1,6 +1,7 @@
 // Pages
 export { ProfilePage } from './pages/ProfilePage';
 export { OrdersPage } from './pages/OrdersPage';
+export { AddressesPage } from './pages/AddressesPage';
 
 // Hooks
 export {

@@ -1,11 +1,11 @@
 import { Stack, TextInput, Textarea, Select, Group, Card, Text, Badge, Radio, Button, Divider, Box, Collapse } from '@mantine/core';
 import type { UseFormReturnType } from '@mantine/form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { IconPlus, IconMapPin, IconCheck } from '@tabler/icons-react';
 import { useDepartments, useProvinces, useDistricts } from '@shared/hooks/useLocations';
 import type { DepartmentResponse, ProvinceResponse, DistrictResponse } from '@shared/api/locationsApi';
 import type { CheckoutFormValues } from '../types/checkout.types';
-import { useMyAddresses } from '@features/storefront/profile';
+import { useMyAddresses, useMyProfile } from '@features/storefront/profile';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';
 
 interface AddressFormProps {
@@ -25,11 +25,30 @@ export const AddressForm = ({ form }: AddressFormProps) => {
 
   const { isAuthenticated } = useStorefrontAuthStore();
   const { data: savedAddresses } = useMyAddresses();
+  const { data: profile } = useMyProfile();
+
   const { data: departments } = useDepartments();
   const { data: provinces } = useProvinces(selectedDepartment);
   const { data: districts } = useDistricts(selectedProvince);
 
   const hasSavedAddresses = savedAddresses && savedAddresses.length > 0;
+
+  // Pre-fill recipient info from profile if empty
+  useEffect(() => {
+    if (profile && !form.values.shippingAddress.recipientName) {
+      form.setFieldValue('shippingAddress.recipientName', `${profile.firstName} ${profile.lastName}`);
+    }
+    if (profile?.phone && !form.values.shippingAddress.recipientPhone) {
+      form.setFieldValue('shippingAddress.recipientPhone', profile.phone);
+    }
+  }, [profile]);
+
+  // If no saved addresses, switch to new mode
+  useEffect(() => {
+    if (savedAddresses && savedAddresses.length === 0) {
+      setAddressMode('new');
+    }
+  }, [savedAddresses]);
 
   const handleDepartmentChange = (value: string | null) => {
     if (value) {
@@ -49,12 +68,12 @@ export const AddressForm = ({ form }: AddressFormProps) => {
   const handleDistrictChange = (value: string | null) => {
     if (value) {
       form.setFieldValue('shippingAddress.ubigeoId', value);
-      
+
       // Guardar nombres para display
       const district = districts?.find((d: DistrictResponse) => d.id === value);
       const province = provinces?.find((p: ProvinceResponse) => p.id === selectedProvince);
       const department = departments?.find((d: DepartmentResponse) => d.id === selectedDepartment);
-      
+
       if (district && province && department) {
         form.setFieldValue('shippingAddress.districtName', district.name);
         form.setFieldValue('shippingAddress.provinceName', province.name);
@@ -67,116 +86,106 @@ export const AddressForm = ({ form }: AddressFormProps) => {
     const address = savedAddresses?.find((a) => a.id === addressId);
     if (address) {
       setSelectedAddressId(addressId);
-      form.setFieldValue('shippingAddress', {
-        recipientName: '',
-        recipientPhone: '',
-        address: address.address,
-        reference: address.reference || '',
-        ubigeoId: address.ubigeoId,
-        districtName: '',
-        provinceName: '',
-        departmentName: '',
-      });
+      form.setFieldValue('shippingAddress.address', address.address);
+      form.setFieldValue('shippingAddress.reference', address.reference || '');
+      form.setFieldValue('shippingAddress.ubigeoId', address.ubigeoId);
+
+      // Note: We don't have location names here (departmentName, etc) from the simple address object.
+      // They might be missing in the summary step, but the ID is what matters for backend.
     }
   };
 
   return (
     <Stack gap="lg">
-      {/* Saved Addresses Section (only for authenticated users) */}
+      {/* Saved Addresses Section */}
       {isAuthenticated() && hasSavedAddresses && (
-        <>
-          <Box>
-            <Group justify="space-between" mb="sm">
-              <Text fw={600}>Mis direcciones guardadas</Text>
-              <Button
-                variant="subtle"
-                size="xs"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => {
-                  setAddressMode('new');
-                  setSelectedAddressId(null);
-                }}
-              >
-                Nueva dirección
-              </Button>
-            </Group>
-
-            <Radio.Group
-              value={selectedAddressId?.toString() || ''}
-              onChange={(value) => {
-                setAddressMode('saved');
-                handleSavedAddressSelect(Number(value));
+        <Box>
+          <Group justify="space-between" mb="sm">
+            <Text fw={600}>Mis direcciones guardadas</Text>
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconPlus size={14} />}
+              onClick={() => {
+                setAddressMode('new');
+                setSelectedAddressId(null);
+                // Clear address fields but keep recipient
+                form.setFieldValue('shippingAddress.address', '');
+                form.setFieldValue('shippingAddress.reference', '');
+                form.setFieldValue('shippingAddress.ubigeoId', '');
               }}
             >
-              <Stack gap="sm">
-                {savedAddresses.map((addr) => (
-                  <Card
-                    key={addr.id}
-                    withBorder
-                    radius="md"
-                    padding="md"
-                    style={{
-                      cursor: 'pointer',
-                      borderColor: selectedAddressId === addr.id ? 'var(--mantine-color-blue-6)' : undefined,
-                      borderWidth: selectedAddressId === addr.id ? 2 : 1,
-                    }}
-                    onClick={() => handleSavedAddressSelect(addr.id)}
-                  >
-                    <Group justify="space-between" wrap="nowrap">
-                      <Group gap="sm" wrap="nowrap">
-                        <Radio value={addr.id.toString()} />
-                        <div>
-                          <Group gap="xs" mb={4}>
-                            <IconMapPin size={16} color="#868e96" />
-                            <Text size="sm" fw={500}>
-                              {addr.address}
-                            </Text>
-                          </Group>
-                          <Text size="xs" c="dimmed">
-                            Ubigeo: {addr.ubigeoId}
-                          </Text>
-                          {addr.reference && (
-                            <Text size="xs" c="dimmed">
-                              Ref: {addr.reference}
-                            </Text>
-                          )}
-                        </div>
-                      </Group>
-                      <Stack gap={4}>
-                        {addr.isDefaultShipping && (
-                          <Badge size="xs" color="blue" variant="light">
-                            Envío
-                          </Badge>
-                        )}
-                        {addr.isDefaultBilling && (
-                          <Badge size="xs" color="grape" variant="light">
-                            Facturación
-                          </Badge>
-                        )}
-                      </Stack>
-                    </Group>
-                  </Card>
-                ))}
-              </Stack>
-            </Radio.Group>
-          </Box>
+              Nueva dirección
+            </Button>
+          </Group>
 
-          <Divider
-            label={
-              <Group gap="xs">
-                <IconPlus size={14} />
-                <Text size="sm">O ingresa una nueva dirección</Text>
-              </Group>
-            }
-            labelPosition="center"
-          />
-        </>
+          <Radio.Group
+            value={selectedAddressId?.toString() || ''}
+            onChange={(value) => {
+              setAddressMode('saved');
+              handleSavedAddressSelect(Number(value));
+            }}
+          >
+            <Stack gap="sm">
+              {savedAddresses.map((addr) => (
+                <Card
+                  key={addr.id}
+                  withBorder
+                  radius="md"
+                  padding="md"
+                  style={{
+                    cursor: 'pointer',
+                    borderColor: selectedAddressId === addr.id ? 'var(--mantine-color-blue-6)' : undefined,
+                    borderWidth: selectedAddressId === addr.id ? 2 : 1,
+                    backgroundColor: selectedAddressId === addr.id ? 'var(--mantine-color-blue-0)' : undefined,
+                  }}
+                  onClick={() => {
+                    setAddressMode('saved');
+                    handleSavedAddressSelect(addr.id);
+                  }}
+                >
+                  <Group justify="space-between" wrap="nowrap">
+                    <Group gap="sm" wrap="nowrap">
+                      <Radio value={addr.id.toString()} style={{ cursor: 'pointer' }} />
+                      <div>
+                        <Group gap="xs" mb={4}>
+                          <IconMapPin size={16} color="#868e96" />
+                          <Text size="sm" fw={500}>
+                            {addr.address}
+                          </Text>
+                        </Group>
+                        <Text size="xs" c="dimmed">
+                          {/* We don't have resolved names here, so just show " Ubigeo: ..." */}
+                          Ubigeo: {addr.ubigeoId}
+                        </Text>
+                        {addr.reference && (
+                          <Text size="xs" c="dimmed">
+                            Ref: {addr.reference}
+                          </Text>
+                        )}
+                      </div>
+                    </Group>
+                    <Stack gap={4}>
+                      {addr.isDefaultShipping && (
+                        <Badge size="xs" color="blue" variant="light">
+                          Envío
+                        </Badge>
+                      )}
+                    </Stack>
+                  </Group>
+                </Card>
+              ))}
+            </Stack>
+          </Radio.Group>
+        </Box>
       )}
 
-      {/* New Address Form */}
-      <Collapse in={addressMode === 'new' || !hasSavedAddresses || !isAuthenticated}>
-        <Stack gap="md">
-          {/* Nombre del destinatario */}
+      {hasSavedAddresses && <Divider />}
+
+      {/* Common Fields: Recipient Info (ALWAYS VISIBLE) */}
+      <Box>
+        <Text fw={600} mb="xs">Datos de Contacto</Text>
+        <Group grow>
           <TextInput
             label="Nombre del destinatario"
             placeholder="Juan Pérez García"
@@ -184,7 +193,6 @@ export const AddressForm = ({ form }: AddressFormProps) => {
             {...form.getInputProps('shippingAddress.recipientName')}
           />
 
-          {/* Teléfono */}
           <TextInput
             label="Teléfono"
             placeholder="987654321"
@@ -193,7 +201,13 @@ export const AddressForm = ({ form }: AddressFormProps) => {
             leftSection={<Text size="sm" c="dimmed">+51</Text>}
             {...form.getInputProps('shippingAddress.recipientPhone')}
           />
+        </Group>
+      </Box>
 
+      {/* New Address Location Fields (Hidden if using saved address) */}
+      <Collapse in={addressMode === 'new'}>
+        <Stack gap="md">
+          <Text fw={600}>Detalles de Ubicación</Text>
           {/* Ubigeo: Departamento, Provincia, Distrito */}
           <Group grow>
             <Select
@@ -202,7 +216,7 @@ export const AddressForm = ({ form }: AddressFormProps) => {
               data={departments?.map((d: DepartmentResponse) => ({ value: d.id, label: d.name })) || []}
               onChange={handleDepartmentChange}
               searchable
-              required
+              required={addressMode === 'new'}
             />
 
             <Select
@@ -212,7 +226,7 @@ export const AddressForm = ({ form }: AddressFormProps) => {
               onChange={handleProvinceChange}
               disabled={!selectedDepartment}
               searchable
-              required
+              required={addressMode === 'new'}
             />
 
             <Select
@@ -221,7 +235,7 @@ export const AddressForm = ({ form }: AddressFormProps) => {
               data={districts?.map((d: DistrictResponse) => ({ value: d.id, label: d.name })) || []}
               disabled={!selectedProvince}
               searchable
-              required
+              required={addressMode === 'new'}
               value={form.values.shippingAddress.ubigeoId}
               onChange={handleDistrictChange}
             />
@@ -231,7 +245,7 @@ export const AddressForm = ({ form }: AddressFormProps) => {
           <TextInput
             label="Dirección"
             placeholder="Av. Principal 123, Urbanización Los Olivos"
-            required
+            required={addressMode === 'new'}
             leftSection={<IconMapPin size={16} />}
             {...form.getInputProps('shippingAddress.address')}
           />
@@ -246,20 +260,15 @@ export const AddressForm = ({ form }: AddressFormProps) => {
         </Stack>
       </Collapse>
 
-      {/* Show selected address when using saved */}
+      {/* Show summary of saved address selection if mode is saved */}
       {addressMode === 'saved' && selectedAddressId && (
-        <Card withBorder radius="md" padding="md" bg="blue.0">
-          <Group gap="xs" mb="xs">
-            <IconCheck size={18} color="var(--mantine-color-blue-6)" />
-            <Text size="sm" fw={600} c="blue">
-              Dirección seleccionada
+        <Card withBorder radius="md" padding="md" bg="gray.1">
+          <Group gap="xs">
+            <IconCheck size={18} color="green" />
+            <Text size="sm" c="dimmed">
+              Usando dirección guardada: <b>{form.values.shippingAddress.address}</b>
             </Text>
           </Group>
-          <Text size="sm">{form.values.shippingAddress.address}</Text>
-          <Text size="xs" c="dimmed">
-            {form.values.shippingAddress.districtName}, {form.values.shippingAddress.provinceName},{' '}
-            {form.values.shippingAddress.departmentName}
-          </Text>
         </Card>
       )}
     </Stack>

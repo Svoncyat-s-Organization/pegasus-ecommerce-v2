@@ -9,10 +9,14 @@ import {
   Text,
   Grid,
   Alert,
-  Textarea,
   Paper,
   ThemeIcon,
   Card,
+  Checkbox,
+  Radio,
+  Divider,
+  Badge,
+  TextInput,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate } from 'react-router-dom';
@@ -22,10 +26,10 @@ import {
   IconCheck,
   IconMapPin,
   IconTruck,
-  IconClipboardCheck,
   IconShoppingCart,
   IconArrowLeft,
   IconArrowRight,
+  IconCreditCard,
 } from '@tabler/icons-react';
 import { useCartStore } from '@features/storefront/cart';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';
@@ -42,20 +46,21 @@ import type { CheckoutFormValues } from '../types/checkout.types';
  * CheckoutPage - Página de checkout con stepper multi-paso
  * Paso 1: Dirección de envío
  * Paso 2: Método de envío
- * Paso 3: Revisión y confirmación
+ * Paso 3: Pago y Confirmación
  */
 export const CheckoutPage = () => {
   const navigate = useNavigate();
   const [active, setActive] = useState(0);
-  
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'yape' | 'plin'>('card');
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
+
   const { items, getSubtotal, getIGV, clearCart } = useCartStore();
   const { user } = useStorefrontAuthStore();
-  const { getPrimaryColor, getSecondaryColor } = useStorefrontConfigStore();
+  const { getPrimaryColor } = useStorefrontConfigStore();
   const { data: shippingMethods } = useShippingMethods();
   const createOrderMutation = useCreateOrder();
 
   const primaryColor = getPrimaryColor();
-  const secondaryColor = getSecondaryColor();
   const subtotal = getSubtotal();
   const igv = getIGV();
 
@@ -79,8 +84,8 @@ export const CheckoutPage = () => {
           'shippingAddress.recipientPhone': !values.shippingAddress.recipientPhone
             ? 'Teléfono requerido'
             : !/^9\d{8}$/.test(values.shippingAddress.recipientPhone)
-            ? 'Debe ser 9 dígitos e iniciar con 9'
-            : null,
+              ? 'Debe ser 9 dígitos e iniciar con 9'
+              : null,
           'shippingAddress.address': !values.shippingAddress.address ? 'Dirección requerida' : null,
           'shippingAddress.ubigeoId': !values.shippingAddress.ubigeoId ? 'Distrito requerido' : null,
         };
@@ -116,16 +121,31 @@ export const CheckoutPage = () => {
 
   const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current));
 
+  const [paymentPhone, setPaymentPhone] = useState('');
+
+  // ...
+
   const handleSubmit = async () => {
     if (!user) {
-      notifications.show({
-        title: 'Inicia sesión',
-        message: 'Debes iniciar sesión para completar la compra',
-        color: 'red',
-      });
+      notifications.show({ title: 'Inicia sesión', message: 'Debes iniciar sesión para completar la compra', color: 'red' });
       navigate('/login');
       return;
     }
+
+    // Validar método de pago
+    if (paymentMethod === 'yape' || paymentMethod === 'plin') {
+      if (!paymentTransactionId || !paymentPhone) {
+        notifications.show({
+          title: 'Información incompleta',
+          message: `Por favor ingresa el celular y el código de aprobación de ${paymentMethod === 'yape' ? 'Yape' : 'Plin'}`,
+          color: 'red'
+        });
+        return;
+      }
+    }
+
+    // Validar tarjeta (simulada)
+    // En un caso real, Stripe/Culqi manejaría esto. Aquí asumimos valida si el form se ve.
 
     try {
       const response = await createOrderMutation.mutateAsync({
@@ -142,6 +162,11 @@ export const CheckoutPage = () => {
           recipientName: form.values.shippingAddress.recipientName,
           recipientPhone: form.values.shippingAddress.recipientPhone,
         },
+        shippingMethodId: form.values.shippingMethodId || undefined,
+        paymentMethod: paymentMethod,
+        paymentTransactionId: paymentMethod === 'card'
+          ? `CARD-${Date.now()}`
+          : paymentTransactionId,
       });
 
       // Clear cart and navigate to confirmation
@@ -177,171 +202,292 @@ export const CheckoutPage = () => {
           </Button>
         </Group>
 
-        {/* Stepper */}
-        <Stepper
-          active={active}
-          onStepClick={setActive}
-          allowNextStepsSelect={false}
-          color={primaryColor.replace('#', '')}
-        >
-          <Stepper.Step
-            label="Dirección"
-            description="¿A dónde enviamos?"
-            icon={<IconMapPin size={18} />}
-          >
-            <Paper withBorder radius="md" p="xl" mt="xl">
-              <Group mb="lg">
-                <ThemeIcon size="lg" variant="light" radius="xl">
-                  <IconMapPin size={18} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={600}>Dirección de Envío</Text>
-                  <Text size="sm" c="dimmed">
-                    Ingresa o selecciona la dirección donde recibirás tu pedido
-                  </Text>
-                </div>
-              </Group>
-              <AddressForm form={form} />
-            </Paper>
-          </Stepper.Step>
-
-          <Stepper.Step
-            label="Método de Envío"
-            description="¿Cómo lo recibes?"
-            icon={<IconTruck size={18} />}
-          >
-            <Paper withBorder radius="md" p="xl" mt="xl">
-              <Group mb="lg">
-                <ThemeIcon size="lg" variant="light" radius="xl">
-                  <IconTruck size={18} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={600}>Método de Envío</Text>
-                  <Text size="sm" c="dimmed">
-                    Elige cómo deseas recibir tu pedido
-                  </Text>
-                </div>
-              </Group>
-              <ShippingMethodSelector form={form} />
-            </Paper>
-          </Stepper.Step>
-
-          <Stepper.Step
-            label="Confirmar"
-            description="Revisa tu pedido"
-            icon={<IconClipboardCheck size={18} />}
-          >
-            <Paper withBorder radius="md" p="xl" mt="xl">
-              <Group mb="lg">
-                <ThemeIcon size="lg" variant="light" color="green" radius="xl">
-                  <IconClipboardCheck size={18} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={600}>Confirma tu Pedido</Text>
-                  <Text size="sm" c="dimmed">
-                    Revisa los detalles antes de confirmar
-                  </Text>
-                </div>
-              </Group>
-
-              <Stack gap="lg">
-                {/* Address Summary */}
-                <Card withBorder radius="md" padding="md" bg="gray.0">
-                  <Group mb="xs">
-                    <IconMapPin size={16} color="#868e96" />
-                    <Text size="sm" fw={600}>
-                      Dirección de Envío
-                    </Text>
-                  </Group>
-                  <Text size="sm" fw={500}>
-                    {form.values.shippingAddress.recipientName}
-                  </Text>
-                  <Text size="sm">
-                    {form.values.shippingAddress.address}
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    {form.values.shippingAddress.districtName}, {form.values.shippingAddress.provinceName},{' '}
-                    {form.values.shippingAddress.departmentName}
-                  </Text>
-                  {form.values.shippingAddress.reference && (
-                    <Text size="xs" c="dimmed" mt="xs">
-                      Ref: {form.values.shippingAddress.reference}
-                    </Text>
-                  )}
-                  <Text size="sm" mt="xs">
-                    Tel: +51 {form.values.shippingAddress.recipientPhone}
-                  </Text>
-                </Card>
-
-                {/* Shipping Method Summary */}
-                <Card withBorder radius="md" padding="md" bg="gray.0">
-                  <Group mb="xs">
-                    <IconTruck size={16} color="#868e96" />
-                    <Text size="sm" fw={600}>
-                      Método de Envío
-                    </Text>
-                  </Group>
-                  <Group justify="space-between">
+        {/* Main Grid Layout */}
+        <Grid gutter="xl" align="flex-start">
+          {/* Left Column: Stepper + Content */}
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            <Stepper
+              active={active}
+              onStepClick={setActive}
+              allowNextStepsSelect={false}
+              color={primaryColor.replace('#', '')}
+              mb="xl"
+            >
+              <Stepper.Step
+                label="Dirección"
+                description="¿A dónde enviamos?"
+                icon={<IconMapPin size={18} />}
+              >
+                <Paper withBorder radius="md" p="xl" mt="xl">
+                  <Group mb="lg">
+                    <ThemeIcon size="lg" variant="light" radius="xl">
+                      <IconMapPin size={18} />
+                    </ThemeIcon>
                     <div>
-                      <Text size="sm" fw={500}>
-                        {selectedShippingMethod?.name}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {selectedShippingMethod?.carrier} -{' '}
-                        {selectedShippingMethod?.estimatedDaysMin === selectedShippingMethod?.estimatedDaysMax
-                          ? `${selectedShippingMethod?.estimatedDaysMin} días`
-                          : `${selectedShippingMethod?.estimatedDaysMin}-${selectedShippingMethod?.estimatedDaysMax} días`}
+                      <Text fw={600}>Dirección de Envío</Text>
+                      <Text size="sm" c="dimmed">
+                        Ingresa o selecciona la dirección donde recibirás tu pedido
                       </Text>
                     </div>
-                    <Text size="sm" fw={600} style={{ color: shippingCost === 0 ? 'var(--mantine-color-green-6)' : primaryColor }}>
-                      {shippingCost === 0 ? 'Gratis' : formatCurrency(shippingCost)}
-                    </Text>
                   </Group>
-                </Card>
+                  <AddressForm form={form} />
+                </Paper>
+              </Stepper.Step>
 
-                {/* Notes */}
-                <Textarea
-                  label="Notas adicionales (opcional)"
-                  placeholder="Instrucciones especiales para la entrega..."
-                  rows={3}
-                  {...form.getInputProps('notes')}
-                />
-              </Stack>
-            </Paper>
-          </Stepper.Step>
-
-          <Stepper.Completed>
-            <Paper withBorder radius="md" p="xl" mt="xl">
-              <Stack align="center" py={40}>
-                <ThemeIcon size={80} radius="xl" color="green" variant="light">
-                  <IconCheck size={48} />
-                </ThemeIcon>
-                <Title order={2} ta="center">
-                  ¡Pedido confirmado!
-                </Title>
-                <Text c="dimmed" ta="center" maw={400}>
-                  Tu pedido ha sido creado exitosamente. Pronto recibirás un correo con los detalles.
-                </Text>
-              </Stack>
-            </Paper>
-          </Stepper.Completed>
-        </Stepper>
-
-        {/* Grid: Actions + Summary */}
-        <Grid gutter="xl" mt="xl">
-          {/* Actions */}
-          <Grid.Col span={{ base: 12, md: 8 }}>
-            <Group justify="space-between">
-              <Button
-                variant="default"
-                leftSection={<IconArrowLeft size={16} />}
-                onClick={prevStep}
-                disabled={active === 0}
+              <Stepper.Step
+                label="Método de Envío"
+                description="¿Cómo lo recibes?"
+                icon={<IconTruck size={18} />}
               >
-                Anterior
-              </Button>
+                <Paper withBorder radius="md" p="xl" mt="xl">
+                  <Group mb="lg">
+                    <ThemeIcon size="lg" variant="light" radius="xl">
+                      <IconTruck size={18} />
+                    </ThemeIcon>
+                    <div>
+                      <Text fw={600}>Método de Envío</Text>
+                      <Text size="sm" c="dimmed">
+                        Elige cómo deseas recibir tu pedido
+                      </Text>
+                    </div>
+                  </Group>
+                  <ShippingMethodSelector form={form} />
+                </Paper>
+              </Stepper.Step>
 
-              {active < 2 && (
+              <Stepper.Step
+                label="Pago"
+                description="Realiza el pago"
+                icon={<IconCreditCard size={18} />}
+              >
+                <Paper withBorder radius="md" p="xl" mt="xl">
+                  {/* Datos del Comprador */}
+                  <Stack gap="md" mb="xl">
+                    <Title order={3} size="h4">Datos del comprador</Title>
+                    <Checkbox
+                      label="Mi dirección de facturación y de envío es la misma"
+                      defaultChecked
+                      color={primaryColor}
+                    />
+
+                    <Card withBorder radius="md" bg="gray.0" p="sm">
+                      <Text size="sm" fw={500}>{form.values.shippingAddress.recipientName}</Text>
+                      <Text size="xs" c="dimmed">Documento: {(user as any)?.docNumber || '-'}</Text>
+                      <Text size="xs" c="dimmed">Tel: {form.values.shippingAddress.recipientPhone}</Text>
+                      <Text size="xs" c="dimmed">{form.values.shippingAddress.address}</Text>
+                    </Card>
+                  </Stack>
+
+                  <Divider my="xl" />
+
+                  {/* Comprobante de Pago */}
+                  <Stack gap="md" mb="xl">
+                    <Title order={3} size="h4">Comprobante de pago</Title>
+                    <Text size="sm" c="dimmed">Selecciona el comprobante de pago que prefieras.</Text>
+                    <Radio.Group
+                      value={form.values.notes?.includes('FACTURA') ? 'factura' : 'boleta'}
+                      onChange={(val) => {
+                        const currentNotes = form.values.notes || '';
+                        const newNotes = val === 'factura'
+                          ? currentNotes + ' [REQUIERE FACTURA]'
+                          : currentNotes.replace(' [REQUIERE FACTURA]', '');
+                        form.setFieldValue('notes', newNotes);
+                      }}
+                    >
+                      <Group>
+                        <Radio value="boleta" label="Boleta" color={primaryColor} />
+                        <Radio value="factura" label="Factura" color={primaryColor} />
+                      </Group>
+                    </Radio.Group>
+                  </Stack>
+
+                  <Divider my="xl" />
+                  {/* Medio de Pago */}
+                  <Title order={3} size="h4">Medio de pago</Title>
+
+                  <Radio.Group
+                    value={paymentMethod}
+                    onChange={(val) => setPaymentMethod(val as 'card' | 'yape' | 'plin')}
+                  >
+                    <Stack gap="md">
+                      {/* Opción 1: Tarjeta */}
+                      <Paper withBorder p="md" radius="md" style={{ borderColor: paymentMethod === 'card' ? primaryColor : undefined }}>
+                        <Stack gap="md">
+                          <Radio
+                            value="card"
+                            label="Pagar con una tarjeta de crédito o débito"
+                            color={primaryColor}
+                          />
+
+                          {paymentMethod === 'card' && (
+                            <>
+                              {/* Logos Tarjetas */}
+                              <Group gap="xs" ms="xl">
+                                {['Visa', 'Mastercard', 'Amex'].map(card => (
+                                  <Badge key={card} variant="outline" color="gray" size="lg" radius="sm">{card}</Badge>
+                                ))}
+                              </Group>
+
+                              {/* Formulario Tarjeta */}
+                              <Stack gap="sm" ms="xl">
+                                <TextInput
+                                  label="Número de Tarjeta"
+                                  placeholder="0000 0000 0000 0000"
+                                  required
+                                  leftSection={<IconCreditCard size={16} />}
+                                />
+                                <Group grow>
+                                  <TextInput label="Expiración (mes/año)" placeholder="MM/AA" required />
+                                  <TextInput label="CVV" placeholder="123" required />
+                                </Group>
+                                <TextInput label="Titular de la Tarjeta" placeholder="Como figura en la tarjeta" required />
+
+                                <Button
+                                  size="xl"
+                                  mt="md"
+                                  onClick={handleSubmit}
+                                  loading={createOrderMutation.isPending}
+                                  leftSection={<IconShoppingCart size={20} />}
+                                  color={primaryColor}
+                                >
+                                  Pagar {formatCurrency(total)}
+                                </Button>
+
+                                <Stack gap="xs">
+                                  <Text size="sm" fw={500}>¿Cómo pagar con Tarjeta de crédito o débito?</Text>
+                                  <Group gap="xs" align="center">
+                                    <IconArrowRight size={14} />
+                                    <Text size="xs" c="dimmed">Asegúrate de haber ingresado el código de seguridad (CVV) correctamente.</Text>
+                                  </Group>
+                                </Stack>
+                              </Stack>
+
+                            </>
+                          )}
+                        </Stack>
+                      </Paper>
+
+                      {/* Opción 2: Yape */}
+                      <Paper withBorder p="md" radius="md" style={{ borderColor: paymentMethod === 'yape' ? '#74007d' : undefined }}>
+                        <Stack gap="md">
+                          <Radio
+                            value="yape"
+                            label={<Text fw={600} style={{ color: '#74007d' }}>Pago con Yape</Text>}
+                            color="#74007d"
+                          />
+
+                          {paymentMethod === 'yape' && (
+                            <Stack ms="xl">
+                              <Group grow>
+                                <TextInput
+                                  placeholder="Celular de Yape"
+                                  size="md"
+                                  value={paymentPhone}
+                                  onChange={(e) => setPaymentPhone(e.currentTarget.value)}
+                                />
+                                <TextInput
+                                  placeholder="Código de Aprobación"
+                                  size="md"
+                                  value={paymentTransactionId}
+                                  onChange={(e) => setPaymentTransactionId(e.currentTarget.value)}
+                                />
+                              </Group>
+
+                              <Button
+                                size="xl"
+                                color="#74007d"
+                                onClick={handleSubmit}
+                                loading={createOrderMutation.isPending}
+                              >
+                                Pagar {formatCurrency(total)}
+                              </Button>
+
+                              <Stack gap="xs">
+                                <Text size="sm" fw={500}>¿Dónde encontrar tu Código de Aprobación?</Text>
+                                <Group gap="xs" align="start">
+                                  <IconArrowRight size={14} style={{ marginTop: 4 }} />
+                                  <Text size="xs" c="dimmed">
+                                    Luego de abrir tu aplicación de Yape, encontrarás el ícono de Código de Aprobación en la parte superior.
+                                  </Text>
+                                </Group>
+                              </Stack>
+                            </Stack>
+                          )}
+                        </Stack>
+                      </Paper>
+
+                      {/* Opción 3: Plin */}
+                      <Paper withBorder p="md" radius="md" style={{ borderColor: paymentMethod === 'plin' ? '#00c7b1' : undefined }}>
+                        <Stack gap="md">
+                          <Radio
+                            value="plin"
+                            label={<Text fw={600} style={{ color: '#00c7b1' }}>Pago con Plin</Text>}
+                            color="#00c7b1"
+                          />
+
+                          {paymentMethod === 'plin' && (
+                            <Stack ms="xl">
+                              <Group grow>
+                                <TextInput
+                                  placeholder="Celular de Plin"
+                                  size="md"
+                                  value={paymentPhone}
+                                  onChange={(e) => setPaymentPhone(e.currentTarget.value)}
+                                />
+                                <TextInput
+                                  placeholder="Código de Aprobación"
+                                  size="md"
+                                  value={paymentTransactionId}
+                                  onChange={(e) => setPaymentTransactionId(e.currentTarget.value)}
+                                />
+                              </Group>
+
+                              <Button
+                                size="xl"
+                                color="#00c7b1"
+                                onClick={handleSubmit}
+                                loading={createOrderMutation.isPending}
+                              >
+                                Pagar {formatCurrency(total)}
+                              </Button>
+                            </Stack>
+                          )}
+                        </Stack>
+                      </Paper>
+                    </Stack>
+                  </Radio.Group>
+                </Paper>
+              </Stepper.Step>
+
+              <Stepper.Completed>
+                <Paper withBorder radius="md" p="xl" mt="xl">
+                  <Stack align="center" py={40}>
+                    <ThemeIcon size={80} radius="xl" color="green" variant="light">
+                      <IconCheck size={48} />
+                    </ThemeIcon>
+                    <Title order={2} ta="center">
+                      ¡Pedido confirmado!
+                    </Title>
+                    <Text c="dimmed" ta="center" maw={400}>
+                      Tu pedido ha sido creado exitosamente. Pronto recibirás un correo con los detalles.
+                    </Text>
+                  </Stack>
+                </Paper>
+              </Stepper.Completed>
+            </Stepper>
+
+            {/* Navigation Buttons */}
+            {active !== 2 ? (
+              <Group justify="space-between" mt="xl">
+                <Button
+                  variant="default"
+                  leftSection={<IconArrowLeft size={16} />}
+                  onClick={prevStep}
+                  disabled={active === 0}
+                >
+                  Anterior
+                </Button>
+
                 <Button
                   rightSection={<IconArrowRight size={16} />}
                   onClick={nextStep}
@@ -349,20 +495,12 @@ export const CheckoutPage = () => {
                 >
                   Siguiente
                 </Button>
-              )}
-
-              {active === 2 && (
-                <Button
-                  onClick={handleSubmit}
-                  loading={createOrderMutation.isPending}
-                  size="lg"
-                  leftSection={<IconShoppingCart size={20} />}
-                  style={{ backgroundColor: secondaryColor }}
-                >
-                  Confirmar Pedido - {formatCurrency(total)}
-                </Button>
-              )}
-            </Group>
+              </Group>
+            ) : (
+              <Button variant="default" onClick={prevStep} leftSection={<IconArrowLeft size={16} />}>
+                Volver / Editar datos
+              </Button>
+            )}
 
             {/* Error Alert */}
             {createOrderMutation.isError && (
@@ -377,7 +515,7 @@ export const CheckoutPage = () => {
             )}
           </Grid.Col>
 
-          {/* Summary */}
+          {/* Right Column: Summary */}
           <Grid.Col span={{ base: 12, md: 4 }}>
             <div style={{ position: 'sticky', top: 80 }}>
               <CheckoutSummary
@@ -386,7 +524,22 @@ export const CheckoutPage = () => {
                 igv={igv}
                 shippingCost={shippingCost}
                 total={total}
+                // @ts-ignore
+                backgroundColor="#f0f9ff"
               />
+
+              <Card withBorder radius="md" mt="md">
+                <Group justify="space-between" mb="xs">
+                  <Text size="lg" fw={600}>Información de Entrega</Text>
+                  {active !== 0 && (
+                    <Button variant="subtle" size="xs" onClick={() => setActive(0)}>Editar</Button>
+                  )}
+                </Group>
+                <Text size="sm" c="dimmed">Envío a domicilio</Text>
+                <Text size="sm">
+                  {form.values.shippingAddress.address ? `${form.values.shippingAddress.address}, ${form.values.shippingAddress.districtName}` : 'No seleccionada'}
+                </Text>
+              </Card>
             </div>
           </Grid.Col>
         </Grid>

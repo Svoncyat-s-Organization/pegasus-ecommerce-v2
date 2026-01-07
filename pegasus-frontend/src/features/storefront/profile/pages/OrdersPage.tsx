@@ -15,12 +15,24 @@ import {
   Divider,
   Box,
   Pagination,
+  Timeline,
+  ThemeIcon,
+  Grid,
+  SimpleGrid,
+  ActionIcon,
 } from '@mantine/core';
 import {
   IconPackage,
   IconEye,
   IconX,
   IconShoppingCart,
+  IconTruck,
+  IconCheck,
+  IconClock,
+  IconCurrencyDollar,
+  IconCreditCard,
+  IconMapPin,
+  IconBuildingStore,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { modals } from '@mantine/modals';
@@ -28,7 +40,7 @@ import { notifications } from '@mantine/notifications';
 import { useMyOrders, useMyOrderDetail, useCancelMyOrder } from '../hooks/useOrders';
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
-import type { OrderSummaryResponse } from '@types';
+import type { OrderSummaryResponse, OrderStatus } from '@types';
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
   PENDING: 'yellow',
@@ -52,16 +64,37 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   REFUNDED: 'Reembolsado',
 };
 
+// Helper to get icon for timeline
+const getStatusIcon = (status: OrderStatus) => {
+  switch (status) {
+    case 'PENDING':
+    case 'AWAIT_PAYMENT':
+      return <IconClock size={16} />;
+    case 'PAID':
+    case 'PROCESSING':
+      return <IconCurrencyDollar size={16} />;
+    case 'SHIPPED':
+      return <IconTruck size={16} />;
+    case 'DELIVERED':
+      return <IconCheck size={16} />;
+    case 'CANCELLED':
+    case 'REFUNDED':
+      return <IconX size={16} />;
+    default:
+      return <IconPackage size={16} />;
+  }
+};
+
 export const OrdersPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  
+
   const { data, isLoading } = useMyOrders(page, 10);
   const { data: orderDetail, isLoading: detailLoading } = useMyOrderDetail(selectedOrderId);
   const cancelOrderMutation = useCancelMyOrder();
   const { getPrimaryColor } = useStorefrontConfigStore();
-  
+
   const primaryColor = getPrimaryColor();
 
   const handleViewOrder = (orderId: number) => {
@@ -110,7 +143,7 @@ export const OrdersPage = () => {
   if (isLoading) {
     return (
       <Center py={100}>
-        <Loader size="lg" />
+        <Loader size="lg" color={primaryColor} />
       </Center>
     );
   }
@@ -119,31 +152,42 @@ export const OrdersPage = () => {
     <Container size="lg" py={40}>
       <Stack gap="xl">
         {/* Header */}
-        <Group justify="space-between">
+        <Group justify="space-between" align="flex-end">
           <div>
             <Title order={2}>Mis Pedidos</Title>
-            <Text c="dimmed">Historial y seguimiento de tus compras</Text>
+            <Text c="dimmed">Historial y seguimiento de tus compras recientes</Text>
           </div>
         </Group>
 
         {/* Orders List */}
         {data?.content && data.content.length > 0 ? (
-          <Card withBorder radius="md" padding={0}>
-            <Table striped highlightOnHover>
-              <Table.Thead>
+          <Card
+            withBorder={false}
+            shadow="sm"
+            radius="md"
+            padding={0}
+            style={{ overflow: 'hidden' }}
+          >
+            <Table verticalSpacing="md" horizontalSpacing="md" striped highlightOnHover>
+              <Table.Thead style={{ backgroundColor: '#f8f9fa' }}>
                 <Table.Tr>
                   <Table.Th>Pedido</Table.Th>
                   <Table.Th>Fecha</Table.Th>
                   <Table.Th>Estado</Table.Th>
                   <Table.Th>Total</Table.Th>
-                  <Table.Th style={{ width: 120 }}>Acciones</Table.Th>
+                  <Table.Th style={{ width: 140 }}>Acciones</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {data.content.map((order) => (
                   <Table.Tr key={order.id}>
                     <Table.Td>
-                      <Text fw={500}>#{order.orderNumber}</Text>
+                      <Group gap="xs">
+                        <ThemeIcon variant="light" color={primaryColor} size="md" radius="md">
+                          <IconPackage size={18} />
+                        </ThemeIcon>
+                        <Text fw={600}>#{order.orderNumber}</Text>
+                      </Group>
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm">{formatDate(order.createdAt)}</Text>
@@ -152,35 +196,39 @@ export const OrdersPage = () => {
                       <Badge
                         color={ORDER_STATUS_COLORS[order.status] || 'gray'}
                         variant="light"
+                        radius="sm"
                       >
                         {ORDER_STATUS_LABELS[order.status] || order.status}
                       </Badge>
                     </Table.Td>
                     <Table.Td>
-                      <Text fw={600} style={{ color: primaryColor }}>
+                      <Text fw={700} style={{ color: primaryColor }}>
                         {formatCurrency(order.total)}
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Group gap="xs">
+                      <Group gap={6}>
                         <Button
-                          variant="subtle"
+                          variant="filled"
+                          color="dark"
                           size="xs"
+                          radius="md"
                           leftSection={<IconEye size={14} />}
                           onClick={() => handleViewOrder(order.id)}
                         >
                           Ver
                         </Button>
                         {['PENDING', 'AWAIT_PAYMENT'].includes(order.status) && (
-                          <Button
+                          <ActionIcon
                             variant="subtle"
                             color="red"
-                            size="xs"
-                            leftSection={<IconX size={14} />}
+                            size="md"
+                            radius="md"
                             onClick={() => handleCancelOrder(order)}
+                            title="Cancelar Pedido"
                           >
-                            Cancelar
-                          </Button>
+                            <IconX size={18} />
+                          </ActionIcon>
                         )}
                       </Group>
                     </Table.Td>
@@ -190,22 +238,26 @@ export const OrdersPage = () => {
             </Table>
 
             {data.totalPages > 1 && (
-              <Box p="md" style={{ borderTop: '1px solid #e9ecef' }}>
+              <Box p="md" style={{ borderTop: '1px solid #f1f3f5' }}>
                 <Group justify="center">
                   <Pagination
                     value={page + 1}
                     onChange={(p) => setPage(p - 1)}
                     total={data.totalPages}
+                    color={primaryColor}
+                    radius="md"
                   />
                 </Group>
               </Box>
             )}
           </Card>
         ) : (
-          <Card withBorder radius="md" padding="xl">
+          <Card withBorder radius="md" padding="xl" shadow="sm">
             <Center py={60}>
               <Stack align="center" gap="md">
-                <IconPackage size={64} color="#adb5bd" />
+                <ThemeIcon size={80} radius="circle" variant="light" color="gray">
+                  <IconPackage size={48} />
+                </ThemeIcon>
                 <Title order={3} c="dimmed">No tienes pedidos</Title>
                 <Text c="dimmed" ta="center" maw={400}>
                   Aún no has realizado ninguna compra. Explora nuestro catálogo
@@ -215,6 +267,8 @@ export const OrdersPage = () => {
                   leftSection={<IconShoppingCart size={18} />}
                   onClick={() => navigate('/products')}
                   style={{ backgroundColor: primaryColor }}
+                  size="md"
+                  radius="md"
                 >
                   Explorar Productos
                 </Button>
@@ -228,68 +282,161 @@ export const OrdersPage = () => {
       <Modal
         opened={!!selectedOrderId}
         onClose={() => setSelectedOrderId(null)}
-        title={`Pedido #${orderDetail?.orderNumber || ''}`}
-        size="lg"
+        title={
+          <Group gap="xs">
+            <IconPackage size={20} color={primaryColor} />
+            <Text fw={700} size="lg">Pedido #{orderDetail?.orderNumber || ''}</Text>
+          </Group>
+        }
+        size="xl"
+        padding="xl"
+        radius="md"
+        centered
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
       >
         {detailLoading ? (
-          <Center py={40}>
-            <Loader />
+          <Center py={60}>
+            <Loader color={primaryColor} />
           </Center>
         ) : orderDetail ? (
-          <Stack gap="md">
-            <Group justify="space-between">
-              <Badge
-                color={ORDER_STATUS_COLORS[orderDetail.status] || 'gray'}
-                variant="light"
-                size="lg"
-              >
-                {ORDER_STATUS_LABELS[orderDetail.status] || orderDetail.status}
-              </Badge>
-              <Text size="sm" c="dimmed">
-                {formatDate(orderDetail.createdAt)}
-              </Text>
-            </Group>
+          <Grid gutter="xl">
+            {/* Left Column: Details */}
+            <Grid.Col span={{ base: 12, md: 8 }}>
+              <Stack gap="lg">
+                <Card withBorder radius="md" padding="md">
+                  <Group justify="space-between" mb="sm">
+                    <Text fw={600} size="lg">Productos</Text>
+                    <Badge
+                      color={ORDER_STATUS_COLORS[orderDetail.status]}
+                      variant="filled"
+                      size="lg"
+                      radius="md"
+                    >
+                      {ORDER_STATUS_LABELS[orderDetail.status]}
+                    </Badge>
+                  </Group>
+                  <Divider mb="md" />
+                  <Stack gap="md">
+                    {orderDetail.items.map((item) => (
+                      <Group key={item.id} justify="space-between" align="flex-start" wrap="nowrap">
+                        <Group gap="sm" style={{ flex: 1 }}>
+                          <ThemeIcon variant="light" color="gray" size="lg" radius="md">
+                            <IconPackage size={24} />
+                          </ThemeIcon>
+                          <div>
+                            <Text size="sm" fw={600} lineClamp={2}>
+                              {item.productName}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              SKU: {item.sku}
+                            </Text>
+                          </div>
+                        </Group>
+                        <div style={{ textAlign: 'right' }}>
+                          <Text size="sm" fw={500}>
+                            {item.quantity} x {formatCurrency(item.unitPrice)}
+                          </Text>
+                          <Text fw={700} style={{ color: primaryColor }}>
+                            {formatCurrency(item.total)}
+                          </Text>
+                        </div>
+                      </Group>
+                    ))}
+                  </Stack>
 
-            <Divider />
+                  <Divider my="md" />
 
-            <Title order={5}>Productos</Title>
-            <Stack gap="xs">
-              {orderDetail.items.map((item) => (
-                <Group key={item.id} justify="space-between" wrap="nowrap">
-                  <div style={{ flex: 1 }}>
-                    <Text size="sm" fw={500} lineClamp={1}>
-                      {item.productName}
+                  <Group justify="space-between">
+                    <Text size="lg" fw={700}>Total</Text>
+                    <Text size="xl" fw={800} style={{ color: primaryColor }}>
+                      {formatCurrency(orderDetail.total)}
                     </Text>
-                    <Text size="xs" c="dimmed">
-                      SKU: {item.sku} | Cantidad: {item.quantity}
-                    </Text>
-                  </div>
-                  <Text size="sm" fw={600}>
-                    {formatCurrency(item.total)}
-                  </Text>
-                </Group>
-              ))}
-            </Stack>
+                  </Group>
+                </Card>
 
-            <Divider />
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  {/* Shipping Address */}
+                  <Card withBorder radius="md" padding="md">
+                    <Group mb="xs" gap="xs">
+                      <IconMapPin size={18} color={primaryColor} />
+                      <Text fw={600}>Dirección de Envío</Text>
+                    </Group>
+                    <Text size="sm" lh={1.5}>{orderDetail.shippingAddress.address}</Text>
+                    {orderDetail.shippingAddress.reference && (
+                      <Text size="xs" c="dimmed" mt={4}>
+                        Ref: {orderDetail.shippingAddress.reference}
+                      </Text>
+                    )}
 
-            <Group justify="space-between">
-              <Text size="lg" fw={700}>Total</Text>
-              <Text size="lg" fw={700} style={{ color: primaryColor }}>
-                {formatCurrency(orderDetail.total)}
-              </Text>
-            </Group>
+                    {orderDetail.shippingAddress.recipientName && (
+                      <Text size="xs" c="dimmed" mt={4}>
+                        {orderDetail.shippingAddress.recipientName}
+                        {orderDetail.shippingAddress.recipientPhone ? ` - ${orderDetail.shippingAddress.recipientPhone}` : ''}
+                      </Text>
+                    )}
 
-            <Divider />
+                  </Card>
 
-            <Title order={5}>Dirección de Envío</Title>
-            <Card withBorder radius="sm" padding="sm" style={{ backgroundColor: '#fafafa' }}>
-              <Text size="sm">{orderDetail.shippingAddress.address}</Text>
-              {orderDetail.shippingAddress.reference && (
-                <Text size="xs" c="dimmed">Ref: {orderDetail.shippingAddress.reference}</Text>
-              )}
-            </Card>
-          </Stack>
+                  {/* Billing Address */}
+                  {orderDetail.billingAddress && (
+                    <Card withBorder radius="md" padding="md">
+                      <Group mb="xs" gap="xs">
+                        <IconBuildingStore size={18} color={primaryColor} />
+                        <Text fw={600}>Dirección de Facturación</Text>
+                      </Group>
+                      <Text size="sm" lh={1.5}>{orderDetail.billingAddress.address}</Text>
+                    </Card>
+                  )}
+                </SimpleGrid>
+              </Stack>
+            </Grid.Col>
+
+            {/* Right Column: Timeline */}
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <Card withBorder radius="md" padding="md" h="100%">
+                <Title order={5} mb="xl">Historial del Pedido</Title>
+                <Timeline active={orderDetail.statusHistories.length - 1} bulletSize={24} lineWidth={2}>
+                  {orderDetail.statusHistories.map((history) => (
+                    <Timeline.Item
+                      key={history.id}
+                      bullet={getStatusIcon(history.status)}
+                      title={ORDER_STATUS_LABELS[history.status]}
+                      color={ORDER_STATUS_COLORS[history.status]}
+                    >
+                      <Text c="dimmed" size="xs">
+                        {formatDate(history.changedAt, true)}
+                      </Text>
+                      {history.notes && (
+                        <Text size="xs" mt={4}>
+                          {history.notes}
+                        </Text>
+                      )}
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+
+                {/* Cancel Action in Details if possible */}
+                {['PENDING', 'AWAIT_PAYMENT'].includes(orderDetail.status) && (
+                  <Button
+                    fullWidth
+                    color="red"
+                    variant="light"
+                    mt="xl"
+                    leftSection={<IconX size={16} />}
+                    onClick={() => {
+                      handleCancelOrder(orderDetail as any);
+                      setSelectedOrderId(null);
+                    }}
+                  >
+                    Cancelar Pedido
+                  </Button>
+                )}
+              </Card>
+            </Grid.Col>
+          </Grid>
         ) : null}
       </Modal>
     </Container>

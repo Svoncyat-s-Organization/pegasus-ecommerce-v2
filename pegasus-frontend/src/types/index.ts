@@ -871,6 +871,7 @@ export interface OrderResponse {
   billingAddress: Record<string, any>;
   items: OrderItemResponse[];
   statusHistories: OrderStatusHistoryResponse[];
+  shippingMethodId?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -895,39 +896,39 @@ export interface UpdateOrderStatusRequest {
 // ============================================
 // RMA Module Types (Return Merchandise Authorization)
 // ============================================
-export type RmaStatus = 
-  | 'PENDING' 
-  | 'APPROVED' 
-  | 'REJECTED' 
-  | 'IN_TRANSIT' 
-  | 'RECEIVED' 
-  | 'INSPECTING' 
-  | 'REFUNDED' 
-  | 'CLOSED' 
+export type RmaStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'IN_TRANSIT'
+  | 'RECEIVED'
+  | 'INSPECTING'
+  | 'REFUNDED'
+  | 'CLOSED'
   | 'CANCELLED';
 
-export type RmaReason = 
-  | 'DEFECTIVE' 
-  | 'WRONG_ITEM' 
-  | 'NOT_AS_DESCRIBED' 
-  | 'DAMAGED_SHIPPING' 
-  | 'CHANGED_MIND' 
-  | 'SIZE_COLOR' 
-  | 'LATE_DELIVERY' 
+export type RmaReason =
+  | 'DEFECTIVE'
+  | 'WRONG_ITEM'
+  | 'NOT_AS_DESCRIBED'
+  | 'DAMAGED_SHIPPING'
+  | 'CHANGED_MIND'
+  | 'SIZE_COLOR'
+  | 'LATE_DELIVERY'
   | 'OTHER';
 
-export type ItemCondition = 
-  | 'UNOPENED' 
-  | 'OPENED_UNUSED' 
-  | 'USED_LIKE_NEW' 
-  | 'USED_GOOD' 
-  | 'DAMAGED' 
+export type ItemCondition =
+  | 'UNOPENED'
+  | 'OPENED_UNUSED'
+  | 'USED_LIKE_NEW'
+  | 'USED_GOOD'
+  | 'DAMAGED'
   | 'DEFECTIVE';
 
-export type RefundMethod = 
-  | 'ORIGINAL_PAYMENT' 
-  | 'BANK_TRANSFER' 
-  | 'STORE_CREDIT' 
+export type RefundMethod =
+  | 'ORIGINAL_PAYMENT'
+  | 'BANK_TRANSFER'
+  | 'STORE_CREDIT'
   | 'EXCHANGE';
 
 export interface RmaItemResponse {

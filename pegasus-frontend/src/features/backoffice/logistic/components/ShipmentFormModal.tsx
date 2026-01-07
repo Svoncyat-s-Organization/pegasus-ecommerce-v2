@@ -81,17 +81,23 @@ export const ShipmentFormModal = ({
   useEffect(() => {
     if (orderDetail && customerData) {
       setSelectedOrder(orderDetail);
-      
+
       // Limpiar el teléfono (quitar +51 si viene)
       let phoneNumber = customerData.phone || '';
       if (phoneNumber.startsWith('+51')) {
         phoneNumber = phoneNumber.substring(3).trim();
       }
-      
+
       form.setFieldsValue({
         recipientName: orderDetail.customerName,
         recipientPhone: phoneNumber,
+        shippingMethodId: orderDetail.shippingMethodId,
       });
+
+      // Si viene con método de envío pre-asignado, calcular costos automáticamente
+      if (orderDetail.shippingMethodId) {
+        handleShippingMethodChange(orderDetail.shippingMethodId);
+      }
     }
   }, [orderDetail, customerData, form]);
 
@@ -376,7 +382,11 @@ export const ShipmentFormModal = ({
                 showSearch
                 optionFilterProp="label"
                 onChange={handleShippingMethodChange}
-                options={shippingMethodOptions}
+                options={
+                  orderDetail?.shippingMethodId
+                    ? shippingMethodOptions.filter(o => o.value === orderDetail.shippingMethodId)
+                    : shippingMethodOptions
+                }
               >
               </Select>
             </Form.Item>

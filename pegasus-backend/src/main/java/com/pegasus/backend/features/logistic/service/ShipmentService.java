@@ -140,11 +140,14 @@ public class ShipmentService {
                                                 () -> new ResourceNotFoundException(
                                                                 "Orden no encontrada con ID: " + request.getOrderId()));
 
-                // Validar que la orden tiene una factura (requisito previo al envío)
-                if (!invoiceRepository.existsByOrderId(request.getOrderId())) {
-                        throw new BadRequestException(
-                                        "No se puede crear un envío para esta orden. Debe emitirse una factura primero.");
-                }
+                /*
+                 * // Validar que la orden tiene una factura (requisito previo al envío)
+                 * if (!invoiceRepository.existsByOrderId(request.getOrderId())) {
+                 * throw new BadRequestException(
+                 * "No se puede crear un envío para esta orden. Debe emitirse una factura primero."
+                 * );
+                 * }
+                 */
 
                 ShippingMethod shippingMethod = shippingMethodRepository.findById(request.getShippingMethodId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -163,16 +166,21 @@ public class ShipmentService {
                 // (devolución/RMA)
                 // no se debe afectar el estado del pedido.
                 if (request.getShipmentType() == ShipmentType.OUTBOUND) {
-                        log.info("Auto-updating order {} status to PROCESSING after OUTBOUND shipment creation",
-                                        request.getOrderId());
-                        orderService.updateOrderStatus(
-                                        request.getOrderId(),
-                                        OrderStatus.PROCESSING,
-                                        "Envío creado - preparando pedido para despacho");
+                        // Solo pasar a PROCESSING si el pedido ya está PAGADO (PAID)
+                        // Si está PENDING, se queda en PENDING hasta que se pague.
+                        if (order.getStatus() == OrderStatus.PAID) {
+                                log.info("Auto-updating order {} status to PROCESSING after OUTBOUND shipment creation",
+                                                request.getOrderId());
+                                orderService.updateOrderStatus(
+                                                request.getOrderId(),
+                                                OrderStatus.PROCESSING,
+                                                "Envío creado - preparando pedido para despacho");
+                        }
                 }
 
-                log.info("Shipment created successfully with tracking number: {} - Order status: PROCESSING",
-                                saved.getTrackingNumber());
+                log.info("Shipment created successfully with tracking number: {} - Order status: {}",
+                                saved.getTrackingNumber(),
+                                order.getStatus() == OrderStatus.PAID ? "PROCESSING" : order.getStatus());
                 return shipmentMapper.toResponse(saved);
         }
 
