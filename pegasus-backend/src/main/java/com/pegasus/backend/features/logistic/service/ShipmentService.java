@@ -181,8 +181,8 @@ public class ShipmentService {
          * Esto dispara el decremento de stock y actualiza el pedido a SHIPPED
          */
         @Transactional
-        public ShipmentResponse markAsShipped(Long id) {
-                log.info("Marking shipment {} as shipped", id);
+        public ShipmentResponse markAsShipped(Long id, Long userId) {
+                log.info("Marking shipment {} as shipped by user {}", id, userId);
 
                 Shipment shipment = shipmentRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Envío no encontrado con ID: " + id));
@@ -221,7 +221,7 @@ public class ShipmentService {
                                         item.getVariantId(),
                                         item.getQuantity(),
                                         order.getId(),
-                                        null // Sistema automático
+                                        userId // Usuario que marcó el envío como enviado
                         );
                 });
 
