@@ -10,13 +10,13 @@ import {
   Card,
   ThemeIcon,
   SimpleGrid,
+  Image,
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import {
   IconTruck,
   IconShieldCheck,
   IconCreditCard,
-  IconHeadset,
   IconArrowRight,
 } from '@tabler/icons-react';
 import { useFeaturedProducts } from '@features/storefront/catalog';
@@ -28,11 +28,12 @@ import type { CategoryResponse } from '@types';
 export const HomePage = () => {
   const navigate = useNavigate();
   const { data: featuredProducts, isLoading } = useFeaturedProducts(0, 8);
-  const { getPrimaryColor, getStoreName } = useStorefrontConfigStore();
+  const { getPrimaryColor, getStoreName, getHeroImageUrl } = useStorefrontConfigStore();
   const { data: categories } = useCategories();
   
   const primaryColor = getPrimaryColor();
   const storeName = getStoreName();
+  const heroImageUrl = getHeroImageUrl();
 
   const features = [
     {
@@ -49,11 +50,6 @@ export const HomePage = () => {
       icon: IconCreditCard,
       title: 'Pago Fácil',
       description: 'Múltiples métodos de pago disponibles',
-    },
-    {
-      icon: IconHeadset,
-      title: 'Soporte 24/7',
-      description: 'Estamos aquí para ayudarte siempre',
     },
   ];
 
@@ -162,50 +158,50 @@ export const HomePage = () => {
             </Grid.Col>
             
             <Grid.Col span={{ base: 12, md: 5 }} visibleFrom="md">
-              <Box
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: 24,
-                  padding: 32,
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                }}
-              >
-                <Stack gap="md" align="center">
-                  <Text size="xl" fw={700} c="white" ta="center">
-                    Categorías Populares
+              {heroImageUrl ? (
+                <Box
+                  style={{
+                    borderRadius: 24,
+                    overflow: 'hidden',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  <Image
+                    src={heroImageUrl}
+                    alt="Promoción destacada"
+                    radius="lg"
+                    fit="cover"
+                    h={320}
+                  />
+                </Box>
+              ) : (
+                <Box
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: 24,
+                    padding: 48,
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 320,
+                  }}
+                >
+                  <Text size="lg" c="white" ta="center" style={{ opacity: 0.7 }}>
+                    Imagen promocional
                   </Text>
-                  <SimpleGrid cols={2} spacing="sm" style={{ width: '100%' }}>
-                    {categories?.slice(0, 4).map((category: CategoryResponse) => (
-                      <Button
-                        key={category.id}
-                        variant="white"
-                        size="md"
-                        radius="md"
-                        fullWidth
-                        onClick={() => navigate(`/products?category=${category.id}`)}
-                        styles={{
-                          root: {
-                            height: 50,
-                            fontWeight: 500,
-                          },
-                        }}
-                      >
-                        {category.name}
-                      </Button>
-                    ))}
-                  </SimpleGrid>
-                </Stack>
-              </Box>
+                </Box>
+              )}
             </Grid.Col>
           </Grid>
         </Container>
       </Box>
 
       {/* Features Section */}
-      <Box bg="white" py={40}>
+      <Box bg="white" py={40} style={{ display: 'flex', justifyContent: 'center' }}>
         <Container size="xl">
-          <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="xl">
+          <SimpleGrid cols={{ base: 1, xs: 2, md: 3 }} spacing={50}>
             {features.map((feature) => (
               <Group key={feature.title} gap="md" wrap="nowrap">
                 <ThemeIcon
@@ -305,21 +301,40 @@ export const HomePage = () => {
                     className="category-card"
                   >
                     <Stack gap="xs" align="center">
-                      <Box
-                        style={{
-                          width: 60,
-                          height: 60,
-                          borderRadius: '50%',
-                          background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}10 100%)`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text size="xl" fw={700} c={primaryColor}>
-                          {category.name.charAt(0)}
-                        </Text>
-                      </Box>
+                      {category.imageUrl ? (
+                        <Box
+                          style={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <Image
+                            src={category.imageUrl}
+                            alt={category.name}
+                            fit="cover"
+                            h={80}
+                            w={80}
+                          />
+                        </Box>
+                      ) : (
+                        <Box
+                          style={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: '50%',
+                            background: `linear-gradient(135deg, ${primaryColor}20 0%, ${primaryColor}10 100%)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Text size="xl" fw={700} c={primaryColor}>
+                            {category.name.charAt(0)}
+                          </Text>
+                        </Box>
+                      )}
                       <Text size="sm" fw={500}>
                         {category.name}
                       </Text>

@@ -10,6 +10,7 @@ public record StorefrontSettingsResponse(
         String storefrontName,
         String logoUrl,
         String faviconUrl,
+        String heroImageUrl,
         String primaryColor,
         String secondaryColor,
         String termsAndConditions,

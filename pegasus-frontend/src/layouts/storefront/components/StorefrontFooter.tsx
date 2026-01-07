@@ -49,11 +49,11 @@ export const StorefrontFooter = () => {
             <Stack gap="md">
               <Group gap="xs">
                 {logoUrl ? (
-                  <Image src={logoUrl} alt={storeName} h={32} w="auto" style={{ filter: 'brightness(0) invert(1)' }} />
-                ) : (
                   <Image src={logoSvg} alt="Logo" h={32} w="auto" style={{ filter: 'brightness(0) invert(1)' }} />
+                ) : (
+                  <Image src={logoUrl} alt={storeName} h={32} w="auto" style={{ filter: 'brightness(0) invert(1)' }} />
                 )}
-                <Text size="lg" fw={700}>{storeName}</Text>
+                <Text size="lg" fw={700}>{storeName.toUpperCase()}</Text>
               </Group>
               {businessInfo?.businessDescription && (
                 <Text size="sm" c="gray.4" lineClamp={3}>

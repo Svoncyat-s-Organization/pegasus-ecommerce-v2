@@ -12,6 +12,7 @@ interface StorefrontConfigState {
   getSecondaryColor: () => string;
   getStoreName: () => string;
   getLogoUrl: () => string | null;
+  getHeroImageUrl: () => string | null;
 }
 
 export const useStorefrontConfigStore = create<StorefrontConfigState>()((set, get) => ({
@@ -27,4 +28,5 @@ export const useStorefrontConfigStore = create<StorefrontConfigState>()((set, ge
   getSecondaryColor: () => get().settings?.secondaryColor || '#f2f2f2',
   getStoreName: () => get().settings?.storefrontName || 'Pegasus Store',
   getLogoUrl: () => get().settings?.logoUrl || null,
+  getHeroImageUrl: () => get().settings?.heroImageUrl || null,
 }));

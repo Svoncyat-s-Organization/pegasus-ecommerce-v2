@@ -143,6 +143,7 @@ public class CategoryService {
             category.name(),
             category.slug(),
             category.description(),
+            category.imageUrl(),
             category.parentId(),
             category.parentName(),
             category.isActive(),

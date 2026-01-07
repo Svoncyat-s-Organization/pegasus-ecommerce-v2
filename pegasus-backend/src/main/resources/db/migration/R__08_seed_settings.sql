@@ -36,7 +36,7 @@ SELECT setval(pg_get_serial_sequence('business_info', 'id'), 1, true);
 DELETE FROM storefront_settings;
 
 INSERT INTO storefront_settings (
-    id, storefront_name, logo_url, favicon_url,
+    id, storefront_name, logo_url, favicon_url, hero_image_url,
     primary_color, secondary_color,
     terms_and_conditions, privacy_policy, return_policy, shipping_policy,
     support_email, support_phone, whatsapp_number,
@@ -46,6 +46,7 @@ INSERT INTO storefront_settings (
     'Pegasus',
     'https://placehold.co/200x50?text=Pegasus',
     'https://placehold.co/32x32?text=P',
+    'https://placehold.co/800x400?text=Pegasus+Hero',
     '#04213b',
     '#f2f2f2',
     'Términos y condiciones de uso de la plataforma Pegasus...',

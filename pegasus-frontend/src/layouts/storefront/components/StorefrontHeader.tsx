@@ -101,9 +101,9 @@ export const StorefrontHeader = ({
               style={{ display: 'flex', alignItems: 'center', gap: 10 }}
             >
               {logoUrl ? (
-                <Image src={logoUrl} alt={storeName} h={36} w="auto" fit="contain" />
-              ) : (
                 <Image src={logoSvg} alt="Logo" h={36} w="auto" />
+              ) : (
+                <Image src={logoUrl} alt={storeName} h={36} w="auto" fit="contain" />
               )}
               <Text
                 size="lg"
@@ -111,7 +111,7 @@ export const StorefrontHeader = ({
                 style={{ color: primaryColor }}
                 visibleFrom="sm"
               >
-                {storeName}
+                {storeName.toUpperCase()}
               </Text>
             </UnstyledButton>
 

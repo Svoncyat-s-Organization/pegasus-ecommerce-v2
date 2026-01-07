@@ -11,6 +11,7 @@ public record CategoryResponse(
         String name,
         String slug,
         String description,
+        String imageUrl,
         Long parentId,
         String parentName,
         Boolean isActive,
@@ -20,8 +21,8 @@ public record CategoryResponse(
 ) {
     // Constructor sin children para compatibilidad
     public CategoryResponse(Long id, String name, String slug, String description,
-                          Long parentId, String parentName, Boolean isActive,
+                          String imageUrl, Long parentId, String parentName, Boolean isActive,
                           OffsetDateTime createdAt, OffsetDateTime updatedAt) {
-        this(id, name, slug, description, parentId, parentName, isActive, createdAt, updatedAt, null);
+        this(id, name, slug, description, imageUrl, parentId, parentName, isActive, createdAt, updatedAt, null);
     }
 }

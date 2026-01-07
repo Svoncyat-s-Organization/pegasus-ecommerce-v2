@@ -122,6 +122,7 @@ public class SettingsService {
         settings.setStorefrontName(request.storefrontName());
         settings.setLogoUrl(request.logoUrl());
         settings.setFaviconUrl(request.faviconUrl());
+        settings.setHeroImageUrl(request.heroImageUrl());
         settings.setPrimaryColor(request.primaryColor());
         settings.setSecondaryColor(request.secondaryColor());
         settings.setTermsAndConditions(request.termsAndConditions());
@@ -152,6 +153,7 @@ public class SettingsService {
                 settings.getStorefrontName(),
                 settings.getLogoUrl(),
                 settings.getFaviconUrl(),
+                settings.getHeroImageUrl(),
                 settings.getPrimaryColor(),
                 settings.getSecondaryColor(),
                 settings.getTermsAndConditions(),

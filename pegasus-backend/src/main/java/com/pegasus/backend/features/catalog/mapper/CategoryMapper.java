@@ -15,6 +15,7 @@ import java.util.List;
 public interface CategoryMapper {
 
     @Mapping(source = "parent.name", target = "parentName")
+    @Mapping(target = "children", ignore = true)
     CategoryResponse toResponse(Category category);
 
     List<CategoryResponse> toResponseList(List<Category> categories);

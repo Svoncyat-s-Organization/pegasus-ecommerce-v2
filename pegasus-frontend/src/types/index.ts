@@ -585,6 +585,7 @@ export interface CategoryResponse extends BaseEntity {
   name: string;
   slug: string;
   description?: string;
+  imageUrl?: string;
   parentId?: number;
   children?: CategoryResponse[]; // Para estructura jerárquica
 }
@@ -593,6 +594,7 @@ export interface CreateCategoryRequest {
   name: string;
   slug: string;
   description?: string;
+  imageUrl?: string;
   parentId?: number;
 }
 
@@ -600,6 +602,7 @@ export interface UpdateCategoryRequest {
   name?: string;
   slug?: string;
   description?: string;
+  imageUrl?: string;
   parentId?: number;
 }
 
@@ -1371,6 +1374,7 @@ export interface StorefrontSettingsResponse {
   storefrontName: string;
   logoUrl?: string;
   faviconUrl?: string;
+  heroImageUrl?: string;
   primaryColor: string;
   secondaryColor: string;
   termsAndConditions?: string;
@@ -1388,6 +1392,7 @@ export interface UpdateStorefrontSettingsRequest {
   storefrontName: string;
   logoUrl?: string;
   faviconUrl?: string;
+  heroImageUrl?: string;
   primaryColor: string;
   secondaryColor: string;
   termsAndConditions?: string;
