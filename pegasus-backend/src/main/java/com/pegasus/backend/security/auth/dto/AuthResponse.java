@@ -7,9 +7,11 @@ import lombok.Builder;
  */
 @Builder
 public record AuthResponse(
-        String token,
-        String userType, // "ADMIN" o "CUSTOMER"
-        Long userId,
-        String email,
-        Long expiresIn // Milisegundos
-) {}
+                String token,
+                String userType, // "ADMIN" o "CUSTOMER"
+                Long userId,
+                String email,
+                String username,
+                Long expiresIn // Milisegundos
+) {
+}

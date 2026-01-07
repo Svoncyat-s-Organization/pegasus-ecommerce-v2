@@ -51,6 +51,7 @@ public class UserAuthService {
                 .userType("ADMIN")
                 .userId(user.getId())
                 .email(user.getEmail())
+                .username(user.getUsername())
                 .expiresIn(jwtExpirationMs)
                 .build();
     }
