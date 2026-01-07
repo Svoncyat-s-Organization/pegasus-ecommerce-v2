@@ -478,9 +478,6 @@ export const ProductDetailPage = () => {
               >
                 Comprar Ahora
               </Button>
-              <Button size="lg" radius="md" variant="light" color="pink">
-                <IconHeart size={20} />
-              </Button>
             </Group>
 
             {/* No Variant Selected Warning */}
@@ -489,36 +486,6 @@ export const ProductDetailPage = () => {
                 Selecciona las opciones del producto para ver el precio y stock.
               </Alert>
             )}
-
-            <Divider />
-
-            {/* Trust Badges */}
-            <Group gap="xl" justify="center">
-              <Stack gap={4} align="center">
-                <ThemeIcon size="lg" variant="light" color="gray" radius="xl">
-                  <IconTruck size={18} />
-                </ThemeIcon>
-                <Text size="xs" c="dimmed" ta="center">
-                  Envío rápido
-                </Text>
-              </Stack>
-              <Stack gap={4} align="center">
-                <ThemeIcon size="lg" variant="light" color="gray" radius="xl">
-                  <IconShieldCheck size={18} />
-                </ThemeIcon>
-                <Text size="xs" c="dimmed" ta="center">
-                  Compra segura
-                </Text>
-              </Stack>
-              <Stack gap={4} align="center">
-                <ThemeIcon size="lg" variant="light" color="gray" radius="xl">
-                  <IconRefresh size={18} />
-                </ThemeIcon>
-                <Text size="xs" c="dimmed" ta="center">
-                  Devolución fácil
-                </Text>
-              </Stack>
-            </Group>
           </Stack>
         </Grid.Col>
       </Grid>

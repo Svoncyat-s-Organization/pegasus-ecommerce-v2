@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -80,6 +81,7 @@ public class RecommendationService {
 
     /**
      * Get AI-based recommendations using cosine similarity of embeddings.
+     * Filters by same category first to ensure relevant recommendations.
      */
     private List<RecommendationItem> getAIRecommendations(Product sourceProduct, int limit) {
         float[] sourceEmbedding = embeddingService.getCachedEmbedding(sourceProduct.getId());
@@ -95,14 +97,25 @@ public class RecommendationService {
             }
         }
 
-        // Calculate similarity with all cached embeddings
+        // Get products from SAME CATEGORY only for relevant recommendations
+        List<Product> sameCategoryProducts = sourceProduct.getCategoryId() != null
+                ? productRepository.findActiveByCategoryId(sourceProduct.getCategoryId(), PageRequest.of(0, 50)).getContent()
+                : Collections.emptyList();
+
+        // Calculate similarity only with products in same category
         Map<Long, float[]> allEmbeddings = embeddingService.getAllCachedEmbeddings();
         List<Map.Entry<Long, Double>> similarities = new ArrayList<>();
 
+        Set<Long> sameCategoryIds = sameCategoryProducts.stream()
+                .map(Product::getId)
+                .collect(Collectors.toSet());
+
         for (Map.Entry<Long, float[]> entry : allEmbeddings.entrySet()) {
             Long productId = entry.getKey();
-            if (productId.equals(sourceProduct.getId())) {
-                continue; // Skip the source product itself
+            
+            // Skip source product and products NOT in same category
+            if (productId.equals(sourceProduct.getId()) || !sameCategoryIds.contains(productId)) {
+                continue;
             }
 
             double similarity = cosineSimilarity(sourceEmbedding, entry.getValue());
@@ -199,6 +212,7 @@ public class RecommendationService {
      *
      * @return Map with statistics about the reindexing
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> reindexEmbeddings() {
         if (!embeddingService.isEnabled()) {
             return Map.of(

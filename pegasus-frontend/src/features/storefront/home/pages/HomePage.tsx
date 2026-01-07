@@ -440,46 +440,6 @@ export const HomePage = () => {
           </Container>
         </Box>
       )}
-
-      {/* CTA Section */}
-      <Box
-        py={60}
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor} 0%, ${adjustColor(primaryColor, -0.2)} 100%)`,
-        }}
-      >
-        <Container size="md">
-          <Stack gap="lg" align="center" ta="center">
-            <Title order={2} size={36} c="white">
-              ¿Listo para comprar?
-            </Title>
-            <Text size="lg" c="white" style={{ opacity: 0.9 }} maw={500}>
-              Regístrate ahora y recibe ofertas exclusivas en tu correo.
-              ¡No te pierdas nuestras promociones!
-            </Text>
-            <Group gap="md" mt="md">
-              <Button
-                size="lg"
-                variant="white"
-                color="dark"
-                radius="xl"
-                onClick={() => navigate('/register')}
-              >
-                Crear Cuenta
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                color="white"
-                radius="xl"
-                onClick={() => navigate('/products')}
-              >
-                Explorar Tienda
-              </Button>
-            </Group>
-          </Stack>
-        </Container>
-      </Box>
     </Box>
   );
 };
