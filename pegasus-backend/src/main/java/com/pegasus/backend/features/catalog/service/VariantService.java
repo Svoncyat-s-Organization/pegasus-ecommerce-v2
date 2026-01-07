@@ -9,6 +9,7 @@ import com.pegasus.backend.features.catalog.entity.Variant;
 import com.pegasus.backend.features.catalog.mapper.VariantMapper;
 import com.pegasus.backend.features.catalog.repository.ProductRepository;
 import com.pegasus.backend.features.catalog.repository.VariantRepository;
+import com.pegasus.backend.features.inventory.repository.StockRepository;
 import com.pegasus.backend.features.inventory.service.StockService;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class VariantService {
     private final ProductRepository productRepository;
     private final VariantMapper variantMapper;
     private final StockService stockService;
+    private final StockRepository stockRepository;
 
     /**
      * Obtener todas las variantes con paginación y búsqueda opcional
