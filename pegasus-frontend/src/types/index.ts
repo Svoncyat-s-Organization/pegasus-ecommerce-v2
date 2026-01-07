@@ -652,6 +652,14 @@ export interface VariantResponse extends BaseEntity {
   attributes: Record<string, unknown>;
 }
 
+export interface VariantWithStockResponse extends BaseEntity {
+  productId: number;
+  sku: string;
+  price: number;
+  attributes: Record<string, unknown>;
+  availableStock: number;
+}
+
 export interface CreateVariantRequest {
   productId: number;
   sku: string;

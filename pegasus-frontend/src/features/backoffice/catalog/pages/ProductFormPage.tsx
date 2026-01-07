@@ -50,10 +50,11 @@ export const ProductFormPage = () => {
       if (isEdit && productId) {
         await updateMutation.mutateAsync({ id: productId, request: values as UpdateProductRequest });
         message.success('Producto actualizado exitosamente');
+        navigate('/admin/catalog/products');
       } else {
-        const newProduct = await createMutation.mutateAsync(values as CreateProductRequest);
+        await createMutation.mutateAsync(values as CreateProductRequest);
         message.success('Producto creado exitosamente');
-        navigate(`/admin/catalog/products/${newProduct.id}/edit`);
+        navigate('/admin/catalog/products');
       }
     } catch {
       // Error ya manejado por el hook

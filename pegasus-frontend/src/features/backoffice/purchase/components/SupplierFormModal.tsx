@@ -121,59 +121,36 @@ export const SupplierFormModal = ({ open, mode, supplierId, onCancel }: Supplier
       confirmLoading={isSubmitting}
       okButtonProps={{ disabled: mode === 'edit' && isLoadingSupplier }}
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" initialValues={{ docType: 'RUC' }}>
         <Row gutter={16}>
-          <Col span={8}>
+          <Col span={24}>
             <Form.Item
-              label="Tipo de documento"
-              name="docType"
-              rules={[{ required: true, message: 'Seleccione el tipo de documento' }]}
-            >
-              <Select placeholder="Seleccione" disabled={mode === 'edit' && isLoadingSupplier}>
-                <Option value="DNI">DNI</Option>
-                <Option value="RUC">RUC</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col span={16}>
-            <Form.Item
-              label="Número de documento"
+              label="RUC"
               name="docNumber"
-              dependencies={['docType']}
               rules={[
-                { required: true, message: 'Ingrese el número de documento' },
-                ({ getFieldValue }) => ({
+                { required: true, message: 'Ingrese el RUC' },
+                {
                   validator: async (_, value: string) => {
-                    const docType = getFieldValue('docType') as SupplierDocumentType | undefined;
-                    if (!docType || !value) return;
-
-                    if (!isValidSupplierDoc(docType, value)) {
-                      throw new Error(
-                        docType === 'DNI'
-                          ? 'DNI debe tener 8 dígitos'
-                          : 'RUC debe tener 11 dígitos'
-                      );
+                    if (!value) return;
+                    if (!/^\d{11}$/.test(value.trim())) {
+                      throw new Error('RUC debe tener 11 dígitos');
                     }
                   },
-                }),
+                },
               ]}
             >
               <Input
-                placeholder={
-                  (Form.useWatch('docType', form) === 'DNI')
-                    ? 'Ej: 12345678'
-                    : 'Ej: 20123456789'
-                }
-                maxLength={
-                  (Form.useWatch('docType', form) === 'DNI') ? 8 : 11
-                }
+                placeholder="Ej: 20123456789"
+                maxLength={11}
                 onKeyPress={(event) => {
                   if (!/[0-9]/.test(event.key)) {
                     event.preventDefault();
                   }
                 }}
               />
+            </Form.Item>
+            <Form.Item name="docType" hidden initialValue="RUC">
+              <Input />
             </Form.Item>
           </Col>
         </Row>
