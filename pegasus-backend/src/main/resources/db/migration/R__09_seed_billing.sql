@@ -8,14 +8,9 @@
 DELETE FROM payment_methods;
 
 INSERT INTO payment_methods (name, is_active) VALUES
-('Efectivo', true),
-('Tarjeta de Crédito', true),
-('Tarjeta de Débito', true),
-('Transferencia Bancaria', true),
+('Tarjeta', true),
 ('Yape', true),
-('Plin', true),
-('PayPal', true),
-('MercadoPago', false);
+('Plin', true);
 
 -- Document Series (billing configuration)
 DELETE FROM document_series;
@@ -27,8 +22,6 @@ INSERT INTO document_series (document_type, series, current_number, is_active) V
 
 -- Facturas (for businesses with RUC)  
 ('INVOICE', 'F001', 0, true),
-('INVOICE', 'F002', 0, false),
+('INVOICE', 'F002', 0, false);
 
--- Notas de Crédito
-('CREDIT_NOTE', 'BC01', 0, true),
-('CREDIT_NOTE', 'FC01', 0, true);
+

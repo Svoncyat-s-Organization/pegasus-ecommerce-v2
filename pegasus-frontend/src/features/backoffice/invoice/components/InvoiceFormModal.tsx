@@ -1,5 +1,5 @@
 import { Button, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, message } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CreateInvoiceRequest, DocumentSeriesResponse, InvoiceType, OrderSummaryResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { INVOICE_TYPE_LABEL } from '../constants/billingConstants';
@@ -7,6 +7,20 @@ import { useCreateBillingInvoice } from '../hooks/useBillingMutations';
 import { useAdminOrders } from '../hooks/useAdminOrders';
 import { useInvoicedOrderIds } from '../hooks/useBillingInvoices';
 import { useBillingDocumentSeries } from '../hooks/useBillingDocumentSeries';
+
+type ReceiverDocKind = 'DNI' | 'CE' | 'RUC' | 'UNKNOWN';
+const inferReceiverDocKind = (docType?: string, docNumber?: string): ReceiverDocKind => {
+  const safeType = String(docType || '').trim().toUpperCase();
+  if (safeType === 'DNI') return 'DNI';
+  if (safeType === 'CE') return 'CE';
+  if (safeType === 'RUC') return 'RUC';
+
+  const safeNumber = String(docNumber || '').trim();
+  if (/^\d{8}$/.test(safeNumber)) return 'DNI';
+  if (/^\d{11}$/.test(safeNumber)) return 'RUC';
+  if (/^[A-Za-z0-9]{9,12}$/.test(safeNumber)) return 'CE';
+  return 'UNKNOWN';
+};
 
 type InitialOrderInfo = {
   id: number;
@@ -34,7 +48,6 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
   const { data: ordersData, isLoading: isLoadingOrders } = useAdminOrders(0, 20, debouncedOrderSearch || undefined);
 
   const isOrderLocked = !!initialOrder && lockOrder !== false;
-  const [selectedOrder, setSelectedOrder] = useState<OrderSummaryResponse | undefined>(undefined);
 
   const { data: documentSeriesData, isLoading: isLoadingSeries } = useBillingDocumentSeries(0, 200);
 
@@ -123,17 +136,33 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
   const selectedSeries = typeof seriesId === 'number' ? seriesById.get(seriesId) : undefined;
   const autoNumberPreview = selectedSeries ? padInvoiceNumber((selectedSeries.currentNumber || 0) + 1) : undefined;
 
-  const applySelectedOrderToForm = (order: OrderSummaryResponse | undefined) => {
-    setSelectedOrder(order);
+  const applySelectedOrderToForm = useCallback((order: OrderSummaryResponse | undefined) => {
     if (!order) return;
     form.setFieldsValue({
+      orderCustomerName: order.customerName,
+      orderCustomerDocType: order.customerDocType,
+      orderCustomerDocNumber: order.customerDocNumber || undefined,
       receiverName: order.customerName,
       receiverTaxId: order.customerDocNumber || undefined,
+      receiverBusinessName: undefined,
+      receiverRuc: undefined,
+      receiverDni: undefined,
+      receiverPersonalName: undefined,
       totalAmount: order.total,
       subtotal: order.total,
       taxAmount: 0,
     });
-  };
+  }, [form]);
+
+  const orderCustomerDocType = Form.useWatch<string | undefined>('orderCustomerDocType', form);
+  const orderCustomerDocNumber = Form.useWatch<string | undefined>('orderCustomerDocNumber', form);
+  const orderCustomerName = Form.useWatch<string | undefined>('orderCustomerName', form);
+  const receiverDocKind = useMemo<ReceiverDocKind>(() => {
+    return inferReceiverDocKind(orderCustomerDocType, orderCustomerDocNumber);
+  }, [orderCustomerDocType, orderCustomerDocNumber]);
+
+  const mustEnterCompanyReceiver = invoiceType === 'INVOICE' && receiverDocKind !== 'RUC';
+  const mustEnterPersonalReceiver = invoiceType === 'BILL' && receiverDocKind === 'RUC';
 
   // If opened with a preselected order, auto-fill when it appears in the eligible list.
   useEffect(() => {
@@ -142,17 +171,29 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
     const order = ordersById.get(initialOrder.id);
     if (!order) return;
     applySelectedOrderToForm(order);
-  }, [open, initialOrder, ordersById]);
+  }, [open, initialOrder, ordersById, applySelectedOrderToForm]);
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
+
+    const receiverTaxId = mustEnterCompanyReceiver
+      ? String(values.receiverRuc).trim()
+      : mustEnterPersonalReceiver
+        ? String(values.receiverDni).trim()
+        : String(values.receiverTaxId).trim();
+
+    const receiverName = mustEnterCompanyReceiver
+      ? String(values.receiverBusinessName).trim()
+      : mustEnterPersonalReceiver
+        ? String(values.receiverPersonalName).trim()
+        : String(values.receiverName).trim();
 
     const request: CreateInvoiceRequest = {
       orderId: Number(values.orderId),
       invoiceType: values.invoiceType,
       seriesId: Number(values.seriesId),
-      receiverTaxId: String(values.receiverTaxId).trim(),
-      receiverName: String(values.receiverName).trim(),
+      receiverTaxId,
+      receiverName,
       subtotal: Number(values.subtotal),
       taxAmount: Number(values.taxAmount),
       totalAmount: Number(values.totalAmount),
@@ -184,7 +225,6 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
       afterOpenChange={(isOpen) => {
         if (!isOpen) return;
         form.resetFields();
-        setSelectedOrder(undefined);
         setOrderSearchTerm(initialOrder?.orderNumber ?? '');
         if (initialOrder) {
           form.setFieldsValue({ orderId: initialOrder.id });
@@ -194,6 +234,16 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
       destroyOnClose
     >
       <Form form={form} layout="vertical">
+        <Form.Item name="orderCustomerName" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="orderCustomerDocType" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="orderCustomerDocNumber" hidden>
+          <Input />
+        </Form.Item>
+
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="orderId" label="Pedido" rules={[{ required: true, message: 'Selecciona un pedido' }]}>
@@ -222,7 +272,13 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
               <Select
                 placeholder="Seleccione"
                 onChange={() => {
-                  form.setFieldsValue({ seriesId: undefined });
+                  form.setFieldsValue({
+                    seriesId: undefined,
+                    receiverBusinessName: undefined,
+                    receiverRuc: undefined,
+                    receiverDni: undefined,
+                    receiverPersonalName: undefined,
+                  });
                 }}
                 options={availableInvoiceTypes.map((type) => ({ value: type, label: INVOICE_TYPE_LABEL[type] }))}
               />
@@ -256,29 +312,85 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
         </Row>
 
         <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="receiverTaxId"
-              label="Documento receptor"
-              rules={[{ required: true, message: 'Ingresa el documento del receptor' }]}
-            >
-              <Input
-                placeholder="12345678"
-                maxLength={20}
-                addonBefore={selectedOrder?.customerDocType || undefined}
-                disabled={!!selectedOrder?.customerDocNumber}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              name="receiverName"
-              label="Nombre receptor"
-              rules={[{ required: true, message: 'Ingresa el nombre del receptor' }]}
-            >
-              <Input placeholder="Juan Pérez" maxLength={150} disabled={!!selectedOrder?.customerName} />
-            </Form.Item>
-          </Col>
+          {mustEnterCompanyReceiver && (
+            <>
+              <Col span={12}>
+                <Form.Item
+                  name="receiverRuc"
+                  label="RUC"
+                  rules={[
+                    { required: true, message: 'Ingresa el RUC' },
+                    { pattern: /^\d{11}$/, message: 'El RUC debe tener 11 dígitos' },
+                  ]}
+                >
+                  <Input placeholder="20601234567" maxLength={11} addonBefore="RUC" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="receiverBusinessName"
+                  label="Razón social"
+                  rules={[{ required: true, message: 'Ingresa la razón social' }]}
+                >
+                  <Input placeholder="EMPRESA SAC" maxLength={150} />
+                </Form.Item>
+              </Col>
+            </>
+          )}
+
+          {mustEnterPersonalReceiver && (
+            <>
+              <Col span={12}>
+                <Form.Item
+                  name="receiverDni"
+                  label="DNI"
+                  rules={[
+                    { required: true, message: 'Ingresa el DNI' },
+                    { pattern: /^\d{8}$/, message: 'El DNI debe tener 8 dígitos' },
+                  ]}
+                >
+                  <Input placeholder="12345678" maxLength={8} addonBefore="DNI" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="receiverPersonalName"
+                  label="Nombre"
+                  rules={[{ required: true, message: 'Ingresa el nombre' }]}
+                >
+                  <Input placeholder="Juan Pérez" maxLength={150} />
+                </Form.Item>
+              </Col>
+            </>
+          )}
+
+          {!mustEnterCompanyReceiver && !mustEnterPersonalReceiver && (
+            <>
+              <Col span={12}>
+                <Form.Item
+                  name="receiverTaxId"
+                  label="Documento receptor"
+                  rules={[{ required: true, message: 'Ingresa el documento del receptor' }]}
+                >
+                  <Input
+                    placeholder="12345678"
+                    maxLength={20}
+                    addonBefore={receiverDocKind === 'UNKNOWN' ? undefined : receiverDocKind}
+                    disabled={!!orderCustomerDocNumber}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="receiverName"
+                  label="Nombre receptor"
+                  rules={[{ required: true, message: 'Ingresa el nombre del receptor' }]}
+                >
+                  <Input placeholder="Juan Pérez" maxLength={150} disabled={!!orderCustomerName} />
+                </Form.Item>
+              </Col>
+            </>
+          )}
         </Row>
 
         <Row gutter={16}>
@@ -289,13 +401,19 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
                 min={0}
                 step={0.01}
                 placeholder="0.00"
-                disabled={!!selectedOrder}
+                disabled={!!orderCustomerName || !!orderCustomerDocNumber}
               />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="taxAmount" label="IGV" rules={[{ required: true, message: 'Ingresa el IGV' }]}>
-              <InputNumber style={{ width: '100%' }} min={0} step={0.01} placeholder="0.00" disabled={!!selectedOrder} />
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                step={0.01}
+                placeholder="0.00"
+                disabled={!!orderCustomerName || !!orderCustomerDocNumber}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -305,7 +423,7 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
                 min={0.01}
                 step={0.01}
                 placeholder="0.00"
-                disabled={!!selectedOrder}
+                disabled={!!orderCustomerName || !!orderCustomerDocNumber}
               />
             </Form.Item>
           </Col>
