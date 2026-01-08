@@ -12,7 +12,6 @@ import {
   Center,
   Paper,
   Box,
-  ThemeIcon,
   Breadcrumbs,
   Anchor,
   Skeleton,
@@ -20,30 +19,64 @@ import {
 } from '@mantine/core';
 import {
   IconShoppingCart,
-  IconHeart,
-  IconTruck,
-  IconShieldCheck,
-  IconRefresh,
   IconCheck,
   IconX,
   IconMinus,
   IconPlus,
   IconChevronRight,
   IconPackage,
+  IconBrandWhatsapp,
 } from '@tabler/icons-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useProductDetail } from '../hooks/useProductDetail';
 import {
   useProductVariants,
   useProductImages,
   useVariantStock,
+  useVariantImages,
 } from '../hooks/useProductVariants';
 import { useCartStore } from '@features/storefront/cart';
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { formatCurrency } from '@shared/utils/formatters';
 import { notifications } from '@mantine/notifications';
 import { ProductRecommendations } from '../components/ProductRecommendations';
+
+/**
+ * Formats a technical key name into a human-readable display name.
+ * Examples: "screen_size" -> "Pantalla", "ram" -> "RAM", "storage" -> "Almacenamiento"
+ */
+const formatAttributeName = (key: string): string => {
+  // Common Spanish translations for typical attribute names
+  const translations: Record<string, string> = {
+    color: 'Color',
+    size: 'Talla',
+    storage: 'Almacenamiento',
+    ram: 'RAM',
+    screen: 'Pantalla',
+    screen_size: 'Tamaño de Pantalla',
+    processor: 'Procesador',
+    battery: 'Batería',
+    camera: 'Cámara',
+    weight: 'Peso',
+    material: 'Material',
+    capacity: 'Capacidad',
+    memory: 'Memoria',
+    display: 'Display',
+    resolution: 'Resolución',
+    connectivity: 'Conectividad',
+  };
+
+  const lowerKey = key.toLowerCase();
+  if (translations[lowerKey]) {
+    return translations[lowerKey];
+  }
+
+  // Fallback: capitalize and replace underscores
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
 export const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,12 +89,14 @@ export const ProductDetailPage = () => {
   const { data: product, isLoading: isLoadingProduct } = useProductDetail(productId);
   const { data: variants, isLoading: isLoadingVariants } = useProductVariants(productId);
   const { data: images } = useProductImages(productId);
+  const { data: variantImages } = useVariantImages(selectedVariantId);
   const { data: stock } = useVariantStock(selectedVariantId);
   const addItem = useCartStore((state) => state.addItem);
-  const { getPrimaryColor, getSecondaryColor } = useStorefrontConfigStore();
+  const { getPrimaryColor, getSecondaryColor, getContactPhone } = useStorefrontConfigStore();
 
   const primaryColor = getPrimaryColor();
   const secondaryColor = getSecondaryColor();
+  const contactPhone = getContactPhone();
   const isLoading = isLoadingProduct || isLoadingVariants;
 
   // Get selected variant
@@ -96,33 +131,62 @@ export const ProductDetailPage = () => {
   const matchingVariant = useMemo(() => {
     if (!variants || Object.keys(selectedAttributes).length === 0) return null;
 
-    return variants.find((variant) => {
+    // Get all attribute keys that exist in variants
+    const allAttributeKeys = new Set<string>();
+    variants.forEach((variant) => {
       const attrs = variant.attributes as Record<string, string>;
-      return Object.entries(selectedAttributes).every(
-        ([key, value]) => attrs[key] === value
-      );
+      Object.keys(attrs).forEach((key) => allAttributeKeys.add(key));
     });
+
+    // Only look for exact match if all attributes are selected
+    if (Object.keys(selectedAttributes).length === allAttributeKeys.size) {
+      return variants.find((variant) => {
+        const attrs = variant.attributes as Record<string, string>;
+        return Object.entries(selectedAttributes).every(
+          ([key, value]) => attrs[key] === value
+        );
+      });
+    }
+
+    return null;
   }, [variants, selectedAttributes]);
 
-  // Auto-select variant when attributes match
-  useMemo(() => {
-    if (matchingVariant && matchingVariant.id !== selectedVariantId) {
-      setSelectedVariantId(matchingVariant.id);
-    }
-  }, [matchingVariant, selectedVariantId]);
+  // Sync selectedVariantId with matchingVariant
+  if (matchingVariant && matchingVariant.id !== selectedVariantId) {
+    setSelectedVariantId(matchingVariant.id);
+  } else if (!matchingVariant && selectedVariantId !== null && Object.keys(selectedAttributes).length > 0) {
+    setSelectedVariantId(null);
+  }
 
-  // Get display images (variant images first, then product images)
+  // Get display images (product images already include all variant images)
   const displayImages = useMemo(() => {
     if (!images || images.length === 0) {
       return [{ id: 0, imageUrl: '/placeholder-product.jpg', isPrimary: true, displayOrder: 0 }];
     }
-    // Sort by displayOrder, with primary first
+
+    // Ordenar por isPrimary primero, luego por displayOrder
     return [...images].sort((a, b) => {
       if (a.isPrimary && !b.isPrimary) return -1;
       if (!a.isPrimary && b.isPrimary) return 1;
       return a.displayOrder - b.displayOrder;
     });
   }, [images]);
+
+  // Auto-select variant's primary image when variant changes
+  useEffect(() => {
+    // Si hay una variante seleccionada y tiene imágenes, buscar su imagen principal en el carrusel
+    if (selectedVariantId && variantImages && variantImages.length > 0) {
+      // Encontrar la imagen principal de la variante
+      const primaryVariantImage = variantImages.find(img => img.isPrimary) || variantImages[0];
+      
+      // Buscar el índice de esa imagen en displayImages (ya está ahí, solo buscar)
+      const index = displayImages.findIndex(img => img.id === primaryVariantImage.id);
+      
+      if (index !== -1) {
+        setSelectedImageIndex(index);
+      }
+    }
+  }, [selectedVariantId, variantImages, displayImages]);
 
   // Calculate price range for product
   const priceRange = useMemo(() => {
@@ -326,16 +390,23 @@ export const ProductDetailPage = () => {
               {product.name}
             </Text>
 
-            {/* SKU */}
-            <Text size="sm" c="dimmed">
-              Código: {selectedVariant?.sku || product.code}
-            </Text>
+            {/* SKU - Solo si hay variante seleccionada */}
+            {selectedVariant && (
+              <Text size="sm" c="dimmed">
+                Código: {selectedVariant.sku}
+              </Text>
+            )}
 
             {/* Price */}
             <Box>
               {selectedVariant ? (
                 <Text size="2rem" fw={700} style={{ color: primaryColor }}>
                   {formatCurrency(selectedVariant.price)}
+                </Text>
+              ) : Object.keys(selectedAttributes).length > 0 &&
+                Object.keys(selectedAttributes).length === Object.keys(attributeOptions).length ? (
+                <Text size="1.5rem" fw={600} c="red">
+                  No disponible
                 </Text>
               ) : priceRange ? (
                 <Text size="1.5rem" fw={600} c="dimmed">
@@ -385,7 +456,7 @@ export const ProductDetailPage = () => {
                 {Object.entries(attributeOptions).map(([attrKey, values]) => (
                   <Box key={attrKey}>
                     <Text size="sm" fw={600} mb="xs">
-                      {attrKey}:
+                      {formatAttributeName(attrKey)}:
                       {selectedAttributes[attrKey] && (
                         <Text span c="dimmed" fw={400} ml="xs">
                           {selectedAttributes[attrKey]}
@@ -393,29 +464,25 @@ export const ProductDetailPage = () => {
                       )}
                     </Text>
                     <Group gap="xs">
-                      {values.map((value) => (
-                        <Button
-                          key={value}
-                          variant={
-                            selectedAttributes[attrKey] === value ? 'filled' : 'outline'
-                          }
-                          size="sm"
-                          radius="md"
-                          onClick={() => handleAttributeSelect(attrKey, value)}
-                          style={{
-                            borderColor:
-                              selectedAttributes[attrKey] === value
-                                ? primaryColor
-                                : undefined,
-                            backgroundColor:
-                              selectedAttributes[attrKey] === value
-                                ? primaryColor
-                                : undefined,
-                          }}
-                        >
-                          {value}
-                        </Button>
-                      ))}
+                      {values.map((value) => {
+                        const isSelected = selectedAttributes[attrKey] === value;
+                        
+                        return (
+                          <Button
+                            key={value}
+                            variant={isSelected ? 'filled' : 'outline'}
+                            size="sm"
+                            radius="md"
+                            onClick={() => handleAttributeSelect(attrKey, value)}
+                            style={{
+                              borderColor: isSelected ? primaryColor : undefined,
+                              backgroundColor: isSelected ? primaryColor : undefined,
+                            }}
+                          >
+                            {value}
+                          </Button>
+                        );
+                      })}
                     </Group>
                   </Box>
                 ))}
@@ -480,8 +547,29 @@ export const ProductDetailPage = () => {
               </Button>
             </Group>
 
+            {/* WhatsApp Contact Button */}
+            {contactPhone && (
+              <Button
+                size="lg"
+                radius="md"
+                variant="outline"
+                color="green"
+                leftSection={<IconBrandWhatsapp size={20} />}
+                onClick={() => {
+                  const message = selectedVariant
+                    ? `Hola, me interesa el producto: ${product.name} (${selectedVariant.sku})`
+                    : `Hola, me interesa el producto: ${product.name}`;
+                  const whatsappUrl = `https://wa.me/${contactPhone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappUrl, '_blank');
+                }}
+                fullWidth
+              >
+                Consultar por WhatsApp
+              </Button>
+            )}
+
             {/* No Variant Selected Warning */}
-            {!selectedVariant && variants && variants.length > 0 && (
+            {!selectedVariant && variants && variants.length > 0 && Object.keys(selectedAttributes).length === 0 && (
               <Alert color="blue" variant="light">
                 Selecciona las opciones del producto para ver el precio y stock.
               </Alert>
@@ -505,20 +593,31 @@ export const ProductDetailPage = () => {
 
         <Grid.Col span={{ base: 12, md: 4 }}>
           <Paper withBorder radius="md" p="xl">
-            <Text size="lg" fw={600} mb="md">
-              Especificaciones
+            <Text size="lg" fw={600} mb="lg">
+              Especificaciones Técnicas
             </Text>
             {product.specs && Object.keys(product.specs).length > 0 ? (
-              <Stack gap="sm">
-                {Object.entries(product.specs).map(([key, value]) => (
-                  <Group key={key} justify="space-between" wrap="nowrap">
-                    <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
-                      {key}
-                    </Text>
-                    <Text size="sm" fw={500} ta="right">
-                      {String(value)}
-                    </Text>
-                  </Group>
+              <Stack gap={0}>
+                {Object.entries(product.specs).map(([key, value], index) => (
+                  <Box
+                    key={key}
+                    py="sm"
+                    style={{
+                      borderBottom:
+                        index < Object.keys(product.specs).length - 1
+                          ? '1px solid var(--mantine-color-gray-2)'
+                          : undefined,
+                    }}
+                  >
+                    <Group justify="space-between" wrap="nowrap" align="flex-start">
+                      <Text size="sm" c="dimmed" style={{ flexShrink: 0, maxWidth: '40%' }}>
+                        {formatAttributeName(key)}
+                      </Text>
+                      <Text size="sm" fw={500} ta="right" style={{ maxWidth: '58%' }}>
+                        {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value)}
+                      </Text>
+                    </Group>
+                  </Box>
                 ))}
               </Stack>
             ) : (

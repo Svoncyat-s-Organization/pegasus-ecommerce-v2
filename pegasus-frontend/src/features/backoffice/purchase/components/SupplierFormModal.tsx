@@ -1,12 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { Modal, Form, Input, Row, Col, Select } from 'antd';
-import type { CreateSupplierRequest, SupplierDocumentType, UpdateSupplierRequest } from '@types';
+import type { CreateSupplierRequest, UpdateSupplierRequest } from '@types';
 import { useDepartments, useDistricts, useProvinces } from '@shared/hooks/useLocations';
 import { cleanPhone } from '@shared/utils/formatters';
 import { useSupplierById } from '../hooks/useSuppliers';
 import { useCreateSupplier, useUpdateSupplier } from '../hooks/useSupplierMutations';
-
-const { Option } = Select;
 
 interface SupplierFormModalProps {
   open: boolean;
@@ -18,13 +16,6 @@ interface SupplierFormModalProps {
 type SupplierFormValues = CreateSupplierRequest & {
   departmentId?: string;
   provinceId?: string;
-};
-
-const isValidSupplierDoc = (docType: SupplierDocumentType, docNumber: string): boolean => {
-  const cleaned = (docNumber || '').trim();
-  if (docType === 'DNI') return /^\d{8}$/.test(cleaned);
-  if (docType === 'RUC') return /^\d{11}$/.test(cleaned);
-  return false;
 };
 
 export const SupplierFormModal = ({ open, mode, supplierId, onCancel }: SupplierFormModalProps) => {

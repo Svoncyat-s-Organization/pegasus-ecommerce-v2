@@ -23,6 +23,7 @@ export const useUpdateProfile = () => {
           {
             userId: user.userId,
             email: data.email,
+            username: user.username,
             userType: user.userType,
           },
           token

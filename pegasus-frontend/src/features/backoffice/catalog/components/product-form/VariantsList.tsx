@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { Table, Button, Tag, Dropdown, Modal, Empty, Space, Image, message, theme } from 'antd';
-import type { MenuProps } from 'antd';
+import { Table, Button, Tag, Space, Image, message, Typography, Modal, Alert } from 'antd';
 import {
   IconPlus,
   IconEdit,
   IconTrash,
   IconPower,
-  IconDotsVertical,
   IconPhoto,
 } from '@tabler/icons-react';
 import {
   useVariantsByProduct,
-  useDeleteVariant,
   useToggleVariantStatus,
+  useDeleteVariant,
 } from '../../hooks/useVariants';
 import {
   useImagesByVariant,
@@ -24,24 +22,49 @@ import type { VariantResponse } from '@types';
 import { VariantFormModal } from '../VariantFormModal';
 import { ImageUploader } from '@shared/components/ImageUploader';
 import { formatCurrency } from '@shared/utils/formatters';
+import type { LocalVariantAttribute } from './ProductVariantAttributesEditor';
+
+const { Text } = Typography;
+
+interface LocalVariant {
+  sku: string;
+  price: number;
+  attributes: Record<string, unknown>;
+  tempId?: string;
+  isActive?: boolean;
+}
 
 interface VariantsListProps {
-  productId: number;
+  productId?: number;
+  localMode?: boolean;
+  localVariantAttributes?: LocalVariantAttribute[];
+  onLocalChange?: (variants: LocalVariant[]) => void;
 }
 
 /**
- * Lista de variantes del producto con gestión de imágenes por variante
+ * Gestión de variantes con diseño minimalista y profesional
  */
-export const VariantsList = ({ productId }: VariantsListProps) => {
+export const VariantsList = ({ 
+  productId, 
+  localMode = false,
+  localVariantAttributes = [],
+  onLocalChange,
+}: VariantsListProps) => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingVariant, setEditingVariant] = useState<VariantResponse | undefined>();
+  const [editingVariant, setEditingVariant] = useState<VariantResponse | LocalVariant | undefined>();
   const [imagesModalVariant, setImagesModalVariant] = useState<VariantResponse | undefined>();
+  const [localVariants, setLocalVariants] = useState<LocalVariant[]>([]);
 
-  const { data: variants, isLoading } = useVariantsByProduct(productId);
-  const deleteMutation = useDeleteVariant();
+  const { data: serverVariants, isLoading } = useVariantsByProduct(
+    productId || 0,
+    { enabled: !localMode && !!productId }
+  );
   const toggleStatusMutation = useToggleVariantStatus();
+  const deleteMutation = useDeleteVariant();
 
-  const handleOpenFormModal = (variant?: VariantResponse) => {
+  const variants = localMode ? localVariants : serverVariants;
+
+  const handleOpenFormModal = (variant?: VariantResponse | LocalVariant) => {
     setEditingVariant(variant);
     setIsFormModalOpen(true);
   };
@@ -51,64 +74,97 @@ export const VariantsList = ({ productId }: VariantsListProps) => {
     setEditingVariant(undefined);
   };
 
-  const handleDelete = (id: number) => {
-    Modal.confirm({
-      title: '¿Eliminar esta variante?',
-      content: 'La variante será desactivada.',
-      okText: 'Eliminar',
-      okType: 'danger',
-      cancelText: 'Cancelar',
-      onOk: () => deleteMutation.mutate(id),
-    });
+  const handleVariantSaved = (variant: LocalVariant | VariantResponse) => {
+    if (localMode && onLocalChange) {
+      // Local mode: update local state
+      if ('tempId' in variant) {
+        // Editing existing local variant
+        const updated = localVariants.map((v) =>
+          v.tempId === variant.tempId ? variant : v
+        );
+        setLocalVariants(updated);
+        onLocalChange(updated);
+      } else {
+        // New local variant
+        const newVariant: LocalVariant = {
+          ...variant,
+          tempId: `temp-${Date.now()}`,
+          isActive: true,
+        };
+        const updated = [...localVariants, newVariant];
+        setLocalVariants(updated);
+        onLocalChange(updated);
+      }
+    }
+    handleCloseFormModal();
+  };
+
+  const handleDelete = (idOrTempId: number | string, sku: string) => {
+    if (localMode && typeof idOrTempId === 'string' && onLocalChange) {
+      // Local mode: remove from local state
+      Modal.confirm({
+        title: '¿Eliminar esta variante?',
+        content: `La variante ${sku} será eliminada.`,
+        okText: 'Eliminar',
+        okType: 'danger',
+        cancelText: 'Cancelar',
+        onOk: () => {
+          const updated = localVariants.filter((v) => v.tempId !== idOrTempId);
+          setLocalVariants(updated);
+          onLocalChange(updated);
+          message.success('Variante eliminada');
+        },
+      });
+      return;
+    }
+
+    // Server mode: delete from database
+    if (typeof idOrTempId === 'number') {
+      Modal.confirm({
+        title: '¿Eliminar esta variante permanentemente?',
+        content: `La variante ${sku} será eliminada de forma definitiva. Esta acción no se puede deshacer.`,
+        okText: 'Eliminar',
+        okType: 'danger',
+        cancelText: 'Cancelar',
+        onOk: () => deleteMutation.mutate(idOrTempId),
+      });
+    }
   };
 
   const handleToggleStatus = (id: number) => {
     toggleStatusMutation.mutate(id);
   };
 
-  const getActionItems = (record: VariantResponse): MenuProps['items'] => [
-    {
-      key: 'edit',
-      label: 'Editar',
-      icon: <IconEdit size={16} />,
-      onClick: () => handleOpenFormModal(record),
-    },
-    {
-      key: 'images',
-      label: 'Imágenes',
-      icon: <IconPhoto size={16} />,
-      onClick: () => setImagesModalVariant(record),
-    },
-    { type: 'divider' },
-    {
-      key: 'toggle',
-      label: record.isActive ? 'Desactivar' : 'Activar',
-      icon: <IconPower size={16} />,
-      onClick: () => handleToggleStatus(record.id),
-    },
-    {
-      key: 'delete',
-      label: 'Eliminar',
-      icon: <IconTrash size={16} />,
-      danger: true,
-      onClick: () => handleDelete(record.id),
-    },
-  ];
+  // Componente para el botón de imágenes con color dinámico
+  const ImageButton = ({ variantId, onClick }: { variantId: number; onClick: () => void }) => {
+    const { data: images } = useImagesByVariant(variantId);
+    const hasImages = images && images.length > 0;
+
+    return (
+      <Button
+        type="link"
+        size="small"
+        icon={<IconPhoto size={16} />}
+        title="Imágenes"
+        onClick={onClick}
+        style={{ color: hasImages ? '#1890ff' : '#8c8c8c' }}
+      />
+    );
+  };
 
   const columns = [
+    {
+      title: '#',
+      key: 'index',
+      width: 60,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
+    },
     {
       title: 'SKU',
       dataIndex: 'sku',
       key: 'sku',
-      width: 140,
-      render: (sku: string) => <code style={{ fontSize: 13 }}>{sku}</code>,
-    },
-    {
-      title: 'Precio',
-      dataIndex: 'price',
-      key: 'price',
-      width: 110,
-      render: (price: number) => formatCurrency(price),
+      width: 160,
+      render: (sku: string) => <code style={{ fontSize: 13, fontWeight: 500 }}>{sku}</code>,
     },
     {
       title: 'Atributos',
@@ -116,13 +172,13 @@ export const VariantsList = ({ productId }: VariantsListProps) => {
       key: 'attributes',
       render: (attributes: Record<string, unknown>) => {
         if (!attributes || Object.keys(attributes).length === 0) {
-          return <Tag color="default">Sin atributos</Tag>;
+          return <Text type="secondary">—</Text>;
         }
         return (
-          <Space size={[4, 4]} wrap>
+          <Space size={[6, 6]} wrap>
             {Object.entries(attributes).map(([key, value]) => (
-              <Tag key={key} color="blue">
-                <span style={{ fontWeight: 500 }}>{key}:</span> {String(value)}
+              <Tag key={key} color="blue" style={{ margin: 0 }}>
+                <strong>{key}:</strong> {String(value)}
               </Tag>
             ))}
           </Space>
@@ -130,65 +186,138 @@ export const VariantsList = ({ productId }: VariantsListProps) => {
       },
     },
     {
+      title: 'Precio',
+      dataIndex: 'price',
+      key: 'price',
+      width: 120,
+      render: (price: number) => <strong>{formatCurrency(price)}</strong>,
+    },
+    {
       title: 'Estado',
       dataIndex: 'isActive',
       key: 'isActive',
-      width: 90,
+      width: 100,
+      align: 'center' as const,
       render: (isActive: boolean) => (
-        <Tag color={isActive ? 'success' : 'default'}>{isActive ? 'Activo' : 'Inactivo'}</Tag>
+        <Tag color={isActive ? 'success' : 'default'} style={{ margin: 0 }}>
+          {isActive ? 'Activo' : 'Inactivo'}
+        </Tag>
       ),
     },
     {
-      title: '',
+      title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 60,
+      width: localMode ? 100 : 150,
       align: 'center' as const,
-      render: (_: unknown, record: VariantResponse) => (
-        <Dropdown menu={{ items: getActionItems(record) }} trigger={['click']}>
-          <Button type="text" icon={<IconDotsVertical size={18} />} />
-        </Dropdown>
-      ),
+      render: (_: unknown, record: VariantResponse | LocalVariant) => {
+        const variantId = 'id' in record ? record.id : record.tempId!;
+        const isTempId = typeof variantId === 'string';
+        
+        return (
+          <Space size="small">
+            {!localMode && !isTempId && 'id' in record && (
+              <>
+                <ImageButton
+                  variantId={record.id}
+                  onClick={() => setImagesModalVariant(record)}
+                />
+                <Button
+                  type="link"
+                  danger={record.isActive}
+                  size="small"
+                  icon={<IconPower size={16} />}
+                  title={record.isActive ? 'Desactivar' : 'Activar'}
+                  onClick={() => handleToggleStatus(record.id)}
+                  style={{ color: record.isActive ? undefined : '#8c8c8c' }}
+                />
+              </>
+            )}
+            <Button
+              type="link"
+              size="small"
+              icon={<IconEdit size={16} />}
+              title="Editar"
+              onClick={() => handleOpenFormModal(record)}
+            />
+            <Button
+              type="link"
+              danger
+              size="small"
+              icon={<IconTrash size={16} />}
+              title="Eliminar"
+              onClick={() => handleDelete(variantId, record.sku)}
+            />
+          </Space>
+        );
+      },
     },
   ];
 
-  if (!variants || variants.length === 0) {
-    return (
-      <>
-        <Empty description="No hay variantes creadas" image={Empty.PRESENTED_IMAGE_SIMPLE}>
-          <Button type="primary" icon={<IconPlus size={16} />} onClick={() => handleOpenFormModal()}>
-            Crear primera variante
-          </Button>
-        </Empty>
-
-        <VariantFormModal
-          open={isFormModalOpen}
-          onCancel={handleCloseFormModal}
-          productId={productId}
-          variant={editingVariant}
-        />
-      </>
-    );
-  }
-
   return (
     <>
-      {/* Botón agregar */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button type="primary" icon={<IconPlus size={16} />} onClick={() => handleOpenFormModal()}>
-          Nueva Variante
-        </Button>
+      {/* Alert for local mode */}
+      {localMode && localVariantAttributes.length === 0 && (
+        <Alert
+          type="info"
+          showIcon
+          message="Configura atributos de variante primero"
+          description="Para crear variantes, primero debes configurar los atributos de variante en la sección anterior."
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <Text strong style={{ fontSize: 16, display: 'block', marginBottom: 4 }}>
+              Variantes del Producto
+            </Text>
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              {localMode 
+                ? 'Configura las variantes del producto (se guardarán al crear)'
+                : 'Gestiona las variantes con sus atributos, precios e imágenes específicas'}
+            </Text>
+          </div>
+          <Button
+            type="primary"
+            icon={<IconPlus size={16} />}
+            onClick={() => handleOpenFormModal()}
+            disabled={localMode && localVariantAttributes.length === 0}
+          >
+            Nueva Variante
+          </Button>
+        </div>
       </div>
 
       {/* Tabla */}
       <Table
         columns={columns}
-        dataSource={variants}
-        rowKey="id"
+        dataSource={variants || []}
+        rowKey={(record) => ('id' in record ? record.id.toString() : record.tempId!)}
         loading={isLoading}
         pagination={false}
+        bordered
         size="middle"
-        scroll={{ x: 600 }}
+        locale={{
+          emptyText: (
+            <div style={{ padding: '40px 0', textAlign: 'center' }}>
+              <Text type="secondary">No hay variantes creadas</Text>
+              {localVariantAttributes.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <Button
+                    type="primary"
+                    icon={<IconPlus size={16} />}
+                    onClick={() => handleOpenFormModal()}
+                  >
+                    Crear Primera Variante
+                  </Button>
+                </div>
+              )}
+            </div>
+          ),
+        }}
       />
 
       {/* Modal de formulario */}
@@ -197,13 +326,16 @@ export const VariantsList = ({ productId }: VariantsListProps) => {
         onCancel={handleCloseFormModal}
         productId={productId}
         variant={editingVariant}
+        localMode={localMode}
+        localVariantAttributes={localVariantAttributes}
+        onLocalSave={handleVariantSaved}
       />
 
       {/* Modal de imágenes */}
-      {imagesModalVariant && (
+      {imagesModalVariant && !localMode && (
         <VariantImagesModal
           variant={imagesModalVariant}
-          productId={productId}
+          productId={productId!}
           onClose={() => setImagesModalVariant(undefined)}
         />
       )}
@@ -219,7 +351,6 @@ interface VariantImagesModalProps {
 }
 
 const VariantImagesModal = ({ variant, productId, onClose }: VariantImagesModalProps) => {
-  const { token } = theme.useToken();
   const { data: images, isLoading } = useImagesByVariant(variant.id);
   const createMutation = useCreateImage();
   const deleteMutation = useDeleteImage();
@@ -269,78 +400,111 @@ const VariantImagesModal = ({ variant, productId, onClose }: VariantImagesModalP
     <Modal
       title={
         <div>
-          <div>Imágenes de Variante</div>
-          <div style={{ fontSize: 13, fontWeight: 400, color: token.colorTextSecondary }}>
-            {variant.sku} {attributesText && `· ${attributesText}`}
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+            Imágenes de Variante
           </div>
+          <Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>
+            {variant.sku} {attributesText && `· ${attributesText}`}
+          </Text>
         </div>
       }
       open
       onCancel={onClose}
       footer={null}
-      width={600}
+      width={700}
     >
       {/* Uploader */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 24 }}>
+        <Text strong style={{ display: 'block', marginBottom: 12 }}>
+          Cargar Imagen
+        </Text>
         <ImageUploader onChange={handleImageUploaded} folder="products" showPreview={false} />
       </div>
 
       {/* Grid de imágenes */}
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 24 }}>Cargando...</div>
-      ) : !images || images.length === 0 ? (
-        <Empty description="Sin imágenes para esta variante" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-            gap: 8,
-          }}
-        >
-          {images.map((image) => (
-            <div
-              key={image.id}
-              style={{
-                border: image.isPrimary ? `2px solid ${token.colorPrimary}` : `1px solid ${token.colorBorder}`,
-                borderRadius: 6,
-                overflow: 'hidden',
-              }}
-            >
-              <Image
-                src={image.imageUrl}
-                alt=""
-                style={{ width: '100%', height: 100, objectFit: 'cover' }}
-              />
+      <div>
+        <Text strong style={{ display: 'block', marginBottom: 12 }}>
+          Imágenes ({images?.length || 0})
+        </Text>
+
+        {isLoading ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+            Cargando imágenes...
+          </div>
+        ) : !images || images.length === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: 40,
+              background: '#fafafa',
+              borderRadius: 6,
+              border: '1px dashed #d9d9d9',
+            }}
+          >
+            <Text type="secondary">Sin imágenes para esta variante</Text>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {images.map((image) => (
               <div
+                key={image.id}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '4px 6px',
-                  background: token.colorBgLayout,
+                  border: image.isPrimary ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                  background: '#fff',
                 }}
               >
-                <Button
-                  type="text"
-                  size="small"
-                  disabled={image.isPrimary}
-                  onClick={() => handleSetPrimary(image.id)}
-                  style={{ fontSize: 11, padding: '0 4px' }}
-                >
-                  {image.isPrimary ? '★ Principal' : 'Hacer principal'}
-                </Button>
-                <Button
-                  type="text"
-                  danger
-                  size="small"
-                  icon={<IconTrash size={14} />}
-                  onClick={() => handleDelete(image.id)}
+                <Image
+                  src={image.imageUrl}
+                  alt=""
+                  style={{ width: '100%', height: 120, objectFit: 'cover' }}
+                  preview={{ mask: 'Ver' }}
                 />
+                <div
+                  style={{
+                    padding: '8px 10px',
+                    background: '#fafafa',
+                    borderTop: '1px solid #f0f0f0',
+                  }}
+                >
+                  <div style={{ marginBottom: 6 }}>
+                    {image.isPrimary ? (
+                      <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>
+                        ★ Principal
+                      </Tag>
+                    ) : (
+                      <Button
+                        type="link"
+                        size="small"
+                        onClick={() => handleSetPrimary(image.id)}
+                        style={{ fontSize: 11, padding: 0, height: 'auto' }}
+                      >
+                        Hacer principal
+                      </Button>
+                    )}
+                  </div>
+                  <Button
+                    danger
+                    size="small"
+                    block
+                    icon={<IconTrash size={14} />}
+                    onClick={() => handleDelete(image.id)}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </Modal>
   );
 };

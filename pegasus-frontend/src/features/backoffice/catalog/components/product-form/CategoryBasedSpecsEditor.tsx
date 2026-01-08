@@ -29,9 +29,11 @@ interface SpecValue {
 }
 
 interface CategoryBasedSpecsEditorProps {
-  productId: number;
+  productId?: number;
   categoryId?: number;
   initialSpecs?: Record<string, unknown>;
+  localMode?: boolean;
+  onLocalChange?: (specs: Record<string, string>) => void;
 }
 
 /**
@@ -42,6 +44,8 @@ export const CategoryBasedSpecsEditor = ({
   productId,
   categoryId,
   initialSpecs,
+  localMode = false,
+  onLocalChange,
 }: CategoryBasedSpecsEditorProps) => {
   const { token } = theme.useToken();
   const updateMutation = useUpdateProduct();
@@ -77,6 +81,19 @@ export const CategoryBasedSpecsEditor = ({
       return updated;
     });
     setHasChanges(true);
+    
+    // In local mode, propagate changes immediately
+    if (localMode && onLocalChange) {
+      const updatedValues = [...specValues];
+      updatedValues[index] = { ...updatedValues[index], value: newValue };
+      const specsObject: Record<string, string> = {};
+      updatedValues.forEach((spec) => {
+        if (spec.value.trim()) {
+          specsObject[spec.key] = spec.value.trim();
+        }
+      });
+      onLocalChange(specsObject);
+    }
   };
 
   const handleSave = async () => {
@@ -102,6 +119,21 @@ export const CategoryBasedSpecsEditor = ({
       }
     });
 
+    // Local mode: just notify parent
+    if (localMode && onLocalChange) {
+      const specsStringObject: Record<string, string> = {};
+      Object.entries(specsObject).forEach(([key, value]) => {
+        specsStringObject[key] = String(value);
+      });
+      onLocalChange(specsStringObject);
+      message.success('Especificaciones configuradas (se guardarán al crear el producto)');
+      setHasChanges(false);
+      return;
+    }
+
+    // Edit mode: save to server
+    if (!productId) return;
+
     try {
       await updateMutation.mutateAsync({
         id: productId,
@@ -115,6 +147,8 @@ export const CategoryBasedSpecsEditor = ({
   };
 
   const renderSpecInput = (spec: SpecValue, index: number) => {
+    const inputWidth = 400;
+
     switch (spec.specType) {
       case 'SELECT':
         return (
@@ -122,7 +156,7 @@ export const CategoryBasedSpecsEditor = ({
             value={spec.value || undefined}
             onChange={(val) => handleSpecValueChange(index, val || '')}
             placeholder={`Seleccionar ${spec.displayName.toLowerCase()}`}
-            style={{ width: '100%' }}
+            style={{ width: inputWidth }}
             allowClear
             options={spec.options?.map((opt) => ({ label: opt, value: opt })) || []}
           />
@@ -133,18 +167,20 @@ export const CategoryBasedSpecsEditor = ({
             value={spec.value ? parseFloat(spec.value) : undefined}
             onChange={(val) => handleSpecValueChange(index, val !== null ? String(val) : '')}
             placeholder={`Ingrese ${spec.displayName.toLowerCase()}`}
-            style={{ width: '100%' }}
-            addonAfter={spec.unit}
+            style={{ width: inputWidth }}
+            suffix={spec.unit && <Text type="secondary">{spec.unit}</Text>}
           />
         );
       case 'BOOLEAN':
         return (
-          <Switch
-            checked={spec.value === 'true'}
-            onChange={(checked) => handleSpecValueChange(index, String(checked))}
-            checkedChildren="Sí"
-            unCheckedChildren="No"
-          />
+          <div style={{ width: inputWidth }}>
+            <Switch
+              checked={spec.value === 'true'}
+              onChange={(checked) => handleSpecValueChange(index, String(checked))}
+              checkedChildren="Sí"
+              unCheckedChildren="No"
+            />
+          </div>
         );
       default: // TEXT
         return (
@@ -152,7 +188,8 @@ export const CategoryBasedSpecsEditor = ({
             value={spec.value}
             onChange={(e) => handleSpecValueChange(index, e.target.value)}
             placeholder={`Ingrese ${spec.displayName.toLowerCase()}`}
-            addonAfter={spec.unit}
+            style={{ width: inputWidth }}
+            suffix={spec.unit && <Text type="secondary">{spec.unit}</Text>}
           />
         );
     }
@@ -197,10 +234,9 @@ export const CategoryBasedSpecsEditor = ({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(150px, 200px) 1fr',
-          gap: '12px 16px',
+          gridTemplateColumns: '200px auto',
+          gap: '16px',
           alignItems: 'center',
-          maxWidth: 600,
           marginBottom: 16,
         }}
       >

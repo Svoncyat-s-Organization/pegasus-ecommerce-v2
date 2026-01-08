@@ -108,6 +108,36 @@ CREATE TABLE public.categories (
         ON DELETE SET NULL ON UPDATE NO ACTION
 );
 
+CREATE TABLE public.category_specifications (
+    id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
+    category_id bigint NOT NULL,
+    name varchar(50) NOT NULL,
+    display_name varchar(100) NOT NULL,
+    spec_type varchar(20) NOT NULL,
+    unit varchar(20),
+    options jsonb,
+    is_required boolean NOT NULL DEFAULT false,
+    position integer NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT category_specifications_pk PRIMARY KEY (id),
+    CONSTRAINT category_specifications_category_name_uq UNIQUE (category_id, name),
+    CONSTRAINT category_specifications_spec_type_check CHECK (spec_type IN ('TEXT', 'NUMBER', 'SELECT', 'BOOLEAN')),
+    CONSTRAINT category_specifications_category_fk FOREIGN KEY (category_id)
+        REFERENCES public.categories (id) MATCH SIMPLE
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_category_specifications_category ON public.category_specifications (category_id);
+COMMENT ON TABLE public.category_specifications IS 'Defines specification templates for categories. Products inherit specs from their category.';
+COMMENT ON COLUMN public.category_specifications.name IS 'Internal name (lowercase, underscore): screen_size, processor, weight';
+COMMENT ON COLUMN public.category_specifications.display_name IS 'User-facing label: Tamaño de Pantalla, Procesador, Peso';
+COMMENT ON COLUMN public.category_specifications.spec_type IS 'Data type: TEXT, NUMBER, SELECT, BOOLEAN';
+COMMENT ON COLUMN public.category_specifications.unit IS 'Unit of measure for NUMBER type: pulgadas, GB, kg';
+COMMENT ON COLUMN public.category_specifications.options IS 'JSON array of possible values for SELECT type: ["Intel", "AMD", "Apple"]';
+COMMENT ON COLUMN public.category_specifications.is_required IS 'Whether this spec is required when creating products in this category';
+COMMENT ON COLUMN public.category_specifications.position IS 'Display order in forms';
+
 CREATE TABLE public.products (
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
     code varchar(50) NOT NULL,
@@ -155,30 +185,50 @@ CREATE TABLE public.variants (
 
 CREATE INDEX idx_variants_attributes ON public.variants USING gin (attributes);
 
-CREATE TABLE public.product_attributes (
+CREATE TABLE public.variant_attributes (
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
-    product_id bigint NOT NULL,
     name varchar(50) NOT NULL,
     display_name varchar(100) NOT NULL,
-    options jsonb NOT NULL DEFAULT '[]',
-    position int NOT NULL DEFAULT 0,
+    attribute_type varchar(20) NOT NULL,
+    options jsonb,
+    description text,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT product_attributes_pk PRIMARY KEY (id),
-    CONSTRAINT product_attributes_product_name_uq UNIQUE (product_id, name),
-    CONSTRAINT product_attributes_product_fk FOREIGN KEY (product_id)
+    CONSTRAINT variant_attributes_pk PRIMARY KEY (id),
+    CONSTRAINT variant_attributes_name_uq UNIQUE (name),
+    CONSTRAINT variant_attributes_type_check CHECK (attribute_type IN ('TEXT', 'COLOR', 'SIZE', 'NUMBER'))
+);
+
+COMMENT ON TABLE public.variant_attributes IS 'Global catalog of variant attributes that can be assigned to products';
+COMMENT ON COLUMN public.variant_attributes.name IS 'Internal name (lowercase, underscore): color, size, storage';
+COMMENT ON COLUMN public.variant_attributes.display_name IS 'User-facing label: Color, Talla, Almacenamiento';
+COMMENT ON COLUMN public.variant_attributes.attribute_type IS 'Attribute type: TEXT, COLOR (hex values), SIZE, NUMBER';
+COMMENT ON COLUMN public.variant_attributes.options IS 'JSON array of default options: ["Rojo", "Azul", "Verde"]';
+COMMENT ON COLUMN public.variant_attributes.description IS 'Description of when/how to use this attribute';
+
+CREATE TABLE public.product_variant_attributes (
+    id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
+    product_id bigint NOT NULL,
+    variant_attribute_id bigint NOT NULL,
+    custom_options jsonb,
+    position integer NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT product_variant_attributes_pk PRIMARY KEY (id),
+    CONSTRAINT product_variant_attributes_uq UNIQUE (product_id, variant_attribute_id),
+    CONSTRAINT product_variant_attributes_product_fk FOREIGN KEY (product_id)
         REFERENCES public.products (id) MATCH SIMPLE
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT product_variant_attributes_attribute_fk FOREIGN KEY (variant_attribute_id)
+        REFERENCES public.variant_attributes (id) MATCH SIMPLE
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX idx_product_attributes_product ON public.product_attributes (product_id);
-CREATE INDEX idx_product_attributes_options ON public.product_attributes USING gin (options);
-
-COMMENT ON TABLE public.product_attributes IS 'Defines attribute types (color, size, etc.) and their options for product variants';
-COMMENT ON COLUMN public.product_attributes.name IS 'Internal name (lowercase, no spaces): color, storage, size';
-COMMENT ON COLUMN public.product_attributes.display_name IS 'User-facing label: Color, Almacenamiento, Talla';
-COMMENT ON COLUMN public.product_attributes.options IS 'JSON array of possible values: ["Negro", "Blanco", "Azul"]';
-COMMENT ON COLUMN public.product_attributes.position IS 'Display order in forms';
+CREATE INDEX idx_product_variant_attributes_product ON public.product_variant_attributes (product_id);
+CREATE INDEX idx_product_variant_attributes_attribute ON public.product_variant_attributes (variant_attribute_id);
+COMMENT ON TABLE public.product_variant_attributes IS 'Junction table linking products to the variant attributes they use';
+COMMENT ON COLUMN public.product_variant_attributes.custom_options IS 'Product-specific options that override default options from variant_attributes';
+COMMENT ON COLUMN public.product_variant_attributes.position IS 'Display order for this attribute in the product form';
 
 CREATE TABLE public.images (
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,

@@ -165,7 +165,7 @@ export const VariantAttributesListPage = () => {
       key: 'options',
       ellipsis: true,
       render: (options: string[]) => (
-        <Space size={[0, 4]} wrap>
+        <Space size={[8, 8]} wrap>
           {options.slice(0, 5).map((opt) => (
             <Tag key={opt}>{opt}</Tag>
           ))}

@@ -12,27 +12,53 @@ import {
   Col,
   Typography,
   message,
-  Divider,
   Alert,
-  theme,
+  Space,
+  Divider,
+  Spin,
 } from 'antd';
-import { IconArrowLeft, IconDeviceFloppy, IconPackage, IconStack2 } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconDeviceFloppy,
+  IconPackage,
+  IconStack2,
+} from '@tabler/icons-react';
 import { useProduct, useCreateProduct, useUpdateProduct } from '../hooks/useProducts';
 import { useBrands } from '../hooks/useBrands';
 import { useCategories } from '../hooks/useCategories';
-import type { CreateProductRequest, UpdateProductRequest } from '@types';
+import { useCreateImage } from '../hooks/useImages';
+import { useSaveAllProductVariantAttributes } from '../hooks/useProductVariantAttributes';
+import { useCreateVariant } from '../hooks/useVariants';
+import type { 
+  CreateProductRequest, 
+  UpdateProductRequest,
+} from '@types';
 import {
   CategoryBasedSpecsEditor,
   ProductImagesGallery,
   ProductVariantAttributesEditor,
   VariantsList,
+  type LocalVariantAttribute,
 } from '../components/product-form';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
+// Local state types for creation mode
+interface LocalImage {
+  imageUrl: string;
+  isPrimary: boolean;
+  displayOrder: number;
+  variantId?: number;
+}
+
+interface LocalVariant {
+  sku: string;
+  price: number;
+  attributes: Record<string, unknown>;
+}
+
 export const ProductFormPage = () => {
-  const { token } = theme.useToken();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -40,15 +66,25 @@ export const ProductFormPage = () => {
   const productId = id ? parseInt(id, 10) : undefined;
 
   const [activeTab, setActiveTab] = useState('product');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Local state for creation mode
+  const [localSpecs, setLocalSpecs] = useState<Record<string, string>>({});
+  const [localImages, setLocalImages] = useState<LocalImage[]>([]);
+  const [localVariantAttributes, setLocalVariantAttributes] = useState<LocalVariantAttribute[]>([]);
+  const [localVariants, setLocalVariants] = useState<LocalVariant[]>([]);
 
   // Queries
-  const { data: product, isLoading: isLoadingProduct } = useProduct(productId || 0);
+  const { data: product, isLoading: isLoadingProduct } = useProduct(productId || 0, { enabled: isEdit });
   const { data: brandsData } = useBrands(0, 100);
   const { data: categoriesData } = useCategories(0, 100);
 
   // Mutations
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
+  const createImageMutation = useCreateImage();
+  const saveVariantAttributesMutation = useSaveAllProductVariantAttributes();
+  const createVariantMutation = useCreateVariant();
 
   // Cargar datos del producto al editar
   useEffect(() => {
@@ -87,18 +123,78 @@ export const ProductFormPage = () => {
 
   const handleSubmit = async (values: CreateProductRequest | UpdateProductRequest) => {
     try {
+      setIsSubmitting(true);
+      
       if (isEdit && productId) {
+        // Edit mode: simple update
         await updateMutation.mutateAsync({ id: productId, request: values as UpdateProductRequest });
         message.success('Producto actualizado exitosamente');
       } else {
-        const result = await createMutation.mutateAsync(values as CreateProductRequest);
-        message.success('Producto creado exitosamente');
-        // Redirigir a la edición para completar specs, imágenes y variantes
-        navigate(`/admin/catalog/products/${result.id}/edit`);
+        // Creation mode: create product with all related data
+        message.loading({ content: 'Creando producto...', key: 'create-product', duration: 0 });
+        
+        // Step 1: Create product
+        const createdProduct = await createMutation.mutateAsync(values as CreateProductRequest);
+        const newProductId = createdProduct.id;
+        
+        // Step 2: Save specs (if any)
+        if (Object.keys(localSpecs).length > 0) {
+          message.loading({ content: 'Guardando especificaciones...', key: 'create-product', duration: 0 });
+          await updateMutation.mutateAsync({
+            id: newProductId,
+            request: { specs: localSpecs as Record<string, unknown> },
+          });
+        }
+        
+        // Step 3: Save images (if any)
+        if (localImages.length > 0) {
+          message.loading({ content: 'Guardando imágenes...', key: 'create-product', duration: 0 });
+          for (const image of localImages) {
+            await createImageMutation.mutateAsync({
+              imageUrl: image.imageUrl,
+              productId: newProductId,
+              variantId: image.variantId,
+              isPrimary: image.isPrimary,
+              displayOrder: image.displayOrder,
+            });
+          }
+        }
+        
+        // Step 4: Save variant attributes (if any)
+        if (localVariantAttributes.length > 0) {
+          message.loading({ content: 'Guardando atributos de variante...', key: 'create-product', duration: 0 });
+          await saveVariantAttributesMutation.mutateAsync({
+            productId: newProductId,
+            data: localVariantAttributes.map(attr => ({
+              variantAttributeId: attr.variantAttributeId,
+              customOptions: attr.customOptions,
+              position: attr.position,
+            })),
+          });
+        }
+        
+        // Step 5: Create variants (if any)
+        if (localVariants.length > 0) {
+          message.loading({ content: 'Creando variantes...', key: 'create-product', duration: 0 });
+          for (const variant of localVariants) {
+            await createVariantMutation.mutateAsync({
+              ...variant,
+              productId: newProductId,
+            });
+          }
+        }
+        
+        message.success({ content: 'Producto creado exitosamente', key: 'create-product', duration: 2 });
+        
+        // Navigate to edit page to continue working
+        navigate(`/admin/catalog/products/${newProductId}/edit`);
         return;
       }
-    } catch {
-      // Error ya manejado por el hook
+    } catch (error) {
+      message.destroy('create-product');
+      // Error already handled by hooks
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -110,182 +206,179 @@ export const ProductFormPage = () => {
   // TAB: PRODUCTO
   // ============================================
   const ProductTabContent = (
-    <div>
-      {/* Información Básica */}
-      <div style={{ marginBottom: 32 }}>
-        <Title level={5} style={{ marginBottom: 16, color: token.colorText }}>
-          Información Básica
-        </Title>
-
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Row gutter={[16, 0]}>
-            <Col xs={24} md={16}>
-              <Form.Item
-                label="Nombre del Producto"
-                name="name"
-                rules={[
-                  { required: true, message: 'El nombre es requerido' },
-                  { max: 255, message: 'Máximo 255 caracteres' },
-                ]}
-              >
-                <Input
-                  placeholder="Ej: iPhone 15 Pro Max 256GB"
-                  size="large"
-                  onChange={handleNameChange}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Código Interno"
-                name="code"
-                rules={[
-                  { required: true, message: 'El código es requerido' },
-                  { max: 50, message: 'Máximo 50 caracteres' },
-                ]}
-              >
-                <Input placeholder="PROD-001" size="large" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 0]}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="URL Amigable (Slug)"
-                name="slug"
-                rules={[
-                  { required: true, message: 'El slug es requerido' },
-                  { pattern: /^[a-z0-9-]+$/, message: 'Solo minúsculas, números y guiones' },
-                ]}
-                tooltip="Se genera automáticamente desde el nombre"
-              >
-                <Input placeholder="iphone-15-pro-max-256gb" addonBefore="/" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item
-                label="Marca"
-                name="brandId"
-                rules={[{ required: true, message: 'Selecciona una marca' }]}
-              >
-                <Select
-                  placeholder="Seleccionar"
-                  options={brandsData?.content.map((brand) => ({
-                    label: brand.name,
-                    value: brand.id,
-                  }))}
-                  showSearch
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item
-                label="Categoría"
-                name="categoryId"
-                rules={[{ required: true, message: 'Selecciona una categoría' }]}
-              >
-                <Select
-                  placeholder="Seleccionar"
-                  options={categoriesData?.content.map((category) => ({
-                    label: category.name,
-                    value: category.id,
-                  }))}
-                  showSearch
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            label="Descripción"
-            name="description"
-            tooltip="Descripción detallada que se mostrará en la página del producto"
+    <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Row gutter={[24, 24]}>
+        {/* Columna Principal */}
+        <Col xs={24} lg={16}>
+          {/* Información Básica */}
+          <Card
+            title={<Text strong>Información Básica</Text>}
+            style={{ marginBottom: 24 }}
           >
-            <TextArea
-              rows={4}
-              placeholder="Describe las características principales del producto..."
-              maxLength={1000}
-              showCount
-            />
-          </Form.Item>
+            <Row gutter={[16, 0]}>
+              <Col span={24}>
+                <Form.Item
+                  label="Nombre del Producto"
+                  name="name"
+                  rules={[
+                    { required: true, message: 'El nombre es requerido' },
+                    { max: 255, message: 'Máximo 255 caracteres' },
+                  ]}
+                >
+                  <Input
+                    placeholder="iPhone 15 Pro Max 256GB"
+                    size="large"
+                    onChange={handleNameChange}
+                    showCount
+                    maxLength={255}
+                  />
+                </Form.Item>
+              </Col>
 
-          <Form.Item
-            label="Producto Destacado"
-            name="isFeatured"
-            valuePropName="checked"
-            tooltip="Los productos destacados aparecen en la página principal"
-          >
-            <Switch checkedChildren="Sí" unCheckedChildren="No" />
-          </Form.Item>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Código Interno"
+                  name="code"
+                  rules={[
+                    { required: true, message: 'El código es requerido' },
+                    { max: 50, message: 'Máximo 50 caracteres' },
+                  ]}
+                >
+                  <Input placeholder="IPH15PRO" size="large" />
+                </Form.Item>
+              </Col>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<IconDeviceFloppy size={16} />}
-              loading={createMutation.isPending || updateMutation.isPending}
-              size="large"
-            >
-              {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
-            </Button>
-            <Button onClick={handleCancel} size="large">
-              Cancelar
-            </Button>
-          </div>
-        </Form>
-      </div>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="URL Amigable"
+                  name="slug"
+                  rules={[
+                    { required: true, message: 'El slug es requerido' },
+                    { pattern: /^[a-z0-9-]+$/, message: 'Solo minúsculas, números y guiones' },
+                  ]}
+                >
+                  <Input placeholder="iphone-15-pro-max-256gb" addonBefore="/" />
+                </Form.Item>
+              </Col>
 
-      {/* Especificaciones - Solo en edición */}
-      {isEdit && productId && (
-        <>
-          <Divider />
-          <div style={{ marginBottom: 32 }}>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Especificaciones Técnicas
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Completa las especificaciones según la categoría seleccionada. Puedes agregar
-              especificaciones adicionales si lo necesitas.
-            </Text>
+              <Col span={24}>
+                <Form.Item label="Descripción" name="description">
+                  <TextArea
+                    rows={4}
+                    placeholder="Describe las características principales del producto..."
+                    maxLength={1000}
+                    showCount
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Especificaciones */}
+          <Card title={<Text strong>Especificaciones Técnicas</Text>} style={{ marginBottom: 24 }}>
             <CategoryBasedSpecsEditor
               productId={productId}
-              categoryId={product?.categoryId}
+              categoryId={form.getFieldValue('categoryId') || product?.categoryId}
               initialSpecs={product?.specs}
+              localMode={!isEdit}
+              onLocalChange={setLocalSpecs}
             />
-          </div>
-        </>
-      )}
+          </Card>
 
-      {/* Imágenes del Producto - Solo en edición */}
-      {isEdit && productId && (
-        <>
-          <Divider />
-          <div>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Imágenes del Producto
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Agrega imágenes generales del producto. La imagen principal se mostrará en listados.
+          {/* Imágenes */}
+          <Card title={<Text strong>Galería de Imágenes</Text>}>
+            <ProductImagesGallery 
+              productId={productId} 
+              localMode={!isEdit}
+              onLocalChange={setLocalImages}
+            />
+          </Card>
+        </Col>
+
+        {/* Sidebar */}
+        <Col xs={24} lg={8}>
+          {/* Clasificación */}
+          <Card title={<Text strong>Clasificación</Text>} style={{ marginBottom: 24 }}>
+            <Form.Item
+              label="Marca"
+              name="brandId"
+              rules={[{ required: true, message: 'Selecciona una marca' }]}
+            >
+              <Select
+                placeholder="Seleccionar"
+                size="large"
+                options={brandsData?.content.map((brand) => ({
+                  label: brand.name,
+                  value: brand.id,
+                }))}
+                showSearch
+                optionFilterProp="label"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Categoría"
+              name="categoryId"
+              rules={[{ required: true, message: 'Selecciona una categoría' }]}
+            >
+              <Select
+                placeholder="Seleccionar"
+                size="large"
+                options={categoriesData?.content.map((category) => ({
+                  label: category.name,
+                  value: category.id,
+                }))}
+                showSearch
+                optionFilterProp="label"
+              />
+            </Form.Item>
+          </Card>
+
+          {/* Visibilidad */}
+          <Card title={<Text strong>Visibilidad</Text>}>
+            <Form.Item
+              label="Producto Destacado"
+              name="isFeatured"
+              valuePropName="checked"
+              style={{ marginBottom: 0 }}
+            >
+              <Switch checkedChildren="Sí" unCheckedChildren="No" />
+            </Form.Item>
+            <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+              Aparecerá en la página principal
             </Text>
-            <ProductImagesGallery productId={productId} />
-          </div>
-        </>
-      )}
+          </Card>
+        </Col>
+      </Row>
 
-      {/* Mensaje para nuevo producto */}
+      {/* Actions */}
+      <Row justify="end" style={{ marginTop: 24 }}>
+        <Space size="middle">
+          <Button onClick={handleCancel} size="large">
+            Cancelar
+          </Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<IconDeviceFloppy size={18} />}
+            loading={isSubmitting}
+            size="large"
+          >
+            {isEdit ? 'Guardar Cambios' : 'Crear Producto Completo'}
+          </Button>
+        </Space>
+      </Row>
+
       {!isEdit && (
         <Alert
           type="info"
           showIcon
-          message="Después de crear el producto"
-          description="Podrás agregar especificaciones técnicas, imágenes y configurar las variantes."
-          style={{ marginTop: 24 }}
+          message="Crea el producto con todos sus detalles"
+          description="Puedes configurar especificaciones, imágenes y variantes antes de guardar. Todo se creará en una sola operación."
+          style={{ marginTop: 16 }}
         />
       )}
-    </div>
+    </Form>
   );
 
   // ============================================
@@ -293,39 +386,34 @@ export const ProductFormPage = () => {
   // ============================================
   const VariantsTabContent = (
     <div>
-      {!isEdit || !productId ? (
+      {!form.getFieldValue('categoryId') && !isEdit ? (
         <Alert
           type="warning"
           showIcon
-          message="Guarda el producto primero"
-          description="Para configurar variantes, primero debes crear y guardar el producto."
+          message="Selecciona una categoría primero"
+          description="Para configurar variantes, primero selecciona una categoría en la pestaña Producto."
         />
       ) : (
         <>
           {/* Definición de Atributos */}
           <div style={{ marginBottom: 32 }}>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Atributos de Variantes
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Selecciona los atributos del catálogo global que aplican a este producto. Puedes
-              personalizar las opciones para cada atributo.
-            </Text>
-            <ProductVariantAttributesEditor productId={productId} />
+            <ProductVariantAttributesEditor 
+              productId={productId} 
+              localMode={!isEdit}
+              onLocalChange={setLocalVariantAttributes}
+            />
           </div>
 
           <Divider />
 
           {/* Lista de Variantes */}
           <div>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Variantes del Producto
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Cada variante representa una combinación única de atributos con su propio SKU, precio e
-              imágenes.
-            </Text>
-            <VariantsList productId={productId} />
+            <VariantsList 
+              productId={productId} 
+              localMode={!isEdit}
+              localVariantAttributes={localVariantAttributes}
+              onLocalChange={setLocalVariants}
+            />
           </div>
         </>
       )}
@@ -352,14 +440,18 @@ export const ProductFormPage = () => {
         </span>
       ),
       children: VariantsTabContent,
-      disabled: !isEdit,
     },
   ];
 
   if (isLoadingProduct && isEdit) {
     return (
       <Card>
-        <div style={{ textAlign: 'center', padding: 48 }}>Cargando producto...</div>
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>
+            <Text>Cargando producto...</Text>
+          </div>
+        </div>
       </Card>
     );
   }

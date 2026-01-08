@@ -93,7 +93,7 @@ export const CreateOrderModal = ({ open, onClose, onSubmit, isLoading }: CreateO
   useEffect(() => {
     const items = form.getFieldValue('items') || [];
     const enrichedItems = items.map((item: any) => {
-      const variant = variantsData?.content.find((v: VariantResponse) => v.id === item.variantId);
+      const variant = variantsData?.content.find((v: VariantWithStockResponse) => v.id === item.variantId);
       const product = productsData?.content.find(
         (p: ProductResponse) => p.id === variant?.productId
       );

@@ -13,11 +13,11 @@ import {
 /**
  * Hook para obtener imágenes de un producto
  */
-export const useImagesByProduct = (productId: number) => {
+export const useImagesByProduct = (productId: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['images', 'product', productId],
     queryFn: () => getImagesByProductId(productId),
-    enabled: !!productId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!productId,
   });
 };
 
