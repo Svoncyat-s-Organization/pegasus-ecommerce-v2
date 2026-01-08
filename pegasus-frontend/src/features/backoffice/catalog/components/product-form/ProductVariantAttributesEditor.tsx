@@ -69,7 +69,7 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
         customOptions: attr.customOptions && attr.customOptions.length > 0 
           ? attr.customOptions 
           : [...attr.globalOptions],
-        useCustomOptions: attr.customOptions && attr.customOptions.length > 0,
+        useCustomOptions: !!(attr.customOptions && attr.customOptions.length > 0),
         position: attr.position,
       }));
       setLocalAttributes(mapped);

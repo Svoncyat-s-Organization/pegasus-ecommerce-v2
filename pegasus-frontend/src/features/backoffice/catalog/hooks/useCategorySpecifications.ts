@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import type {
-  CategorySpecificationResponse,
   CreateCategorySpecificationRequest,
   UpdateCategorySpecificationRequest,
   SaveCategorySpecificationRequest,
