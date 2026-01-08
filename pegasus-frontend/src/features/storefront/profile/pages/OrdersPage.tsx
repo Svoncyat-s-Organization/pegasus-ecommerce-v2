@@ -35,6 +35,7 @@ import {
   IconBuildingStore,
   IconReceipt,
   IconCash,
+  IconArrowBack,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { modals } from '@mantine/modals';
@@ -43,6 +44,9 @@ import { useMyOrders, useMyOrderDetail, useCancelMyOrder, useConfirmOrderDeliver
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import type { OrderSummaryResponse, OrderStatus } from '@types';
+import { CreateRmaModal } from '@features/storefront/rma/components/CreateRmaModal';
+import { RmaDetailModal } from '@features/storefront/rma/components/RmaDetailModal';
+import { useOrderRmas } from '@features/storefront/rma/hooks/useOrderRmas';
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
   PENDING: 'yellow',
@@ -77,9 +81,13 @@ export const OrdersPage = () => {
   });
   const [page, setPage] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [rmaModalOpen, setRmaModalOpen] = useState(false);
+  const [rmaDetailModalOpen, setRmaDetailModalOpen] = useState(false);
+  const [selectedRmaId, setSelectedRmaId] = useState<number | null>(null);
 
   const { data, isLoading } = useMyOrders(page, 10);
   const { data: orderDetail, isLoading: detailLoading } = useMyOrderDetail(selectedOrderId);
+  const { data: orderRmasData } = useOrderRmas(selectedOrderId, 0, 10);
   const cancelOrderMutation = useCancelMyOrder();
   const confirmDeliveredMutation = useConfirmOrderDelivered();
   const { getPrimaryColor } = useStorefrontConfigStore();
@@ -588,11 +596,58 @@ export const OrdersPage = () => {
                     Confirmar Recepción
                   </Button>
                 )}
+
+                {/* Request Return Button or View RMA Status */}
+                {orderDetail.status === 'DELIVERED' && (
+                  orderRmasData && orderRmasData.content.length > 0 ? (
+                    <Button
+                      fullWidth
+                      color="blue"
+                      variant="light"
+                      leftSection={<IconEye size={16} />}
+                      onClick={() => {
+                        setSelectedRmaId(orderRmasData.content[0].id);
+                        setRmaDetailModalOpen(true);
+                      }}
+                    >
+                      Ver Estado de Devolución
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      color="orange"
+                      variant="light"
+                      leftSection={<IconArrowBack size={16} />}
+                      onClick={() => setRmaModalOpen(true)}
+                    >
+                      Solicitar Devolución
+                    </Button>
+                  )
+                )}
               </Stack>
             </SimpleGrid>
           </Stack>
         ) : null}
       </Modal>
+
+      {/* RMA Modal */}
+      <CreateRmaModal
+        open={rmaModalOpen}
+        onClose={() => {
+          setRmaModalOpen(false);
+        }}
+        preselectedOrderId={selectedOrderId}
+      />
+
+      {/* RMA Detail Modal */}
+      <RmaDetailModal
+        rmaId={selectedRmaId}
+        open={rmaDetailModalOpen}
+        onClose={() => {
+          setRmaDetailModalOpen(false);
+          setSelectedRmaId(null);
+        }}
+      />
     </Container>
   );
 };
