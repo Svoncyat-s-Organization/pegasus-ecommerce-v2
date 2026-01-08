@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography, Modal, Descriptions } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconEye, IconPower } from '@tabler/icons-react';
+import { Card, Input, Button, Table, Tag, Typography, Modal, Descriptions, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconEye, IconPower, IconDotsVertical } from '@tabler/icons-react';
 import { useProducts, useDeleteProduct, useToggleProductStatus } from '../hooks/useProducts';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import type { ProductResponse } from '@types';
@@ -22,12 +23,50 @@ export const ProductsListPage = () => {
   const toggleStatusMutation = useToggleProductStatus();
 
   const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
+    Modal.confirm({
+      title: '¿Eliminar producto?',
+      content: 'Esta acción desactivará el producto. Podrás reactivarlo después si lo necesitas.',
+      okText: 'Eliminar',
+      okType: 'danger',
+      cancelText: 'Cancelar',
+      onOk: () => deleteMutation.mutate(id),
+    });
   };
 
   const handleToggleStatus = (id: number) => {
     toggleStatusMutation.mutate(id);
   };
+
+  const getActionItems = (record: ProductResponse): MenuProps['items'] => [
+    {
+      key: 'view',
+      label: 'Ver detalles',
+      icon: <IconEye size={16} />,
+      onClick: () => handleOpenDetail(record),
+    },
+    {
+      key: 'edit',
+      label: 'Editar',
+      icon: <IconEdit size={16} />,
+      onClick: () => handleEdit(record.id),
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'toggle',
+      label: record.isActive ? 'Desactivar' : 'Activar',
+      icon: <IconPower size={16} />,
+      onClick: () => handleToggleStatus(record.id),
+    },
+    {
+      key: 'delete',
+      label: 'Eliminar',
+      icon: <IconTrash size={16} />,
+      danger: true,
+      onClick: () => handleDelete(record.id),
+    },
+  ];
 
   const handleCreate = () => {
     navigate('/admin/catalog/products/new');
@@ -103,48 +142,12 @@ export const ProductsListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 180,
+      width: 100,
+      align: 'center' as const,
       render: (_: unknown, record: ProductResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => handleOpenDetail(record)}
-            title="Ver detalles"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleEdit(record.id)}
-            title="Editar"
-          />
-          <Button
-            type="link"
-            size="small"
-            danger={record.isActive}
-            style={!record.isActive ? { color: '#8c8c8c' } : undefined}
-            icon={<IconPower size={16} />}
-            onClick={() => handleToggleStatus(record.id)}
-            title={record.isActive ? 'Desactivar' : 'Activar'}
-          />
-          <Popconfirm
-            title="¿Eliminar producto?"
-            description="Esta acción no se puede deshacer"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Sí"
-            cancelText="No"
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
-          </Popconfirm>
-        </Space>
+        <Dropdown menu={{ items: getActionItems(record) }} trigger={['click']}>
+          <Button type="text" icon={<IconDotsVertical size={18} />} />
+        </Dropdown>
       ),
     },
   ];

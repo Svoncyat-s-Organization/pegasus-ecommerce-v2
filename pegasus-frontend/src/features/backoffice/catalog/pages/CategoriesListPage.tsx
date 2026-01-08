@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch, IconFolder, IconFile } from '@tabler/icons-react';
+import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography, Drawer } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch, IconFolder, IconFile, IconSettings } from '@tabler/icons-react';
 import { useDeleteCategory, useToggleCategoryStatus, useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { CategoryFormModal } from '../components/CategoryFormModal';
+import { CategorySpecificationsEditor } from '../components/CategorySpecificationsEditor';
 import { getCategoriesTree } from '../api/categoriesApi';
 import { useQuery } from '@tanstack/react-query';
 import type { CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest } from '@types';
@@ -15,6 +16,8 @@ export const CategoriesListPage = () => {
   const debouncedSearch = useDebounce(searchTerm, 500);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryResponse | undefined>();
+  const [specsDrawerOpen, setSpecsDrawerOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryResponse | null>(null);
 
   // Usar árbol jerárquico en lugar de paginación
   const { data: treeData, isLoading } = useQuery({
@@ -42,6 +45,16 @@ export const CategoriesListPage = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingCategory(undefined);
+  };
+
+  const handleOpenSpecsDrawer = (category: CategoryResponse) => {
+    setSelectedCategory(category);
+    setSpecsDrawerOpen(true);
+  };
+
+  const handleCloseSpecsDrawer = () => {
+    setSpecsDrawerOpen(false);
+    setSelectedCategory(null);
   };
 
   const handleSubmit = (values: CreateCategoryRequest | UpdateCategoryRequest) => {
@@ -137,9 +150,16 @@ export const CategoriesListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 150,
+      width: 180,
       render: (_: unknown, record: CategoryResponse) => (
         <Space size="small">
+          <Button
+            type="link"
+            size="small"
+            icon={<IconSettings size={16} />}
+            onClick={() => handleOpenSpecsDrawer(record)}
+            title="Especificaciones"
+          />
           <Button
             type="link"
             size="small"
@@ -230,6 +250,23 @@ export const CategoriesListPage = () => {
         initialValues={editingCategory}
         loading={createMutation.isPending || updateMutation.isPending}
       />
+
+      <Drawer
+        title={`Especificaciones: ${selectedCategory?.name || ''}`}
+        placement="right"
+        width={700}
+        onClose={handleCloseSpecsDrawer}
+        open={specsDrawerOpen}
+        destroyOnClose
+      >
+        {selectedCategory && (
+          <CategorySpecificationsEditor
+            categoryId={selectedCategory.id}
+            categoryName={selectedCategory.name}
+            onClose={handleCloseSpecsDrawer}
+          />
+        )}
+      </Drawer>
     </Card>
   );
 };
