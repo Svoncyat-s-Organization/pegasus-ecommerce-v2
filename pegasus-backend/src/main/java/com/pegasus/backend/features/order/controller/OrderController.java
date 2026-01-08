@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -96,7 +97,10 @@ public class OrderController {
         @ApiResponse(responseCode = "404", description = "Cliente o variante no encontrada")
         public ResponseEntity<OrderResponse> createOrder(
                         @Valid @RequestBody CreateOrderRequest request,
-                        @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+                        Authentication authentication) {
+                if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
                 OrderResponse response = orderService.createOrder(request, userId);
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
@@ -109,7 +113,10 @@ public class OrderController {
         public ResponseEntity<OrderResponse> updateOrderStatus(
                         @PathVariable Long id,
                         @Valid @RequestBody UpdateOrderStatusRequest request,
-                        @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+                        Authentication authentication) {
+                if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
                 OrderResponse response = orderService.updateOrderStatus(id, request, userId);
                 return ResponseEntity.ok(response);
         }
@@ -122,7 +129,10 @@ public class OrderController {
         public ResponseEntity<OrderResponse> cancelOrder(
                         @PathVariable Long id,
                         @RequestParam(required = false) String reason,
-                        @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+                        Authentication authentication) {
+                if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
                 OrderResponse response = orderService.cancelOrder(id, reason, userId);
                 return ResponseEntity.ok(response);
         }

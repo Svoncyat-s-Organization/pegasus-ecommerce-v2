@@ -28,6 +28,7 @@ import com.pegasus.backend.features.order.entity.OrderStatusHistory;
 import com.pegasus.backend.features.order.mapper.OrderMapper;
 import com.pegasus.backend.features.order.repository.OrderRepository;
 import com.pegasus.backend.features.order.repository.OrderStatusHistoryRepository;
+import com.pegasus.backend.features.user.repository.UserRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import com.pegasus.backend.shared.enums.OrderStatus;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +66,14 @@ public class OrderService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final InvoiceRepository invoiceRepository;
     private final InvoiceMapper invoiceMapper;
+    private final UserRepository userRepository;
+
+    private Long sanitizeStaffUserId(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        return userRepository.existsById(userId) ? userId : null;
+    }
 
     /**
      * Obtener todos los pedidos con filtros opcionales y paginación
@@ -212,6 +221,8 @@ public class OrderService {
     public OrderResponse createOrder(CreateOrderRequest request, Long createdByUserId) {
         log.debug("Creating order for customer: {}", request.customerId());
 
+        Long sanitizedUserId = sanitizeStaffUserId(createdByUserId);
+
         // Validar que el cliente existe y está activo
         Customer customer = customerRepository.findById(request.customerId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -314,7 +325,7 @@ public class OrderService {
                     item.getVariantId(),
                     item.getQuantity(),
                     savedOrder.getId(),
-                    createdByUserId);
+                    sanitizedUserId);
         }
 
         // Crear historial inicial
@@ -322,7 +333,7 @@ public class OrderService {
                 .orderId(savedOrder.getId())
                 .status(OrderStatus.PENDING)
                 .comments("Pedido creado - Stock reservado")
-                .createdBy(createdByUserId)
+                .createdBy(sanitizedUserId)
                 .build();
 
         orderStatusHistoryRepository.save(initialHistory);
@@ -390,7 +401,7 @@ public class OrderService {
                         .orderId(savedOrder.getId())
                         .status(OrderStatus.PAID)
                         .comments("Pago confirmado: " + request.paymentTransactionId())
-                        .createdBy(createdByUserId)
+                        .createdBy(sanitizedUserId)
                         .build();
                 orderStatusHistoryRepository.save(paymentHistory);
             }
@@ -410,6 +421,8 @@ public class OrderService {
             Long updatedByUserId) {
         log.debug("Updating order {} status to {}", orderId, request.newStatus());
 
+        Long sanitizedUserId = sanitizeStaffUserId(updatedByUserId);
+
         Order order = findOrderById(orderId);
 
         // Validar transición de estado
@@ -424,7 +437,7 @@ public class OrderService {
                 .orderId(order.getId())
                 .status(request.newStatus())
                 .comments(request.comments())
-                .createdBy(updatedByUserId)
+                .createdBy(sanitizedUserId)
                 .build();
 
         orderStatusHistoryRepository.save(history);
@@ -470,6 +483,8 @@ public class OrderService {
     public OrderResponse cancelOrder(Long orderId, String reason, Long cancelledByUserId) {
         log.debug("Cancelling order: {}", orderId);
 
+        Long sanitizedUserId = sanitizeStaffUserId(cancelledByUserId);
+
         Order order = findOrderById(orderId);
 
         // Validar que el pedido puede ser cancelado
@@ -486,7 +501,7 @@ public class OrderService {
                     item.getVariantId(),
                     item.getQuantity(),
                     orderId,
-                    cancelledByUserId);
+                    sanitizedUserId);
         }
 
         // Actualizar estado
@@ -498,7 +513,7 @@ public class OrderService {
                 .orderId(order.getId())
                 .status(OrderStatus.CANCELLED)
                 .comments(reason != null ? reason : "Pedido cancelado - Stock liberado")
-                .createdBy(cancelledByUserId)
+                .createdBy(sanitizedUserId)
                 .build();
 
         orderStatusHistoryRepository.save(history);
