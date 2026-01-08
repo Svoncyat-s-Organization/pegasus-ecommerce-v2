@@ -18,6 +18,7 @@ import {
   Badge,
   TextInput,
   Select,
+  Modal,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate } from 'react-router-dom';
@@ -55,6 +56,7 @@ export const CheckoutPage = () => {
   const [active, setActive] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'yape' | 'plin'>('card');
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
   const { items, getSubtotal, getIGV, clearCart } = useCartStore();
   const { user } = useStorefrontAuthStore();
@@ -276,6 +278,7 @@ export const CheckoutPage = () => {
         shippingMethodId: form.values.shippingMethodId || undefined,
         paymentMethod: paymentMethod,
         paymentTransactionId: generateTransactionId(),
+        preferredInvoiceType: form.values.notes?.includes('FACTURA') ? 'INVOICE' : 'BILL',
         billingAddress: form.values.notes?.includes('FACTURA') ? {
           ubigeoId: invoiceDistrict || '',
           address: invoiceAddress,
@@ -604,7 +607,7 @@ export const CheckoutPage = () => {
                                 <Button
                                   size="xl"
                                   mt="md"
-                                  onClick={handleSubmit}
+                                  onClick={() => setConfirmModalOpen(true)}
                                   loading={createOrderMutation.isPending}
                                   leftSection={<IconShoppingCart size={20} />}
                                   color={primaryColor}
@@ -655,7 +658,7 @@ export const CheckoutPage = () => {
                               <Button
                                 size="xl"
                                 color="#74007d"
-                                onClick={handleSubmit}
+                                onClick={() => setConfirmModalOpen(true)}
                                 loading={createOrderMutation.isPending}
                               >
                                 Pagar {formatCurrency(total)}
@@ -704,7 +707,7 @@ export const CheckoutPage = () => {
                               <Button
                                 size="xl"
                                 color="#00c7b1"
-                                onClick={handleSubmit}
+                                onClick={() => setConfirmModalOpen(true)}
                                 loading={createOrderMutation.isPending}
                               >
                                 Pagar {formatCurrency(total)}
@@ -803,6 +806,47 @@ export const CheckoutPage = () => {
           </Grid.Col>
         </Grid>
       </Stack>
+
+      {/* Modal de Confirmación de Pago */}
+      <Modal
+        opened={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        title="Confirmar pedido"
+        centered
+        size="md"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Estás a punto de realizar un pedido por <Text component="span" fw={700}>{formatCurrency(total)}</Text>
+          </Text>
+
+          <Text size="sm" c="dimmed">
+            Una vez confirmado, tu pedido será procesado y recibirás un correo con los detalles.
+          </Text>
+
+          <Divider />
+
+          <Group justify="flex-end" gap="sm">
+            <Button
+              variant="subtle"
+              onClick={() => setConfirmModalOpen(false)}
+              disabled={createOrderMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmModalOpen(false);
+                handleSubmit();
+              }}
+              loading={createOrderMutation.isPending}
+              color={primaryColor}
+            >
+              Confirmar y Pagar
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Container>
   );
 };

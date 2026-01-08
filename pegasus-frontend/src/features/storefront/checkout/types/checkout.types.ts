@@ -64,6 +64,9 @@ export interface CreateOrderRequest {
 
   /** ID de transacción (si aplica) */
   paymentTransactionId?: string;
+
+  /** Tipo de comprobante preferido (BILL o INVOICE) */
+  preferredInvoiceType?: 'BILL' | 'INVOICE';
 }
 
 export interface OrderItemRequest {
