@@ -25,6 +25,7 @@ import {
   IconPlus,
   IconChevronRight,
   IconPackage,
+  IconBrandWhatsapp,
 } from '@tabler/icons-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useMemo } from 'react';
@@ -89,10 +90,11 @@ export const ProductDetailPage = () => {
   const { data: images } = useProductImages(productId);
   const { data: stock } = useVariantStock(selectedVariantId);
   const addItem = useCartStore((state) => state.addItem);
-  const { getPrimaryColor, getSecondaryColor } = useStorefrontConfigStore();
+  const { getPrimaryColor, getSecondaryColor, getContactPhone } = useStorefrontConfigStore();
 
   const primaryColor = getPrimaryColor();
   const secondaryColor = getSecondaryColor();
+  const contactPhone = getContactPhone();
   const isLoading = isLoadingProduct || isLoadingVariants;
 
   // Get selected variant
@@ -129,52 +131,21 @@ export const ProductDetailPage = () => {
 
     const available: Record<string, Set<string>> = {};
 
-    // If no attributes selected, all options are available
-    if (Object.keys(selectedAttributes).length === 0) {
-      variants.forEach((variant) => {
-        const attrs = variant.attributes as Record<string, string>;
-        Object.entries(attrs).forEach(([key, value]) => {
-          if (!available[key]) {
-            available[key] = new Set();
-          }
-          available[key].add(value);
-        });
-      });
-    } else {
-      // For each attribute, find what values are available in compatible variants
-      variants.forEach((variant) => {
-        const attrs = variant.attributes as Record<string, string>;
-        
-        // Check if this variant is compatible with current selection (excluding the attribute we're checking)
-        const isCompatible = Object.entries(selectedAttributes).every(
-          ([key, value]) => attrs[key] === value || !selectedAttributes[key]
-        );
-
-        if (isCompatible) {
-          Object.entries(attrs).forEach(([key, value]) => {
-            if (!available[key]) {
-              available[key] = new Set();
-            }
-            // Check if selecting this value with other selected attributes creates a valid variant
-            const testSelection = { ...selectedAttributes, [key]: value };
-            const hasMatchingVariant = variants.some((v) => {
-              const vAttrs = v.attributes as Record<string, string>;
-              return Object.entries(testSelection).every(
-                ([k, val]) => vAttrs[k] === val
-              );
-            });
-            if (hasMatchingVariant) {
-              available[key].add(value);
-            }
-          });
+    // Simplemente retornar todas las opciones disponibles sin filtrar
+    variants.forEach((variant) => {
+      const attrs = variant.attributes as Record<string, string>;
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (!available[key]) {
+          available[key] = new Set();
         }
+        available[key].add(value);
       });
-    }
+    });
 
     return Object.fromEntries(
       Object.entries(available).map(([key, values]) => [key, Array.from(values)])
     );
-  }, [variants, selectedAttributes]);
+  }, [variants]);
 
   // Find variant matching selected attributes
   const matchingVariant = useMemo(() => {
@@ -422,16 +393,23 @@ export const ProductDetailPage = () => {
               {product.name}
             </Text>
 
-            {/* SKU */}
-            <Text size="sm" c="dimmed">
-              Código: {selectedVariant?.sku || product.code}
-            </Text>
+            {/* SKU - Solo si hay variante seleccionada */}
+            {selectedVariant && (
+              <Text size="sm" c="dimmed">
+                Código: {selectedVariant.sku}
+              </Text>
+            )}
 
             {/* Price */}
             <Box>
               {selectedVariant ? (
                 <Text size="2rem" fw={700} style={{ color: primaryColor }}>
                   {formatCurrency(selectedVariant.price)}
+                </Text>
+              ) : Object.keys(selectedAttributes).length > 0 &&
+                Object.keys(selectedAttributes).length === Object.keys(attributeOptions).length ? (
+                <Text size="1.5rem" fw={600} c="red">
+                  No disponible
                 </Text>
               ) : priceRange ? (
                 <Text size="1.5rem" fw={600} c="dimmed">
@@ -490,7 +468,6 @@ export const ProductDetailPage = () => {
                     </Text>
                     <Group gap="xs">
                       {values.map((value) => {
-                        const isAvailable = availableOptions[attrKey]?.includes(value);
                         const isSelected = selectedAttributes[attrKey] === value;
                         
                         return (
@@ -500,12 +477,9 @@ export const ProductDetailPage = () => {
                             size="sm"
                             radius="md"
                             onClick={() => handleAttributeSelect(attrKey, value)}
-                            disabled={!isAvailable}
                             style={{
                               borderColor: isSelected ? primaryColor : undefined,
                               backgroundColor: isSelected ? primaryColor : undefined,
-                              opacity: !isAvailable ? 0.4 : 1,
-                              cursor: !isAvailable ? 'not-allowed' : 'pointer',
                             }}
                           >
                             {value}
@@ -576,12 +550,31 @@ export const ProductDetailPage = () => {
               </Button>
             </Group>
 
+            {/* WhatsApp Contact Button */}
+            {contactPhone && (
+              <Button
+                size="lg"
+                radius="md"
+                variant="outline"
+                color="green"
+                leftSection={<IconBrandWhatsapp size={20} />}
+                onClick={() => {
+                  const message = selectedVariant
+                    ? `Hola, me interesa el producto: ${product.name} (${selectedVariant.sku})`
+                    : `Hola, me interesa el producto: ${product.name}`;
+                  const whatsappUrl = `https://wa.me/${contactPhone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappUrl, '_blank');
+                }}
+                fullWidth
+              >
+                Consultar por WhatsApp
+              </Button>
+            )}
+
             {/* No Variant Selected Warning */}
-            {!selectedVariant && variants && variants.length > 0 && (
+            {!selectedVariant && variants && variants.length > 0 && Object.keys(selectedAttributes).length === 0 && (
               <Alert color="blue" variant="light">
-                {Object.keys(selectedAttributes).length === 0
-                  ? 'Selecciona las opciones del producto para ver el precio y stock.'
-                  : 'Esta combinación no está disponible. Por favor selecciona otras opciones.'}
+                Selecciona las opciones del producto para ver el precio y stock.
               </Alert>
             )}
           </Stack>

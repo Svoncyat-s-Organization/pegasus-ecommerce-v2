@@ -55,7 +55,7 @@ INSERT INTO storefront_settings (
     'Política de envíos: Envíos a todo el Perú...',
     'soporte@pegasus.com.pe',
     '(01) 555-1234',
-    '51999888777',
+    '999888777',
     true
 );
 

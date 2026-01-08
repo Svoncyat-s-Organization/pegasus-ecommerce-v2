@@ -12,11 +12,17 @@ import {
   Col,
   Typography,
   message,
-  Divider,
   Alert,
   theme,
+  Space,
+  Divider,
 } from 'antd';
-import { IconArrowLeft, IconDeviceFloppy, IconPackage, IconStack2 } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconDeviceFloppy,
+  IconPackage,
+  IconStack2,
+} from '@tabler/icons-react';
 import { useProduct, useCreateProduct, useUpdateProduct } from '../hooks/useProducts';
 import { useBrands } from '../hooks/useBrands';
 import { useCategories } from '../hooks/useCategories';
@@ -110,182 +116,176 @@ export const ProductFormPage = () => {
   // TAB: PRODUCTO
   // ============================================
   const ProductTabContent = (
-    <div>
-      {/* Información Básica */}
-      <div style={{ marginBottom: 32 }}>
-        <Title level={5} style={{ marginBottom: 16, color: token.colorText }}>
-          Información Básica
-        </Title>
-
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Row gutter={[16, 0]}>
-            <Col xs={24} md={16}>
-              <Form.Item
-                label="Nombre del Producto"
-                name="name"
-                rules={[
-                  { required: true, message: 'El nombre es requerido' },
-                  { max: 255, message: 'Máximo 255 caracteres' },
-                ]}
-              >
-                <Input
-                  placeholder="Ej: iPhone 15 Pro Max 256GB"
-                  size="large"
-                  onChange={handleNameChange}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Código Interno"
-                name="code"
-                rules={[
-                  { required: true, message: 'El código es requerido' },
-                  { max: 50, message: 'Máximo 50 caracteres' },
-                ]}
-              >
-                <Input placeholder="PROD-001" size="large" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 0]}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="URL Amigable (Slug)"
-                name="slug"
-                rules={[
-                  { required: true, message: 'El slug es requerido' },
-                  { pattern: /^[a-z0-9-]+$/, message: 'Solo minúsculas, números y guiones' },
-                ]}
-                tooltip="Se genera automáticamente desde el nombre"
-              >
-                <Input placeholder="iphone-15-pro-max-256gb" addonBefore="/" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item
-                label="Marca"
-                name="brandId"
-                rules={[{ required: true, message: 'Selecciona una marca' }]}
-              >
-                <Select
-                  placeholder="Seleccionar"
-                  options={brandsData?.content.map((brand) => ({
-                    label: brand.name,
-                    value: brand.id,
-                  }))}
-                  showSearch
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item
-                label="Categoría"
-                name="categoryId"
-                rules={[{ required: true, message: 'Selecciona una categoría' }]}
-              >
-                <Select
-                  placeholder="Seleccionar"
-                  options={categoriesData?.content.map((category) => ({
-                    label: category.name,
-                    value: category.id,
-                  }))}
-                  showSearch
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            label="Descripción"
-            name="description"
-            tooltip="Descripción detallada que se mostrará en la página del producto"
+    <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Row gutter={[24, 24]}>
+        {/* Columna Principal */}
+        <Col xs={24} lg={16}>
+          {/* Información Básica */}
+          <Card
+            title={<Text strong>Información Básica</Text>}
+            style={{ marginBottom: 24 }}
           >
-            <TextArea
-              rows={4}
-              placeholder="Describe las características principales del producto..."
-              maxLength={1000}
-              showCount
-            />
-          </Form.Item>
+            <Row gutter={[16, 0]}>
+              <Col span={24}>
+                <Form.Item
+                  label="Nombre del Producto"
+                  name="name"
+                  rules={[
+                    { required: true, message: 'El nombre es requerido' },
+                    { max: 255, message: 'Máximo 255 caracteres' },
+                  ]}
+                >
+                  <Input
+                    placeholder="iPhone 15 Pro Max 256GB"
+                    size="large"
+                    onChange={handleNameChange}
+                    showCount
+                    maxLength={255}
+                  />
+                </Form.Item>
+              </Col>
 
-          <Form.Item
-            label="Producto Destacado"
-            name="isFeatured"
-            valuePropName="checked"
-            tooltip="Los productos destacados aparecen en la página principal"
-          >
-            <Switch checkedChildren="Sí" unCheckedChildren="No" />
-          </Form.Item>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Código Interno"
+                  name="code"
+                  rules={[
+                    { required: true, message: 'El código es requerido' },
+                    { max: 50, message: 'Máximo 50 caracteres' },
+                  ]}
+                >
+                  <Input placeholder="IPH15PRO" size="large" />
+                </Form.Item>
+              </Col>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<IconDeviceFloppy size={16} />}
-              loading={createMutation.isPending || updateMutation.isPending}
-              size="large"
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="URL Amigable"
+                  name="slug"
+                  rules={[
+                    { required: true, message: 'El slug es requerido' },
+                    { pattern: /^[a-z0-9-]+$/, message: 'Solo minúsculas, números y guiones' },
+                  ]}
+                >
+                  <Input placeholder="iphone-15-pro-max-256gb" addonBefore="/" />
+                </Form.Item>
+              </Col>
+
+              <Col span={24}>
+                <Form.Item label="Descripción" name="description">
+                  <TextArea
+                    rows={4}
+                    placeholder="Describe las características principales del producto..."
+                    maxLength={1000}
+                    showCount
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Especificaciones */}
+          {isEdit && productId && (
+            <Card title={<Text strong>Especificaciones Técnicas</Text>} style={{ marginBottom: 24 }}>
+              <CategoryBasedSpecsEditor
+                productId={productId}
+                categoryId={product?.categoryId}
+                initialSpecs={product?.specs}
+              />
+            </Card>
+          )}
+
+          {/* Imágenes */}
+          {isEdit && productId && (
+            <Card title={<Text strong>Galería de Imágenes</Text>}>
+              <ProductImagesGallery productId={productId} />
+            </Card>
+          )}
+        </Col>
+
+        {/* Sidebar */}
+        <Col xs={24} lg={8}>
+          {/* Clasificación */}
+          <Card title={<Text strong>Clasificación</Text>} style={{ marginBottom: 24 }}>
+            <Form.Item
+              label="Marca"
+              name="brandId"
+              rules={[{ required: true, message: 'Selecciona una marca' }]}
             >
-              {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
-            </Button>
-            <Button onClick={handleCancel} size="large">
-              Cancelar
-            </Button>
-          </div>
-        </Form>
-      </div>
+              <Select
+                placeholder="Seleccionar"
+                size="large"
+                options={brandsData?.content.map((brand) => ({
+                  label: brand.name,
+                  value: brand.id,
+                }))}
+                showSearch
+                optionFilterProp="label"
+              />
+            </Form.Item>
 
-      {/* Especificaciones - Solo en edición */}
-      {isEdit && productId && (
-        <>
-          <Divider />
-          <div style={{ marginBottom: 32 }}>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Especificaciones Técnicas
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Completa las especificaciones según la categoría seleccionada. Puedes agregar
-              especificaciones adicionales si lo necesitas.
+            <Form.Item
+              label="Categoría"
+              name="categoryId"
+              rules={[{ required: true, message: 'Selecciona una categoría' }]}
+            >
+              <Select
+                placeholder="Seleccionar"
+                size="large"
+                options={categoriesData?.content.map((category) => ({
+                  label: category.name,
+                  value: category.id,
+                }))}
+                showSearch
+                optionFilterProp="label"
+              />
+            </Form.Item>
+          </Card>
+
+          {/* Visibilidad */}
+          <Card title={<Text strong>Visibilidad</Text>}>
+            <Form.Item
+              label="Producto Destacado"
+              name="isFeatured"
+              valuePropName="checked"
+              style={{ marginBottom: 0 }}
+            >
+              <Switch checkedChildren="Sí" unCheckedChildren="No" />
+            </Form.Item>
+            <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+              Aparecerá en la página principal
             </Text>
-            <CategoryBasedSpecsEditor
-              productId={productId}
-              categoryId={product?.categoryId}
-              initialSpecs={product?.specs}
-            />
-          </div>
-        </>
-      )}
+          </Card>
+        </Col>
+      </Row>
 
-      {/* Imágenes del Producto - Solo en edición */}
-      {isEdit && productId && (
-        <>
-          <Divider />
-          <div>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Imágenes del Producto
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Agrega imágenes generales del producto. La imagen principal se mostrará en listados.
-            </Text>
-            <ProductImagesGallery productId={productId} />
-          </div>
-        </>
-      )}
+      {/* Actions */}
+      <Row justify="end" style={{ marginTop: 24 }}>
+        <Space size="middle">
+          <Button onClick={handleCancel} size="large">
+            Cancelar
+          </Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<IconDeviceFloppy size={18} />}
+            loading={createMutation.isPending || updateMutation.isPending}
+            size="large"
+          >
+            {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
+          </Button>
+        </Space>
+      </Row>
 
-      {/* Mensaje para nuevo producto */}
       {!isEdit && (
         <Alert
           type="info"
           showIcon
-          message="Después de crear el producto"
-          description="Podrás agregar especificaciones técnicas, imágenes y configurar las variantes."
-          style={{ marginTop: 24 }}
+          message="Después de crear el producto podrás agregar especificaciones, imágenes y variantes"
+          style={{ marginTop: 16 }}
         />
       )}
-    </div>
+    </Form>
   );
 
   // ============================================

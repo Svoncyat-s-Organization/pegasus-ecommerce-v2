@@ -115,6 +115,8 @@ export const CategoryBasedSpecsEditor = ({
   };
 
   const renderSpecInput = (spec: SpecValue, index: number) => {
+    const inputWidth = 400;
+
     switch (spec.specType) {
       case 'SELECT':
         return (
@@ -122,7 +124,7 @@ export const CategoryBasedSpecsEditor = ({
             value={spec.value || undefined}
             onChange={(val) => handleSpecValueChange(index, val || '')}
             placeholder={`Seleccionar ${spec.displayName.toLowerCase()}`}
-            style={{ width: '100%' }}
+            style={{ width: inputWidth }}
             allowClear
             options={spec.options?.map((opt) => ({ label: opt, value: opt })) || []}
           />
@@ -133,18 +135,20 @@ export const CategoryBasedSpecsEditor = ({
             value={spec.value ? parseFloat(spec.value) : undefined}
             onChange={(val) => handleSpecValueChange(index, val !== null ? String(val) : '')}
             placeholder={`Ingrese ${spec.displayName.toLowerCase()}`}
-            style={{ width: '100%' }}
-            addonAfter={spec.unit}
+            style={{ width: inputWidth }}
+            suffix={spec.unit && <Text type="secondary">{spec.unit}</Text>}
           />
         );
       case 'BOOLEAN':
         return (
-          <Switch
-            checked={spec.value === 'true'}
-            onChange={(checked) => handleSpecValueChange(index, String(checked))}
-            checkedChildren="Sí"
-            unCheckedChildren="No"
-          />
+          <div style={{ width: inputWidth }}>
+            <Switch
+              checked={spec.value === 'true'}
+              onChange={(checked) => handleSpecValueChange(index, String(checked))}
+              checkedChildren="Sí"
+              unCheckedChildren="No"
+            />
+          </div>
         );
       default: // TEXT
         return (
@@ -152,7 +156,8 @@ export const CategoryBasedSpecsEditor = ({
             value={spec.value}
             onChange={(e) => handleSpecValueChange(index, e.target.value)}
             placeholder={`Ingrese ${spec.displayName.toLowerCase()}`}
-            addonAfter={spec.unit}
+            style={{ width: inputWidth }}
+            suffix={spec.unit && <Text type="secondary">{spec.unit}</Text>}
           />
         );
     }
@@ -197,10 +202,9 @@ export const CategoryBasedSpecsEditor = ({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(150px, 200px) 1fr',
-          gap: '12px 16px',
+          gridTemplateColumns: '200px auto',
+          gap: '16px',
           alignItems: 'center',
-          maxWidth: 600,
           marginBottom: 16,
         }}
       >
