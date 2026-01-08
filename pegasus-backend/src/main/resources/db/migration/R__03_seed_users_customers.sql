@@ -19,3 +19,28 @@ INSERT INTO users (username, email, password_hash, doc_type, doc_number, first_n
 INSERT INTO customers (username, email, password_hash, doc_type, doc_number, first_name, last_name, phone, is_active) VALUES
 ('cliente1', 'cliente1@example.com', '$2a$12$H4ydi1ZIBLGlvzACtaf03OvENxxtiCELpooBFGt0UDsS/RLUbmNVi', 'DNI', '44556677', 'Carlos', 'López', '987654321', true),
 ('cliente2', 'cliente2@example.com', '$2a$12$H4ydi1ZIBLGlvzACtaf03OvENxxtiCELpooBFGt0UDsS/RLUbmNVi', 'DNI', '55667788', 'Ana', 'Martínez', '987123456', true);
+
+-- Storefront Customer Addresses
+-- Note: customer_id is resolved via email for determinism.
+DELETE FROM customer_addresses
+WHERE customer_id IN (
+	SELECT id FROM customers WHERE email LIKE '%@example.com'
+);
+
+-- cliente1: default shipping + billing
+INSERT INTO customer_addresses (customer_id, ubigeo_id, address, reference, postal_code, is_default_shipping, is_default_billing)
+SELECT c.id, '150103', 'Av. La Molina 123', 'Dpto 301', '15012', true, true
+FROM customers c
+WHERE c.email = 'cliente1@example.com';
+
+-- cliente1: secondary address (non-default)
+INSERT INTO customer_addresses (customer_id, ubigeo_id, address, reference, postal_code, is_default_shipping, is_default_billing)
+SELECT c.id, '150101', 'Jr. Huallaga 456', 'Referencia: al costado de la plaza', '15001', false, false
+FROM customers c
+WHERE c.email = 'cliente1@example.com';
+
+-- cliente2: default shipping + billing
+INSERT INTO customer_addresses (customer_id, ubigeo_id, address, reference, postal_code, is_default_shipping, is_default_billing)
+SELECT c.id, '150104', 'Av. Pedro de Osma 789', 'Casa color blanca', '15063', true, true
+FROM customers c
+WHERE c.email = 'cliente2@example.com';
