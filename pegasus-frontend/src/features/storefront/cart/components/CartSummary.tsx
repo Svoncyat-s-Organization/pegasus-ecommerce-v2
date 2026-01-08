@@ -13,7 +13,7 @@ interface CartSummaryProps {
  * CartSummary Component
  * Muestra el resumen de costos del carrito (subtotal, IGV, total)
  */
-export const CartSummary = ({ subtotal, igv, total, itemCount }: CartSummaryProps) => {
+export const CartSummary = ({ subtotal, total, itemCount }: CartSummaryProps) => {
   const navigate = useNavigate();
 
   return (

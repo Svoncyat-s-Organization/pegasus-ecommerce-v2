@@ -77,7 +77,7 @@ export const CheckoutPage = () => {
   const { data: provinces } = useProvinces(invoiceDepartment);
   const { data: districts } = useDistricts(invoiceProvince);
 
-  const [invoiceConfirmed, setInvoiceConfirmed] = useState(false);
+  const [_invoiceConfirmed, setInvoiceConfirmed] = useState(false);
   const [invoiceErrors, setInvoiceErrors] = useState<Record<string, string>>({});
 
   const validateInvoice = () => {

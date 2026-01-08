@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Button, Table, Tag, Space, Tooltip, Card } from 'antd';
 import { IconPlus, IconEye } from '@tabler/icons-react';
 import type { ColumnsType } from 'antd/es/table';
-import type { RmaSummaryResponse, CreateRmaRequest } from '@types';
+import type { RmaSummaryResponse } from '@types';
 import { useMyRmas } from '../hooks/useMyRmas';
-import { useCreateRma } from '../hooks/useCreateRma';
 import { CreateRmaModal } from '../components/CreateRmaModal';
 import { RmaDetailModal } from '../components/RmaDetailModal';
 import {
@@ -27,7 +26,6 @@ export const ReturnsPage = () => {
     const [selectedRmaId, setSelectedRmaId] = useState<number | null>(null);
 
     const { data: rmasPage, isLoading } = useMyRmas(page, pageSize);
-    const { mutateAsync: createRma, isPending: isCreating } = useCreateRma();
 
     const handleViewDetail = (rmaId: number) => {
         setSelectedRmaId(rmaId);
@@ -37,10 +35,6 @@ export const ReturnsPage = () => {
     const handleCloseDetail = () => {
         setDetailModalOpen(false);
         setSelectedRmaId(null);
-    };
-
-    const handleCreateRma = async (request: CreateRmaRequest) => {
-        await createRma(request);
     };
 
     const columns: ColumnsType<RmaSummaryResponse> = [
@@ -155,8 +149,6 @@ export const ReturnsPage = () => {
             <CreateRmaModal
                 open={createModalOpen}
                 onClose={() => setCreateModalOpen(false)}
-                onSubmit={handleCreateRma}
-                isLoading={isCreating}
             />
 
             <RmaDetailModal

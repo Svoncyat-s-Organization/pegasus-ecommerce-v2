@@ -11,7 +11,6 @@ import {
     REFUND_METHOD_LABELS,
 } from '@features/backoffice/rma/constants/rmaConstants';
 import { formatCurrency } from '@shared/utils/formatters';
-import dayjs from 'dayjs';
 
 interface RmaDetailModalProps {
     rmaId: number | null;

@@ -39,7 +39,6 @@ interface InvoiceFormModalProps {
 export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lockOrder }: InvoiceFormModalProps) => {
   const [form] = Form.useForm();
   const createInvoice = useCreateBillingInvoice();
-  const [selectedOrder, setSelectedOrder] = useState<OrderSummaryResponse | undefined>();
 
   const invoiceType = Form.useWatch<InvoiceType>('invoiceType', form);
   const seriesId = Form.useWatch<number | undefined>('seriesId', form);
@@ -138,7 +137,6 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
   const autoNumberPreview = selectedSeries ? padInvoiceNumber((selectedSeries.currentNumber || 0) + 1) : undefined;
 
   const applySelectedOrderToForm = useCallback((order: OrderSummaryResponse | undefined) => {
-    setSelectedOrder(order);
     if (!order) return;
     form.setFieldsValue({
       orderCustomerName: order.customerName,

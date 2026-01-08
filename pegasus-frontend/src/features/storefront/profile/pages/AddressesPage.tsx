@@ -11,7 +11,7 @@ import {
     Group,
     ThemeIcon,
 } from '@mantine/core';
-import { IconMapPin, IconPlus, IconAddressBook } from '@tabler/icons-react';
+import { IconPlus, IconAddressBook } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import { useMyAddresses } from '../hooks/useProfile';
 import { AddressCard } from '../components/AddressCard';

@@ -28,7 +28,6 @@ import {
   IconHome,
   IconCategory,
   IconMapPin,
-  IconArrowBack,
 } from '@tabler/icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';

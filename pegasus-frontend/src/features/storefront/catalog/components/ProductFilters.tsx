@@ -24,10 +24,11 @@ export const ProductFilters = ({
 
   const categoryTree = useMemo(() => categories ?? [], [categories]);
 
-  const getDescendantIds = (category: { children?: Array<{ id: number; children?: unknown[] }> }): number[] => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getDescendantIds = (category: { children?: any[] }): number[] => {
     const children = category.children ?? [];
-    const direct = children.map((c) => c.id);
-    const nested = children.flatMap((c) => getDescendantIds(c));
+    const direct = children.map((c: { id: number }) => c.id);
+    const nested = children.flatMap((c: { id: number; children?: unknown[] }) => getDescendantIds(c));
     return [...direct, ...nested];
   };
 
