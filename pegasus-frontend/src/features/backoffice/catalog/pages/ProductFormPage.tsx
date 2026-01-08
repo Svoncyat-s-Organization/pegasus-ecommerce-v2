@@ -13,9 +13,9 @@ import {
   Typography,
   message,
   Alert,
-  theme,
   Space,
   Divider,
+  Spin,
 } from 'antd';
 import {
   IconArrowLeft,
@@ -26,19 +26,39 @@ import {
 import { useProduct, useCreateProduct, useUpdateProduct } from '../hooks/useProducts';
 import { useBrands } from '../hooks/useBrands';
 import { useCategories } from '../hooks/useCategories';
-import type { CreateProductRequest, UpdateProductRequest } from '@types';
+import { useCreateImage } from '../hooks/useImages';
+import { useSaveAllProductVariantAttributes } from '../hooks/useProductVariantAttributes';
+import { useCreateVariant } from '../hooks/useVariants';
+import type { 
+  CreateProductRequest, 
+  UpdateProductRequest,
+} from '@types';
 import {
   CategoryBasedSpecsEditor,
   ProductImagesGallery,
   ProductVariantAttributesEditor,
   VariantsList,
+  type LocalVariantAttribute,
 } from '../components/product-form';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
+// Local state types for creation mode
+interface LocalImage {
+  imageUrl: string;
+  isPrimary: boolean;
+  displayOrder: number;
+  variantId?: number;
+}
+
+interface LocalVariant {
+  sku: string;
+  price: number;
+  attributes: Record<string, unknown>;
+}
+
 export const ProductFormPage = () => {
-  const { token } = theme.useToken();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -46,15 +66,25 @@ export const ProductFormPage = () => {
   const productId = id ? parseInt(id, 10) : undefined;
 
   const [activeTab, setActiveTab] = useState('product');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Local state for creation mode
+  const [localSpecs, setLocalSpecs] = useState<Record<string, string>>({});
+  const [localImages, setLocalImages] = useState<LocalImage[]>([]);
+  const [localVariantAttributes, setLocalVariantAttributes] = useState<LocalVariantAttribute[]>([]);
+  const [localVariants, setLocalVariants] = useState<LocalVariant[]>([]);
 
   // Queries
-  const { data: product, isLoading: isLoadingProduct } = useProduct(productId || 0);
+  const { data: product, isLoading: isLoadingProduct } = useProduct(productId || 0, { enabled: isEdit });
   const { data: brandsData } = useBrands(0, 100);
   const { data: categoriesData } = useCategories(0, 100);
 
   // Mutations
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
+  const createImageMutation = useCreateImage();
+  const saveVariantAttributesMutation = useSaveAllProductVariantAttributes();
+  const createVariantMutation = useCreateVariant();
 
   // Cargar datos del producto al editar
   useEffect(() => {
@@ -93,18 +123,78 @@ export const ProductFormPage = () => {
 
   const handleSubmit = async (values: CreateProductRequest | UpdateProductRequest) => {
     try {
+      setIsSubmitting(true);
+      
       if (isEdit && productId) {
+        // Edit mode: simple update
         await updateMutation.mutateAsync({ id: productId, request: values as UpdateProductRequest });
         message.success('Producto actualizado exitosamente');
       } else {
-        const result = await createMutation.mutateAsync(values as CreateProductRequest);
-        message.success('Producto creado exitosamente');
-        // Redirigir a la edición para completar specs, imágenes y variantes
-        navigate(`/admin/catalog/products/${result.id}/edit`);
+        // Creation mode: create product with all related data
+        message.loading({ content: 'Creando producto...', key: 'create-product', duration: 0 });
+        
+        // Step 1: Create product
+        const createdProduct = await createMutation.mutateAsync(values as CreateProductRequest);
+        const newProductId = createdProduct.id;
+        
+        // Step 2: Save specs (if any)
+        if (Object.keys(localSpecs).length > 0) {
+          message.loading({ content: 'Guardando especificaciones...', key: 'create-product', duration: 0 });
+          await updateMutation.mutateAsync({
+            id: newProductId,
+            request: { specs: localSpecs as Record<string, unknown> },
+          });
+        }
+        
+        // Step 3: Save images (if any)
+        if (localImages.length > 0) {
+          message.loading({ content: 'Guardando imágenes...', key: 'create-product', duration: 0 });
+          for (const image of localImages) {
+            await createImageMutation.mutateAsync({
+              imageUrl: image.imageUrl,
+              productId: newProductId,
+              variantId: image.variantId,
+              isPrimary: image.isPrimary,
+              displayOrder: image.displayOrder,
+            });
+          }
+        }
+        
+        // Step 4: Save variant attributes (if any)
+        if (localVariantAttributes.length > 0) {
+          message.loading({ content: 'Guardando atributos de variante...', key: 'create-product', duration: 0 });
+          await saveVariantAttributesMutation.mutateAsync({
+            productId: newProductId,
+            data: localVariantAttributes.map(attr => ({
+              variantAttributeId: attr.variantAttributeId,
+              customOptions: attr.customOptions,
+              position: attr.position,
+            })),
+          });
+        }
+        
+        // Step 5: Create variants (if any)
+        if (localVariants.length > 0) {
+          message.loading({ content: 'Creando variantes...', key: 'create-product', duration: 0 });
+          for (const variant of localVariants) {
+            await createVariantMutation.mutateAsync({
+              ...variant,
+              productId: newProductId,
+            });
+          }
+        }
+        
+        message.success({ content: 'Producto creado exitosamente', key: 'create-product', duration: 2 });
+        
+        // Navigate to edit page to continue working
+        navigate(`/admin/catalog/products/${newProductId}/edit`);
         return;
       }
-    } catch {
-      // Error ya manejado por el hook
+    } catch (error) {
+      message.destroy('create-product');
+      // Error already handled by hooks
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -185,22 +275,24 @@ export const ProductFormPage = () => {
           </Card>
 
           {/* Especificaciones */}
-          {isEdit && productId && (
-            <Card title={<Text strong>Especificaciones Técnicas</Text>} style={{ marginBottom: 24 }}>
-              <CategoryBasedSpecsEditor
-                productId={productId}
-                categoryId={product?.categoryId}
-                initialSpecs={product?.specs}
-              />
-            </Card>
-          )}
+          <Card title={<Text strong>Especificaciones Técnicas</Text>} style={{ marginBottom: 24 }}>
+            <CategoryBasedSpecsEditor
+              productId={productId}
+              categoryId={form.getFieldValue('categoryId') || product?.categoryId}
+              initialSpecs={product?.specs}
+              localMode={!isEdit}
+              onLocalChange={setLocalSpecs}
+            />
+          </Card>
 
           {/* Imágenes */}
-          {isEdit && productId && (
-            <Card title={<Text strong>Galería de Imágenes</Text>}>
-              <ProductImagesGallery productId={productId} />
-            </Card>
-          )}
+          <Card title={<Text strong>Galería de Imágenes</Text>}>
+            <ProductImagesGallery 
+              productId={productId} 
+              localMode={!isEdit}
+              onLocalChange={setLocalImages}
+            />
+          </Card>
         </Col>
 
         {/* Sidebar */}
@@ -269,10 +361,10 @@ export const ProductFormPage = () => {
             type="primary"
             htmlType="submit"
             icon={<IconDeviceFloppy size={18} />}
-            loading={createMutation.isPending || updateMutation.isPending}
+            loading={isSubmitting}
             size="large"
           >
-            {isEdit ? 'Guardar Cambios' : 'Crear Producto'}
+            {isEdit ? 'Guardar Cambios' : 'Crear Producto Completo'}
           </Button>
         </Space>
       </Row>
@@ -281,7 +373,8 @@ export const ProductFormPage = () => {
         <Alert
           type="info"
           showIcon
-          message="Después de crear el producto podrás agregar especificaciones, imágenes y variantes"
+          message="Crea el producto con todos sus detalles"
+          description="Puedes configurar especificaciones, imágenes y variantes antes de guardar. Todo se creará en una sola operación."
           style={{ marginTop: 16 }}
         />
       )}
@@ -293,39 +386,34 @@ export const ProductFormPage = () => {
   // ============================================
   const VariantsTabContent = (
     <div>
-      {!isEdit || !productId ? (
+      {!form.getFieldValue('categoryId') && !isEdit ? (
         <Alert
           type="warning"
           showIcon
-          message="Guarda el producto primero"
-          description="Para configurar variantes, primero debes crear y guardar el producto."
+          message="Selecciona una categoría primero"
+          description="Para configurar variantes, primero selecciona una categoría en la pestaña Producto."
         />
       ) : (
         <>
           {/* Definición de Atributos */}
           <div style={{ marginBottom: 32 }}>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Atributos de Variantes
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Selecciona los atributos del catálogo global que aplican a este producto. Puedes
-              personalizar las opciones para cada atributo.
-            </Text>
-            <ProductVariantAttributesEditor productId={productId} />
+            <ProductVariantAttributesEditor 
+              productId={productId} 
+              localMode={!isEdit}
+              onLocalChange={setLocalVariantAttributes}
+            />
           </div>
 
           <Divider />
 
           {/* Lista de Variantes */}
           <div>
-            <Title level={5} style={{ marginBottom: 8, color: token.colorText }}>
-              Variantes del Producto
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Cada variante representa una combinación única de atributos con su propio SKU, precio e
-              imágenes.
-            </Text>
-            <VariantsList productId={productId} />
+            <VariantsList 
+              productId={productId} 
+              localMode={!isEdit}
+              localVariantAttributes={localVariantAttributes}
+              onLocalChange={setLocalVariants}
+            />
           </div>
         </>
       )}
@@ -352,14 +440,18 @@ export const ProductFormPage = () => {
         </span>
       ),
       children: VariantsTabContent,
-      disabled: !isEdit,
     },
   ];
 
   if (isLoadingProduct && isEdit) {
     return (
       <Card>
-        <div style={{ textAlign: 'center', padding: 48 }}>Cargando producto...</div>
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>
+            <Text>Cargando producto...</Text>
+          </div>
+        </div>
       </Card>
     );
   }

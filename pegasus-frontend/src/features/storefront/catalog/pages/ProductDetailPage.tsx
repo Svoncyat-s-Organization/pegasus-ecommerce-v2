@@ -28,12 +28,13 @@ import {
   IconBrandWhatsapp,
 } from '@tabler/icons-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useProductDetail } from '../hooks/useProductDetail';
 import {
   useProductVariants,
   useProductImages,
   useVariantStock,
+  useVariantImages,
 } from '../hooks/useProductVariants';
 import { useCartStore } from '@features/storefront/cart';
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
@@ -88,6 +89,7 @@ export const ProductDetailPage = () => {
   const { data: product, isLoading: isLoadingProduct } = useProductDetail(productId);
   const { data: variants, isLoading: isLoadingVariants } = useProductVariants(productId);
   const { data: images } = useProductImages(productId);
+  const { data: variantImages } = useVariantImages(selectedVariantId);
   const { data: stock } = useVariantStock(selectedVariantId);
   const addItem = useCartStore((state) => state.addItem);
   const { getPrimaryColor, getSecondaryColor, getContactPhone } = useStorefrontConfigStore();
@@ -125,28 +127,6 @@ export const ProductDetailPage = () => {
   // Selected attribute values state
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
-  // Get available options for each attribute based on current selection
-  const availableOptions = useMemo(() => {
-    if (!variants || variants.length === 0) return {};
-
-    const available: Record<string, Set<string>> = {};
-
-    // Simplemente retornar todas las opciones disponibles sin filtrar
-    variants.forEach((variant) => {
-      const attrs = variant.attributes as Record<string, string>;
-      Object.entries(attrs).forEach(([key, value]) => {
-        if (!available[key]) {
-          available[key] = new Set();
-        }
-        available[key].add(value);
-      });
-    });
-
-    return Object.fromEntries(
-      Object.entries(available).map(([key, values]) => [key, Array.from(values)])
-    );
-  }, [variants]);
-
   // Find variant matching selected attributes
   const matchingVariant = useMemo(() => {
     if (!variants || Object.keys(selectedAttributes).length === 0) return null;
@@ -178,18 +158,35 @@ export const ProductDetailPage = () => {
     setSelectedVariantId(null);
   }
 
-  // Get display images (variant images first, then product images)
+  // Get display images (product images already include all variant images)
   const displayImages = useMemo(() => {
     if (!images || images.length === 0) {
       return [{ id: 0, imageUrl: '/placeholder-product.jpg', isPrimary: true, displayOrder: 0 }];
     }
-    // Sort by displayOrder, with primary first
+
+    // Ordenar por isPrimary primero, luego por displayOrder
     return [...images].sort((a, b) => {
       if (a.isPrimary && !b.isPrimary) return -1;
       if (!a.isPrimary && b.isPrimary) return 1;
       return a.displayOrder - b.displayOrder;
     });
   }, [images]);
+
+  // Auto-select variant's primary image when variant changes
+  useEffect(() => {
+    // Si hay una variante seleccionada y tiene imágenes, buscar su imagen principal en el carrusel
+    if (selectedVariantId && variantImages && variantImages.length > 0) {
+      // Encontrar la imagen principal de la variante
+      const primaryVariantImage = variantImages.find(img => img.isPrimary) || variantImages[0];
+      
+      // Buscar el índice de esa imagen en displayImages (ya está ahí, solo buscar)
+      const index = displayImages.findIndex(img => img.id === primaryVariantImage.id);
+      
+      if (index !== -1) {
+        setSelectedImageIndex(index);
+      }
+    }
+  }, [selectedVariantId, variantImages, displayImages]);
 
   // Calculate price range for product
   const priceRange = useMemo(() => {

@@ -25,11 +25,11 @@ export const useVariants = (page = 0, size = 20, search?: string) => {
 /**
  * Hook para obtener variantes de un producto
  */
-export const useVariantsByProduct = (productId: number) => {
+export const useVariantsByProduct = (productId: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['variants', 'product', productId],
     queryFn: () => getVariantsByProductId(productId),
-    enabled: !!productId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!productId,
   });
 };
 

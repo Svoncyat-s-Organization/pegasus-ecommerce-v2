@@ -3,23 +3,19 @@ import {
   Button,
   Select,
   Space,
-  Empty,
   Card,
   Tag,
   Modal,
   message,
-  Tooltip,
-  theme,
   Input,
   Checkbox,
+  Typography,
 } from 'antd';
 import {
   IconPlus,
   IconTrash,
   IconDeviceFloppy,
   IconX,
-  IconInfoCircle,
-  IconGripVertical,
 } from '@tabler/icons-react';
 import {
   useProductVariantAttributes,
@@ -27,6 +23,16 @@ import {
 } from '../../hooks/useProductVariantAttributes';
 import { useAllActiveVariantAttributes } from '../../hooks/useVariantAttributes';
 import type { ProductVariantAttributeResponse, VariantAttributeResponse } from '@types';
+
+const { Text } = Typography;
+
+export interface LocalVariantAttribute {
+  variantAttributeId: number;
+  customOptions?: string[];
+  position?: number;
+  attributeName?: string;
+  attributeDisplayName?: string;
+}
 
 interface LocalAttribute {
   id?: number; // undefined if new
@@ -40,16 +46,24 @@ interface LocalAttribute {
 }
 
 interface ProductVariantAttributesEditorProps {
-  productId: number;
+  productId?: number;
+  localMode?: boolean;
+  onLocalChange?: (attributes: LocalVariantAttribute[]) => void;
 }
 
 /**
  * Editor para asignar atributos del catálogo global a un producto.
  * Permite seleccionar qué atributos usar para las variantes y personalizar opciones.
  */
-export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttributesEditorProps) => {
-  const { token } = theme.useToken();
-  const { data: assignedAttributes, isLoading: isLoadingAssigned } = useProductVariantAttributes(productId);
+export const ProductVariantAttributesEditor = ({ 
+  productId, 
+  localMode = false,
+  onLocalChange,
+}: ProductVariantAttributesEditorProps) => {
+  const { data: assignedAttributes, isLoading: isLoadingAssigned } = useProductVariantAttributes(
+    productId || 0,
+    { enabled: !localMode && !!productId }
+  );
   const { data: allAttributes, isLoading: isLoadingAll } = useAllActiveVariantAttributes();
   const saveMutation = useSaveAllProductVariantAttributes();
 
@@ -59,7 +73,7 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
 
   // Sincronizar datos del servidor
   useEffect(() => {
-    if (assignedAttributes && !hasChanges) {
+    if (assignedAttributes && !hasChanges && !localMode) {
       const mapped: LocalAttribute[] = assignedAttributes.map((attr: ProductVariantAttributeResponse) => ({
         id: attr.id,
         variantAttributeId: attr.variantAttributeId,
@@ -74,7 +88,7 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
       }));
       setLocalAttributes(mapped);
     }
-  }, [assignedAttributes, hasChanges]);
+  }, [assignedAttributes, hasChanges, localMode]);
 
   // Atributos disponibles (no asignados aún)
   const getAvailableAttributes = (): VariantAttributeResponse[] => {
@@ -97,8 +111,20 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
       position: localAttributes.length,
     };
 
-    setLocalAttributes((prev) => [...prev, newAttr]);
+    const updated = [...localAttributes, newAttr];
+    setLocalAttributes(updated);
     setHasChanges(true);
+    
+    // Notify parent in local mode
+    if (localMode && onLocalChange) {
+      onLocalChange(updated.map((attr, index) => ({
+        variantAttributeId: attr.variantAttributeId,
+        customOptions: attr.useCustomOptions ? attr.customOptions : [],
+        position: index,
+        attributeName: attr.attributeName,
+        attributeDisplayName: attr.displayName,
+      })));
+    }
   };
 
   const handleRemoveAttribute = (index: number) => {
@@ -109,8 +135,20 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
       okType: 'danger',
       cancelText: 'Cancelar',
       onOk: () => {
-        setLocalAttributes((prev) => prev.filter((_, i) => i !== index));
+        const updated = localAttributes.filter((_, i) => i !== index);
+        setLocalAttributes(updated);
         setHasChanges(true);
+        
+        // Notify parent in local mode
+        if (localMode && onLocalChange) {
+          onLocalChange(updated.map((attr, idx) => ({
+            variantAttributeId: attr.variantAttributeId,
+            customOptions: attr.useCustomOptions ? attr.customOptions : [],
+            position: idx,
+            attributeName: attr.attributeName,
+            attributeDisplayName: attr.displayName,
+          })));
+        }
       },
     });
   };
@@ -184,10 +222,28 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
     }
 
     const payload = localAttributes.map((attr, index) => ({
+      id: attr.id, // Incluir el ID si existe (para actualización)
       variantAttributeId: attr.variantAttributeId,
       customOptions: attr.useCustomOptions ? attr.customOptions : [],
       position: index,
     }));
+
+    // Local mode: just notify parent
+    if (localMode && onLocalChange) {
+      onLocalChange(localAttributes.map((attr, index) => ({
+        variantAttributeId: attr.variantAttributeId,
+        customOptions: attr.useCustomOptions ? attr.customOptions : [],
+        position: index,
+        attributeName: attr.attributeName,
+        attributeDisplayName: attr.displayName,
+      })));
+      message.success('Atributos configurados (se guardarán al crear el producto)');
+      setHasChanges(false);
+      return;
+    }
+
+    // Server mode: save to database
+    if (!productId) return;
 
     try {
       await saveMutation.mutateAsync({ productId, data: payload });
@@ -208,42 +264,53 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
 
   if (localAttributes.length === 0) {
     return (
-      <Empty
-        description="No hay atributos de variante asignados"
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
+      <div
+        style={{
+          textAlign: 'center',
+          padding: '40px 24px',
+          background: '#fafafa',
+          borderRadius: 6,
+          border: '1px dashed #d9d9d9',
+        }}
       >
-        <Space direction="vertical" align="center">
+        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          No hay atributos de variante asignados
+        </Text>
+        <Space direction="vertical" align="center" size={12}>
           {availableAttributes.length > 0 ? (
             <Select
               placeholder="Seleccionar atributo del catálogo"
-              style={{ width: 280 }}
+              style={{ width: 300 }}
               onChange={handleAddAttribute}
               value={undefined}
               options={availableAttributes.map((a: VariantAttributeResponse) => ({
                 value: a.id,
-                label: (
-                  <Space>
-                    <span>{a.displayName}</span>
-                    <Tag color="blue">{a.name}</Tag>
-                  </Space>
-                ),
+                label: `${a.displayName} (${a.name})`,
               }))}
             />
           ) : (
-            <span style={{ color: token.colorTextSecondary }}>
-              No hay atributos disponibles en el catálogo
-            </span>
+            <Text type="secondary">No hay atributos disponibles en el catálogo</Text>
           )}
-          <span style={{ color: token.colorTextSecondary, fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
             Gestiona el catálogo global en Catálogo → Atributos de variantes
-          </span>
+          </Text>
         </Space>
-      </Empty>
+      </div>
     );
   }
 
   return (
     <div>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <Text strong style={{ fontSize: 16, display: 'block', marginBottom: 4 }}>
+          Atributos de Variantes
+        </Text>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          Selecciona los atributos del catálogo global que aplican a este producto. Puedes personalizar las opciones para cada atributo.
+        </Text>
+      </div>
+
       {/* Lista de atributos asignados */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
         {localAttributes.map((attr, attrIndex) => (
@@ -252,8 +319,7 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
             size="small"
             title={
               <Space>
-                <IconGripVertical size={14} style={{ color: token.colorTextTertiary, cursor: 'grab' }} />
-                <span>{attr.displayName}</span>
+                <Text strong>{attr.displayName}</Text>
                 <Tag color="blue">{attr.attributeName}</Tag>
               </Space>
             }
@@ -263,20 +329,17 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
                 danger
                 size="small"
                 icon={<IconTrash size={16} />}
+                title="Desasignar atributo"
                 onClick={() => handleRemoveAttribute(attrIndex)}
               />
             }
-            styles={{ body: { padding: 16 } }}
           >
             {/* Opciones base del catálogo */}
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, color: token.colorTextSecondary, display: 'block', marginBottom: 8 }}>
+            <div style={{ marginBottom: 16 }}>
+              <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
                 Opciones del catálogo global
-                <Tooltip title="Selecciona las opciones que aplican a este producto">
-                  <IconInfoCircle size={12} style={{ marginLeft: 4 }} />
-                </Tooltip>
-              </label>
-              <Space size={[4, 8]} wrap>
+              </Text>
+              <Space size={[8, 8]} wrap>
                 {attr.baseOptions.map((option) => (
                   <Checkbox
                     key={option}
@@ -291,14 +354,14 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
 
             {/* Opciones personalizadas adicionales */}
             <div>
-              <label style={{ fontSize: 12, color: token.colorTextSecondary, display: 'block', marginBottom: 8 }}>
+              <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
                 Opciones adicionales (solo este producto)
-              </label>
+              </Text>
 
               {/* Mostrar opciones custom que no están en base */}
               {attr.customOptions.filter((o) => !attr.baseOptions.includes(o)).length > 0 && (
-                <div style={{ marginBottom: 8 }}>
-                  <Space size={[4, 4]} wrap>
+                <div style={{ marginBottom: 12 }}>
+                  <Space size={[6, 6]} wrap>
                     {attr.customOptions
                       .filter((o) => !attr.baseOptions.includes(o))
                       .map((option) => (
@@ -310,8 +373,8 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
                             handleRemoveCustomOption(attrIndex, realIndex);
                           }}
                           closeIcon={<IconX size={10} />}
-                          style={{ margin: 0 }}
                           color="orange"
+                          style={{ margin: 0 }}
                         >
                           {option}
                         </Tag>
@@ -329,7 +392,11 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
                   }
                   onPressEnter={() => handleAddCustomOption(attrIndex)}
                 />
-                <Button icon={<IconPlus size={16} />} onClick={() => handleAddCustomOption(attrIndex)}>
+                <Button
+                  type="default"
+                  icon={<IconPlus size={16} />}
+                  onClick={() => handleAddCustomOption(attrIndex)}
+                >
                   Agregar
                 </Button>
               </Space.Compact>
@@ -339,28 +406,20 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
       </div>
 
       {/* Selector para agregar más atributos */}
-      {availableAttributes.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
+      <Space size="middle">
+        {availableAttributes.length > 0 && (
           <Select
-            placeholder="Agregar otro atributo del catálogo"
-            style={{ width: 280 }}
+            placeholder="Agregar otro atributo"
+            style={{ width: 300 }}
             onChange={handleAddAttribute}
             value={undefined}
             options={availableAttributes.map((a: VariantAttributeResponse) => ({
               value: a.id,
-              label: (
-                <Space>
-                  <span>{a.displayName}</span>
-                  <Tag color="blue">{a.name}</Tag>
-                </Space>
-              ),
+              label: `${a.displayName} (${a.name})`,
             }))}
           />
-        </div>
-      )}
+        )}
 
-      {/* Acciones */}
-      <Space>
         <Button
           type="primary"
           icon={<IconDeviceFloppy size={16} />}
@@ -368,7 +427,7 @@ export const ProductVariantAttributesEditor = ({ productId }: ProductVariantAttr
           disabled={!hasChanges}
           loading={saveMutation.isPending}
         >
-          Guardar atributos
+          Guardar Cambios
         </Button>
       </Space>
     </div>

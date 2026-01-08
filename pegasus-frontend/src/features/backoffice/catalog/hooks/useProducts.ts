@@ -58,11 +58,11 @@ export const useProductsByBrand = (brandId: number) => {
 /**
  * Hook para obtener un producto por ID
  */
-export const useProduct = (id: number) => {
+export const useProduct = (id: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['products', id],
     queryFn: () => getProductById(id),
-    enabled: !!id,
+    enabled: options?.enabled !== undefined ? options.enabled : !!id,
   });
 };
 

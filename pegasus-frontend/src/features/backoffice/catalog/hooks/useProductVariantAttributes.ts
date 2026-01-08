@@ -16,11 +16,11 @@ import {
 /**
  * Hook para obtener atributos asignados a un producto
  */
-export const useProductVariantAttributes = (productId: number) => {
+export const useProductVariantAttributes = (productId: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['productVariantAttributes', productId],
     queryFn: () => getProductVariantAttributes(productId),
-    enabled: !!productId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!productId,
   });
 };
 

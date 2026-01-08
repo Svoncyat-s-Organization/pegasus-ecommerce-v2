@@ -5,31 +5,66 @@ import { useImagesByProduct, useCreateImage, useDeleteImage, useUpdateImage } fr
 import { ImageUploader } from '@shared/components/ImageUploader';
 import type { ImageResponse } from '@types';
 
+interface LocalImage {
+  imageUrl: string;
+  isPrimary: boolean;
+  displayOrder: number;
+  id: string; // temporary ID for local mode
+}
+
 interface ProductImagesGalleryProps {
-  productId: number;
+  productId?: number;
+  localMode?: boolean;
+  onLocalChange?: (images: LocalImage[]) => void;
 }
 
 /**
  * Galería de imágenes del producto (no variantes)
  * Permite subir, eliminar y establecer imagen principal
  */
-export const ProductImagesGallery = ({ productId }: ProductImagesGalleryProps) => {
+export const ProductImagesGallery = ({ 
+  productId, 
+  localMode = false,
+  onLocalChange,
+}: ProductImagesGalleryProps) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [localImages, setLocalImages] = useState<LocalImage[]>([]);
 
-  const { data: images, isLoading } = useImagesByProduct(productId);
+  const { data: serverImages, isLoading } = useImagesByProduct(productId || 0, { enabled: !localMode && !!productId });
   const createMutation = useCreateImage();
   const deleteMutation = useDeleteImage();
   const updateMutation = useUpdateImage();
 
+  const images = localMode ? localImages : serverImages;
+
   const handleImageUploaded = async (url: string | undefined) => {
     if (!url) return;
+
+    if (localMode) {
+      // Local mode: add to local state
+      const newImage: LocalImage = {
+        imageUrl: url,
+        isPrimary: localImages.length === 0,
+        displayOrder: localImages.length,
+        id: `temp-${Date.now()}`,
+      };
+      const updated = [...localImages, newImage];
+      setLocalImages(updated);
+      onLocalChange?.(updated);
+      message.success('Imagen agregada (se guardará al crear el producto)');
+      setIsUploadModalOpen(false);
+      return;
+    }
+
+    // Server mode: save to database
+    if (!productId) return;
 
     try {
       await createMutation.mutateAsync({
         imageUrl: url,
         productId,
         variantId: undefined,
-        isPrimary: !images || images.length === 0, // Primera imagen es principal
+        isPrimary: !images || images.length === 0,
         displayOrder: images?.length || 0,
       });
       message.success('Imagen agregada');
@@ -39,12 +74,38 @@ export const ProductImagesGallery = ({ productId }: ProductImagesGalleryProps) =
     }
   };
 
-  const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
+  const handleDelete = (idOrTempId: number | string) => {
+    if (localMode) {
+      // Local mode: remove from local state
+      const updated = localImages.filter((img) => img.id !== idOrTempId);
+      setLocalImages(updated);
+      onLocalChange?.(updated);
+      message.success('Imagen eliminada');
+      return;
+    }
+
+    // Server mode: delete from database
+    if (typeof idOrTempId === 'number') {
+      deleteMutation.mutate(idOrTempId);
+    }
   };
 
-  const handleSetPrimary = async (image: ImageResponse) => {
-    if (image.isPrimary) return;
+  const handleSetPrimary = async (imageIdOrTemp: number | string) => {
+    if (localMode) {
+      // Local mode: update local state
+      const updated = localImages.map((img: LocalImage) => ({
+        ...img,
+        isPrimary: img.id === imageIdOrTemp,
+      }));
+      setLocalImages(updated);
+      onLocalChange?.(updated);
+      message.success('Imagen principal actualizada');
+      return;
+    }
+
+    // Server mode: update in database
+    const image = images?.find((img) => 'id' in img && typeof img.id === 'number' && img.id === imageIdOrTemp) as ImageResponse | undefined;
+    if (!image || image.isPrimary) return;
 
     try {
       await updateMutation.mutateAsync({
@@ -107,14 +168,17 @@ export const ProductImagesGallery = ({ productId }: ProductImagesGalleryProps) =
           gap: 12,
         }}
       >
-        {images.map((image) => (
-          <ImageCard
-            key={image.id}
-            image={image}
-            onSetPrimary={handleSetPrimary}
-            onDelete={handleDelete}
-          />
-        ))}
+        {images.map((image: ImageResponse | LocalImage) => {
+          const imgId = 'id' in image && typeof image.id === 'number' ? image.id : (image as LocalImage).id;
+          return (
+            <ImageCard
+              key={imgId}
+              image={image}
+              onSetPrimary={() => handleSetPrimary(imgId)}
+              onDelete={() => handleDelete(imgId)}
+            />
+          );
+        })}
       </div>
 
       {/* Modal de subida */}
@@ -136,13 +200,17 @@ export const ProductImagesGallery = ({ productId }: ProductImagesGalleryProps) =
 
 // Componente interno para cada imagen
 interface ImageCardProps {
-  image: ImageResponse;
-  onSetPrimary: (image: ImageResponse) => void;
-  onDelete: (id: number) => void;
+  image: ImageResponse | LocalImage;
+  onSetPrimary: () => void;
+  onDelete: () => void;
 }
 
 const ImageCard = ({ image, onSetPrimary, onDelete }: ImageCardProps) => {
   const { token } = theme.useToken();
+  const imageId = 'id' in image && typeof image.id === 'number' 
+    ? image.id 
+    : (image as LocalImage).id || 'temp';
+  
   return (
     <div
       style={{
@@ -154,7 +222,7 @@ const ImageCard = ({ image, onSetPrimary, onDelete }: ImageCardProps) => {
     >
       <Image
         src={image.imageUrl}
-        alt={`Imagen ${image.id}`}
+        alt={`Imagen ${imageId}`}
         style={{ width: '100%', height: 140, objectFit: 'cover' }}
         preview={{ mask: 'Ver' }}
       />
@@ -171,14 +239,14 @@ const ImageCard = ({ image, onSetPrimary, onDelete }: ImageCardProps) => {
           type="text"
           size="small"
           icon={image.isPrimary ? <IconStarFilled size={16} color={token.colorWarning} /> : <IconStar size={16} />}
-          onClick={() => onSetPrimary(image)}
+          onClick={onSetPrimary}
           disabled={image.isPrimary}
           title={image.isPrimary ? 'Imagen principal' : 'Establecer como principal'}
         />
 
         <Popconfirm
           title="¿Eliminar imagen?"
-          onConfirm={() => onDelete(image.id)}
+          onConfirm={onDelete}
           okText="Eliminar"
           cancelText="Cancelar"
         >

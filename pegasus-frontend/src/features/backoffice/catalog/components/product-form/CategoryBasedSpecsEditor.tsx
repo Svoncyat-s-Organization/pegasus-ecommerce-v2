@@ -29,9 +29,11 @@ interface SpecValue {
 }
 
 interface CategoryBasedSpecsEditorProps {
-  productId: number;
+  productId?: number;
   categoryId?: number;
   initialSpecs?: Record<string, unknown>;
+  localMode?: boolean;
+  onLocalChange?: (specs: Record<string, string>) => void;
 }
 
 /**
@@ -42,6 +44,8 @@ export const CategoryBasedSpecsEditor = ({
   productId,
   categoryId,
   initialSpecs,
+  localMode = false,
+  onLocalChange,
 }: CategoryBasedSpecsEditorProps) => {
   const { token } = theme.useToken();
   const updateMutation = useUpdateProduct();
@@ -77,6 +81,19 @@ export const CategoryBasedSpecsEditor = ({
       return updated;
     });
     setHasChanges(true);
+    
+    // In local mode, propagate changes immediately
+    if (localMode && onLocalChange) {
+      const updatedValues = [...specValues];
+      updatedValues[index] = { ...updatedValues[index], value: newValue };
+      const specsObject: Record<string, string> = {};
+      updatedValues.forEach((spec) => {
+        if (spec.value.trim()) {
+          specsObject[spec.key] = spec.value.trim();
+        }
+      });
+      onLocalChange(specsObject);
+    }
   };
 
   const handleSave = async () => {
@@ -101,6 +118,21 @@ export const CategoryBasedSpecsEditor = ({
         }
       }
     });
+
+    // Local mode: just notify parent
+    if (localMode && onLocalChange) {
+      const specsStringObject: Record<string, string> = {};
+      Object.entries(specsObject).forEach(([key, value]) => {
+        specsStringObject[key] = String(value);
+      });
+      onLocalChange(specsStringObject);
+      message.success('Especificaciones configuradas (se guardarán al crear el producto)');
+      setHasChanges(false);
+      return;
+    }
+
+    // Edit mode: save to server
+    if (!productId) return;
 
     try {
       await updateMutation.mutateAsync({
