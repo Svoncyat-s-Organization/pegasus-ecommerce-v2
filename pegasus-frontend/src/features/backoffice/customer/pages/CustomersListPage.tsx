@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Table, Button, Space, Tag, Card, Typography, Popconfirm, Input } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconEye, IconSearch } from '@tabler/icons-react';
+import { Table, Button, Tag, Card, Typography, Input, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { IconPlus, IconEdit, IconTrash, IconEye, IconSearch, IconDotsVertical } from '@tabler/icons-react';
 import { useCustomers } from '../hooks/useCustomers';
 import { useDeleteCustomer } from '../hooks/useCustomerMutations';
 import { CustomerFormModal } from '../components/CustomerFormModal';
@@ -94,33 +95,48 @@ export const CustomersListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 150,
+      width: 100,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => handleView(record.id)}
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleEdit(record.id)}
-          />
-          <Popconfirm
-            title="¿Eliminar cliente?"
-            description="El cliente será desactivado. ¿Deseas continuar?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Sí"
-            cancelText="No"
-          >
-            <Button type="link" danger size="small" icon={<IconTrash size={16} />} />
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalle',
+            icon: <IconEye size={16} />,
+            onClick: () => handleView(record.id),
+          },
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleEdit(record.id),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar cliente?',
+                content: 'El cliente será desactivado. ¿Deseas continuar?',
+                okText: 'Sí',
+                cancelText: 'No',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

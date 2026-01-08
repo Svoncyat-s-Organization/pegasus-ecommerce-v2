@@ -52,6 +52,11 @@ const menuItems: MenuItem[] = [
         label: 'Productos',
         path: '/admin/catalog/products',
       },
+      {
+        key: '/admin/catalog/variant-attributes',
+        label: 'Atributos de Variantes',
+        path: '/admin/catalog/variant-attributes',
+      },
     ],
   },
   {

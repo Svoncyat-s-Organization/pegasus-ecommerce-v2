@@ -1,5 +1,6 @@
-import { Table, Tag, Button, Space, Popconfirm, Badge } from 'antd';
-import { IconEye, IconX } from '@tabler/icons-react';
+import { Table, Tag, Button, Badge, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconEye, IconX, IconDotsVertical } from '@tabler/icons-react';
 import type { RmaSummaryResponse, RmaStatus } from '@types';
 import { RMA_STATUS_LABELS, RMA_STATUS_COLORS, RMA_REASON_LABELS, isActionAvailable } from '../constants/rmaConstants';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -94,35 +95,47 @@ export const RmaList = ({
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 110,
-      render: (record: RmaSummaryResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            title="Ver detalles"
-            onClick={() => onViewDetail(record.id)}
-          />
-          {isActionAvailable(record.status, 'cancel') && (
-            <Popconfirm
-              title="¿Cancelar RMA?"
-              description="Esta acción no se puede deshacer"
-              onConfirm={() => onCancel(record.id)}
-              okText="Sí"
-              cancelText="No"
-            >
-              <Button
-                type="link"
-                danger
-                size="small"
-                icon={<IconX size={16} />}
-                title="Cancelar"
-              />
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (record: RmaSummaryResponse) => {
+        const canCancel = isActionAvailable(record.status, 'cancel');
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalles',
+            icon: <IconEye size={16} />,
+            onClick: () => onViewDetail(record.id),
+          },
+          ...(canCancel
+            ? [
+                {
+                  type: 'divider' as const,
+                },
+                {
+                  key: 'cancel',
+                  label: 'Cancelar',
+                  icon: <IconX size={16} />,
+                  danger: true,
+                  onClick: () => {
+                    Modal.confirm({
+                      title: '¿Cancelar RMA?',
+                      content: 'Esta acción no se puede deshacer',
+                      okText: 'Sí',
+                      cancelText: 'No',
+                      okButtonProps: { danger: true },
+                      onOk: () => onCancel(record.id),
+                    });
+                  },
+                },
+              ]
+            : []),
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

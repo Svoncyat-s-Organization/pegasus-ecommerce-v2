@@ -8,6 +8,7 @@ const pageTitles: Record<string, string> = {
   '/admin/catalog/products': 'Productos',
   '/admin/catalog/categories': 'Categorías',
   '/admin/catalog/brands': 'Marcas',
+  '/admin/catalog/variant-attributes': 'Atributos de Variantes',
   '/admin/orders': 'Pedidos',
   '/admin/inventory': 'Inventario',
   '/admin/inventory/stock': 'Stock',

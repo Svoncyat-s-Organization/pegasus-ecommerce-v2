@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Table, Button, Space, Tag, Input, Typography, Popconfirm, Card } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconSearch, IconEye, IconKey } from '@tabler/icons-react';
+import { Table, Button, Tag, Input, Typography, Card, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { IconPlus, IconEdit, IconTrash, IconSearch, IconEye, IconKey, IconDotsVertical } from '@tabler/icons-react';
 import { useUsers } from '../hooks/useUsers';
 import { useDeleteUser } from '../hooks/useUserMutations';
 import { UserFormModal } from '../components/UserFormModal';
@@ -103,47 +104,54 @@ export const UsersListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 150,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconKey size={16} />}
-            onClick={() => handleAssignRoles(record.id, record.username)}
-            title="Asignar roles"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => handleView(record.id)}
-            title="Ver detalle"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleEdit(record.id)}
-            title="Editar"
-          />
-          <Popconfirm
-            title="¿Eliminar usuario?"
-            description="Esta acción no se puede deshacer"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Eliminar"
-            cancelText="Cancelar"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_, record) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'roles',
+            label: 'Asignar roles',
+            icon: <IconKey size={16} />,
+            onClick: () => handleAssignRoles(record.id, record.username),
+          },
+          {
+            key: 'view',
+            label: 'Ver detalle',
+            icon: <IconEye size={16} />,
+            onClick: () => handleView(record.id),
+          },
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleEdit(record.id),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar usuario?',
+                content: 'Esta acción no se puede deshacer',
+                okText: 'Eliminar',
+                cancelText: 'Cancelar',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

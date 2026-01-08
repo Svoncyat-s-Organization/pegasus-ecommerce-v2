@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Table, Button, Space, Popconfirm, Tag } from 'antd';
-import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
-import { useVariantsByProduct, useDeleteVariant } from '../hooks/useVariants';
+import { Table, Button, Space, Tag, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconPower, IconDotsVertical } from '@tabler/icons-react';
+import { useVariantsByProduct, useDeleteVariant, useToggleVariantStatus } from '../hooks/useVariants';
 import type { VariantResponse } from '@types';
 import { VariantFormModal } from './VariantFormModal';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -16,6 +17,7 @@ export const VariantsSection = ({ productId }: VariantsSectionProps) => {
 
   const { data: variants, isLoading } = useVariantsByProduct(productId);
   const deleteMutation = useDeleteVariant();
+  const toggleStatusMutation = useToggleVariantStatus();
 
   const handleOpenModal = (variant?: VariantResponse) => {
     setEditingVariant(variant);
@@ -28,8 +30,44 @@ export const VariantsSection = ({ productId }: VariantsSectionProps) => {
   };
 
   const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
+    Modal.confirm({
+      title: '¿Eliminar variante?',
+      content: 'Esta acción desactivará la variante.',
+      okText: 'Eliminar',
+      okType: 'danger',
+      cancelText: 'Cancelar',
+      onOk: () => deleteMutation.mutate(id),
+    });
   };
+
+  const handleToggleStatus = (id: number) => {
+    toggleStatusMutation.mutate(id);
+  };
+
+  const getActionItems = (record: VariantResponse): MenuProps['items'] => [
+    {
+      key: 'edit',
+      label: 'Editar',
+      icon: <IconEdit size={16} />,
+      onClick: () => handleOpenModal(record),
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'toggle',
+      label: record.isActive ? 'Desactivar' : 'Activar',
+      icon: <IconPower size={16} />,
+      onClick: () => handleToggleStatus(record.id),
+    },
+    {
+      key: 'delete',
+      label: 'Eliminar',
+      icon: <IconTrash size={16} />,
+      danger: true,
+      onClick: () => handleDelete(record.id),
+    },
+  ];
 
   const columns = [
     {
@@ -85,32 +123,12 @@ export const VariantsSection = ({ productId }: VariantsSectionProps) => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 120,
+      width: 80,
+      align: 'center' as const,
       render: (_: unknown, record: VariantResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleOpenModal(record)}
-            title="Editar"
-          />
-          <Popconfirm
-            title="¿Eliminar variante?"
-            description="Esta acción no se puede deshacer"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Eliminar"
-            cancelText="Cancelar"
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
-          </Popconfirm>
-        </Space>
+        <Dropdown menu={{ items: getActionItems(record) }} trigger={['click']}>
+          <Button type="text" icon={<IconDotsVertical size={18} />} />
+        </Dropdown>
       ),
     },
   ];

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Input, Button, Table, Space, Tag, Popconfirm } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconEye } from '@tabler/icons-react';
+import { Input, Button, Table, Tag, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconEye, IconDotsVertical } from '@tabler/icons-react';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useShippingMethods, useDeleteShippingMethod } from '../hooks/useShippingMethods';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -77,39 +78,48 @@ export const ShippingMethodsList = ({ onEdit, onCreate, onView }: ShippingMethod
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 120,
-      render: (record: ShippingMethod) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => onView(record.id)}
-            title="Ver detalles"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => onEdit(record.id)}
-            title="Editar"
-          />
-          <Popconfirm
-            title="¿Está seguro de eliminar este método de envío?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Sí"
-            cancelText="No"
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (record: ShippingMethod) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalles',
+            icon: <IconEye size={16} />,
+            onClick: () => onView(record.id),
+          },
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => onEdit(record.id),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar método de envío?',
+                content: '¿Está seguro de eliminar este método de envío?',
+                okText: 'Sí',
+                cancelText: 'No',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

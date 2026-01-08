@@ -703,6 +703,119 @@ export interface UpdateImageRequest {
   displayOrder?: number;
 }
 
+// Category Specification (specs defined at category level)
+export type SpecType = 'TEXT' | 'NUMBER' | 'SELECT' | 'BOOLEAN';
+
+export interface CategorySpecificationResponse {
+  id: number;
+  categoryId: number;
+  name: string;
+  displayName: string;
+  specType: SpecType;
+  unit?: string;
+  options?: string[];
+  isRequired: boolean;
+  position: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategorySpecificationRequest {
+  categoryId: number;
+  name: string;
+  displayName: string;
+  specType: SpecType;
+  unit?: string;
+  options?: string[];
+  isRequired?: boolean;
+  position?: number;
+}
+
+export interface UpdateCategorySpecificationRequest {
+  name?: string;
+  displayName?: string;
+  specType?: SpecType;
+  unit?: string;
+  options?: string[];
+  isRequired?: boolean;
+  position?: number;
+  isActive?: boolean;
+}
+
+export interface SaveCategorySpecificationRequest {
+  id?: number;
+  name: string;
+  displayName: string;
+  specType: SpecType;
+  unit?: string;
+  options?: string[];
+  isRequired?: boolean;
+  position?: number;
+}
+
+// Variant Attribute (global catalog)
+export type AttributeType = 'TEXT' | 'COLOR' | 'SIZE' | 'NUMBER';
+
+export interface VariantAttributeResponse {
+  id: number;
+  name: string;
+  displayName: string;
+  attributeType: AttributeType;
+  options: string[];
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateVariantAttributeRequest {
+  name: string;
+  displayName: string;
+  attributeType: AttributeType;
+  options: string[];
+  description?: string;
+}
+
+export interface UpdateVariantAttributeRequest {
+  name: string;
+  displayName: string;
+  attributeType: AttributeType;
+  options: string[];
+  description?: string;
+  isActive?: boolean;
+}
+
+// Product Variant Attribute (assignment junction)
+export interface ProductVariantAttributeResponse {
+  id: number;
+  productId: number;
+  variantAttributeId: number;
+  attributeName: string;
+  attributeDisplayName: string;
+  attributeType: AttributeType;
+  effectiveOptions: string[];
+  customOptions?: string[];
+  globalOptions: string[];
+  position: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssignVariantAttributeRequest {
+  variantAttributeId: number;
+  customOptions?: string[];
+  position?: number;
+}
+
+export interface SaveProductVariantAttributeRequest {
+  id?: number;
+  variantAttributeId: number;
+  customOptions?: string[];
+  position?: number;
+}
+
 // ============================================
 // Logistic Module Types
 // ============================================

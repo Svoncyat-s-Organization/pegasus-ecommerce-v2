@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Tabs, Upload, Button, Space, Image, Empty, Popconfirm, message, Select } from 'antd';
-import { IconUpload, IconTrash, IconStar, IconStarFilled } from '@tabler/icons-react';
+import { Tabs, Button, Space, Image, Empty, Popconfirm, message, Select, Modal } from 'antd';
+import { IconPlus, IconTrash, IconStar, IconStarFilled } from '@tabler/icons-react';
 import { useImagesByProduct, useImagesByVariant, useCreateImage, useDeleteImage, useUpdateImage } from '../hooks/useImages';
 import { useVariantsByProduct } from '../hooks/useVariants';
+import { ImageUploader } from '@shared/components/ImageUploader';
 import type { ImageResponse } from '@types';
 
 interface ImagesSectionProps {
@@ -12,6 +13,7 @@ interface ImagesSectionProps {
 export const ImagesSection = ({ productId }: ImagesSectionProps) => {
   const [activeTab, setActiveTab] = useState<'product' | 'variant'>('product');
   const [selectedVariantId, setSelectedVariantId] = useState<number>();
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   // Queries
   const { data: productImages, isLoading: isLoadingProductImages } = useImagesByProduct(productId);
@@ -23,25 +25,22 @@ export const ImagesSection = ({ productId }: ImagesSectionProps) => {
   const deleteMutation = useDeleteImage();
   const updateMutation = useUpdateImage();
 
-  const handleUpload = async (file: File) => {
-    // TODO: Implementar upload real a un servicio de almacenamiento (S3, Cloudinary, etc.)
-    // Por ahora usamos una URL de placeholder
-    const fakeUrl = `https://via.placeholder.com/800x600?text=${file.name}`;
-    
+  const handleImageUploaded = async (url: string | undefined) => {
+    if (!url) return;
+
     try {
       await createMutation.mutateAsync({
-        imageUrl: fakeUrl,
+        imageUrl: url,
         productId,
         variantId: activeTab === 'variant' ? selectedVariantId : undefined,
         isPrimary: false,
         displayOrder: 0,
       });
       message.success('Imagen agregada exitosamente');
+      setIsUploadModalOpen(false);
     } catch {
       // Error manejado por el hook
     }
-    
-    return false; // Evita el upload automático de Ant Design
   };
 
   const handleDelete = (id: number) => {
@@ -68,11 +67,9 @@ export const ImagesSection = ({ productId }: ImagesSectionProps) => {
     if (!images || images.length === 0) {
       return (
         <Empty description="No hay imágenes" style={{ margin: '40px 0' }}>
-          <Upload beforeUpload={handleUpload} showUploadList={false} accept="image/*">
-            <Button type="primary" icon={<IconUpload size={16} />}>
-              Subir Primera Imagen
-            </Button>
-          </Upload>
+          <Button type="primary" icon={<IconPlus size={16} />} onClick={() => setIsUploadModalOpen(true)}>
+            Agregar Primera Imagen
+          </Button>
         </Empty>
       );
     }
@@ -80,11 +77,9 @@ export const ImagesSection = ({ productId }: ImagesSectionProps) => {
     return (
       <div>
         <div style={{ marginBottom: 16 }}>
-          <Upload beforeUpload={handleUpload} showUploadList={false} accept="image/*">
-            <Button icon={<IconUpload size={16} />}>
-              Agregar Imagen
-            </Button>
-          </Upload>
+          <Button icon={<IconPlus size={16} />} onClick={() => setIsUploadModalOpen(true)}>
+            Agregar Imagen
+          </Button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
@@ -170,7 +165,28 @@ export const ImagesSection = ({ productId }: ImagesSectionProps) => {
     },
   ];
 
-  return <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as 'product' | 'variant')} items={tabItems} />;
+  return (
+    <>
+      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as 'product' | 'variant')} items={tabItems} />
+
+      <Modal
+        title="Agregar Imagen"
+        open={isUploadModalOpen}
+        onCancel={() => setIsUploadModalOpen(false)}
+        footer={null}
+        width={500}
+        destroyOnClose
+      >
+        <div style={{ marginTop: 16 }}>
+          <ImageUploader
+            onChange={handleImageUploaded}
+            folder="products"
+            showPreview={false}
+          />
+        </div>
+      </Modal>
+    </>
+  );
 };
 
 function formatCurrency(price: number): string {

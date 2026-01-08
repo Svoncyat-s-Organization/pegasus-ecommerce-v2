@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch } from '@tabler/icons-react';
+import { Card, Input, Button, Table, Tag, Typography, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch, IconDotsVertical } from '@tabler/icons-react';
 import { useBrands, useDeleteBrand, useToggleBrandStatus, useCreateBrand, useUpdateBrand } from '../hooks/useBrands';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { BrandFormModal } from '../components/BrandFormModal';
@@ -91,43 +92,48 @@ export const BrandsListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 150,
-      render: (_: unknown, record: BrandResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleOpenModal(record)}
-            title="Editar"
-          />
-          <Button
-            type="link"
-            size="small"
-            danger={record.isActive}
-            style={!record.isActive ? { color: '#8c8c8c' } : undefined}
-            icon={<IconPower size={16} />}
-            onClick={() => handleToggleStatus(record.id)}
-            title={record.isActive ? 'Desactivar' : 'Activar'}
-          />
-          <Popconfirm
-            title="¿Eliminar marca permanentemente?"
-            description="Esta acción es irreversible. Solo se puede eliminar si no tiene productos asociados."
-            onConfirm={() => handleDelete(record.id)}
-            okText="Sí, eliminar"
-            cancelText="Cancelar"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_: unknown, record: BrandResponse) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleOpenModal(record),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'toggle',
+            label: record.isActive ? 'Desactivar' : 'Activar',
+            icon: <IconPower size={16} />,
+            onClick: () => handleToggleStatus(record.id),
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar marca permanentemente?',
+                content: 'Esta acción es irreversible. Solo se puede eliminar si no tiene productos asociados.',
+                okText: 'Sí, eliminar',
+                cancelText: 'Cancelar',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

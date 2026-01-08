@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Button } from 'antd';
+import { Modal, Form, Input, InputNumber, Button, Select, Typography, Alert } from 'antd';
 import { IconPlus } from '@tabler/icons-react';
 import type { VariantResponse, CreateVariantRequest, UpdateVariantRequest } from '@types';
 import { useCreateVariant, useUpdateVariant } from '../hooks/useVariants';
+import { useProductVariantAttributes } from '../hooks/useProductVariantAttributes';
+
+const { Text } = Typography;
 
 interface VariantFormModalProps {
   open: boolean;
@@ -15,38 +18,52 @@ export const VariantFormModal = ({ open, onCancel, productId, variant }: Variant
   const [form] = Form.useForm();
   const isEdit = !!variant;
 
+  const { data: productAttributes, isLoading: isLoadingAttributes } = useProductVariantAttributes(productId);
   const createMutation = useCreateVariant();
   const updateMutation = useUpdateVariant();
 
   useEffect(() => {
     if (open && variant) {
-      form.setFieldsValue({
+      // Cargar valores básicos
+      const formValues: Record<string, unknown> = {
         sku: variant.sku,
         price: variant.price,
-        attributes: JSON.stringify(variant.attributes || {}, null, 2),
-      });
+      };
+
+      // Cargar valores de atributos desde el objeto attributes
+      if (variant.attributes && productAttributes) {
+        productAttributes.forEach((attr) => {
+          const value = variant.attributes[attr.attributeName];
+          if (value !== undefined) {
+            formValues[`attr_${attr.attributeName}`] = String(value);
+          }
+        });
+      }
+
+      form.setFieldsValue(formValues);
     } else if (open && !variant) {
       form.resetFields();
     }
-  }, [open, variant, form]);
+  }, [open, variant, form, productAttributes]);
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
-      // Parsear atributos JSON
-      let attributes = {};
-      if (values.attributes) {
-        try {
-          attributes = JSON.parse(values.attributes);
-        } catch {
-          form.setFields([{ name: 'attributes', errors: ['JSON inválido'] }]);
-          return;
-        }
+
+      // Construir objeto de atributos desde los campos dinámicos
+      const attributes: Record<string, string> = {};
+      if (productAttributes) {
+        productAttributes.forEach((attr) => {
+          const value = values[`attr_${attr.attributeName}`];
+          if (value) {
+            attributes[attr.attributeName] = value;
+          }
+        });
       }
 
       const payload = {
-        ...values,
+        sku: values.sku,
+        price: values.price,
         attributes,
       };
 
@@ -62,6 +79,8 @@ export const VariantFormModal = ({ open, onCancel, productId, variant }: Variant
       // Errores de validación o del servidor ya manejados
     }
   };
+
+  const hasAttributes = productAttributes && productAttributes.length > 0;
 
   return (
     <Modal
@@ -101,29 +120,61 @@ export const VariantFormModal = ({ open, onCancel, productId, variant }: Variant
           name="price"
           rules={[
             { required: true, message: 'Precio es requerido' },
-            { type: 'number', min: 0, message: 'Precio debe ser mayor o igual a 0' },
+            { type: 'number', min: 0.01, message: 'Precio debe ser mayor a 0' },
           ]}
         >
           <InputNumber
             placeholder="99.99"
             style={{ width: '100%' }}
             precision={2}
-            min={0}
+            min={0.01}
             addonBefore="S/"
           />
         </Form.Item>
 
-        <Form.Item
-          label="Atributos (JSON)"
-          name="attributes"
-          extra={'Formato: { "color": "Azul", "talla": "L" }'}
-        >
-          <Input.TextArea
-            rows={6}
-            placeholder={'{"color": "Azul", "talla": "L", "material": "Algodón"}'}
-            style={{ fontFamily: 'monospace' }}
-          />
-        </Form.Item>
+        {/* Sección de Atributos */}
+        <div style={{ marginTop: 16 }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            Atributos de la Variante
+          </Text>
+
+          {isLoadingAttributes ? (
+            <Text type="secondary">Cargando atributos...</Text>
+          ) : !hasAttributes ? (
+            <Alert
+              type="info"
+              showIcon
+              message="Sin atributos definidos"
+              description={
+                <span>
+                  Para agregar atributos a las variantes, primero define los atributos disponibles
+                  en la pestaña <strong>Atributos de Variantes</strong> del producto.
+                </span>
+              }
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {productAttributes.map((attr) => (
+                <Form.Item
+                  key={attr.id}
+                  label={attr.attributeDisplayName}
+                  name={`attr_${attr.attributeName}`}
+                  rules={[{ required: true, message: `${attr.attributeDisplayName} es requerido` }]}
+                >
+                  <Select
+                    placeholder={`Seleccionar ${attr.attributeDisplayName.toLowerCase()}`}
+                    options={attr.effectiveOptions.map((option) => ({
+                      label: option,
+                      value: option,
+                    }))}
+                    showSearch
+                    optionFilterProp="label"
+                  />
+                </Form.Item>
+              ))}
+            </div>
+          )}
+        </div>
       </Form>
     </Modal>
   );

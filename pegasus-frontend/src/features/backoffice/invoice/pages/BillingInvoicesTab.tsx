@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Button, Input, Select, Space, Table, Tag } from 'antd';
+import { Button, Input, Select, Space, Table, Tag, Dropdown } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconEye, IconPlus, IconPrinter, IconRefresh, IconSearch } from '@tabler/icons-react';
+import type { MenuProps } from 'antd';
+import { IconEdit, IconEye, IconPlus, IconPrinter, IconRefresh, IconSearch, IconDotsVertical } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import type { InvoiceStatus, InvoiceSummaryResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -101,33 +102,39 @@ export const BillingInvoicesTab = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 160,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => handleOpenDetail(record.id)}
-            title="Ver detalle"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconPrinter size={16} />}
-            onClick={() => handleOpenPrint(record.id)}
-            disabled={record.status !== 'ISSUED'}
-            title={record.status === 'ISSUED' ? 'Imprimir' : 'Solo disponible para comprobantes emitidos'}
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleOpenStatus(record.id, record.status)}
-            title="Actualizar estado"
-          />
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_, record) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalle',
+            icon: <IconEye size={16} />,
+            onClick: () => handleOpenDetail(record.id),
+          },
+          {
+            key: 'print',
+            label: 'Imprimir',
+            icon: <IconPrinter size={16} />,
+            disabled: record.status !== 'ISSUED',
+            onClick: () => handleOpenPrint(record.id),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'status',
+            label: 'Actualizar estado',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleOpenStatus(record.id, record.status),
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

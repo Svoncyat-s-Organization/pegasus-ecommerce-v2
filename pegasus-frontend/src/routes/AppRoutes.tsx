@@ -10,7 +10,7 @@ import { DashboardPage } from '@features/backoffice/dashboard';
 import { UsersListPage } from '@features/backoffice/security';
 import { RolesPermissionsPage } from '@features/backoffice/security/rbac';
 import { CustomersListPage } from '@features/backoffice/customer';
-import { BrandsListPage, CategoriesListPage, ProductsListPage, ProductFormPage } from '@features/backoffice/catalog';
+import { BrandsListPage, CategoriesListPage, ProductsListPage, ProductFormPage, VariantAttributesListPage } from '@features/backoffice/catalog';
 import { ShippingMethodsListPage, ShipmentsListPage } from '@features/backoffice/logistic';
 import { OrderListPage } from '@features/backoffice/order';
 import { RmaListPage } from '@features/backoffice/rma';
@@ -78,6 +78,7 @@ export const AppRoutes = () => {
         <Route path="catalog/products/:id/edit" element={<ProductFormPage />} />
         <Route path="catalog/categories" element={<CategoriesListPage />} />
         <Route path="catalog/brands" element={<BrandsListPage />} />
+        <Route path="catalog/variant-attributes" element={<VariantAttributesListPage />} />
 
         {/* Orders */}
         <Route path="orders" element={<OrderListPage />} />

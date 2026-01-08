@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { Button, Card, Input, Space, Table, Tag, Typography, Dropdown, Modal } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconEye, IconPlus, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-react';
+import type { MenuProps } from 'antd';
+import { IconEdit, IconEye, IconPlus, IconRefresh, IconSearch, IconTrash, IconDotsVertical } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import type { PurchaseResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -93,35 +94,48 @@ export const PurchasesListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 140,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => handleOpenDetail(record.id)}
-            title="Ver detalle"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleOpenStatus(record.id, record.status)}
-            title="Actualizar estado"
-          />
-          <Popconfirm
-            title="¿Eliminar compra?"
-            description="Esta acción no se puede deshacer"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Eliminar"
-            cancelText="Cancelar"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="link" danger size="small" icon={<IconTrash size={16} />} title="Eliminar" />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_, record) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalle',
+            icon: <IconEye size={16} />,
+            onClick: () => handleOpenDetail(record.id),
+          },
+          {
+            key: 'status',
+            label: 'Actualizar estado',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleOpenStatus(record.id, record.status),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar compra?',
+                content: 'Esta acción no se puede deshacer',
+                okText: 'Eliminar',
+                cancelText: 'Cancelar',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 
