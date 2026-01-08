@@ -11,6 +11,7 @@ import com.pegasus.backend.features.catalog.repository.ProductRepository;
 import com.pegasus.backend.features.catalog.repository.VariantRepository;
 import com.pegasus.backend.features.inventory.repository.StockRepository;
 import com.pegasus.backend.features.inventory.service.StockService;
+import com.pegasus.backend.features.order.repository.OrderItemRepository;
 import com.pegasus.backend.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class VariantService {
     private final VariantMapper variantMapper;
     private final StockService stockService;
     private final StockRepository stockRepository;
+    private final OrderItemRepository orderItemRepository;
 
     /**
      * Obtener todas las variantes con paginación y búsqueda opcional
@@ -46,7 +48,9 @@ public class VariantService {
                 ? variantRepository.searchVariants(search.trim(), pageable)
                 : variantRepository.findAll(pageable);
 
-        List<VariantResponse> content = variantMapper.toResponseList(page.getContent());
+        List<VariantResponse> content = page.getContent().stream()
+                .map(v -> variantMapper.toResponseWithOrders(v, hasOrders(v.getId())))
+                .toList();
 
         return new PageResponse<>(
                 content,
@@ -64,7 +68,7 @@ public class VariantService {
     public VariantResponse getVariantById(Long id) {
         log.debug("Getting variant by id: {}", id);
         Variant variant = findVariantById(id);
-        return variantMapper.toResponse(variant);
+        return variantMapper.toResponseWithOrders(variant, hasOrders(id));
     }
 
     /**
@@ -73,7 +77,9 @@ public class VariantService {
     public List<VariantResponse> getVariantsByProductId(Long productId) {
         log.debug("Getting variants by product id: {}", productId);
         List<Variant> variants = variantRepository.findByProductId(productId);
-        return variantMapper.toResponseList(variants);
+        return variants.stream()
+                .map(v -> variantMapper.toResponseWithOrders(v, hasOrders(v.getId())))
+                .toList();
     }
 
     /**
@@ -82,7 +88,9 @@ public class VariantService {
     public List<VariantResponse> getActiveVariantsByProductId(Long productId) {
         log.debug("Getting active variants by product id: {}", productId);
         List<Variant> variants = variantRepository.findActiveByProductId(productId);
-        return variantMapper.toResponseList(variants);
+        return variants.stream()
+                .map(v -> variantMapper.toResponseWithOrders(v, hasOrders(v.getId())))
+                .toList();
     }
 
     /**
@@ -109,7 +117,7 @@ public class VariantService {
         stockService.initializeZeroStockForVariantAcrossActiveWarehouses(saved.getId());
 
         log.info("Variant created successfully: {}", saved.getSku());
-        return variantMapper.toResponse(saved);
+        return variantMapper.toResponseWithOrders(saved, false);
     }
 
     /**
@@ -132,7 +140,7 @@ public class VariantService {
         Variant updated = variantRepository.save(variant);
 
         log.info("Variant updated successfully: {}", updated.getSku());
-        return variantMapper.toResponse(updated);
+        return variantMapper.toResponseWithOrders(updated, hasOrders(id));
     }
 
     /**
@@ -157,7 +165,7 @@ public class VariantService {
         variant.setIsActive(!variant.getIsActive());
         Variant updated = variantRepository.save(variant);
         log.info("Variant status toggled: {} -> {}", id, updated.getIsActive());
-        return variantMapper.toResponse(updated);
+        return variantMapper.toResponseWithOrders(updated, hasOrders(id));
     }
 
     /**
@@ -207,5 +215,33 @@ public class VariantService {
     private Variant findVariantById(Long id) {
         return variantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Variante no encontrada con ID: " + id));
+    }
+
+    /**
+     * Verifica si una variante tiene pedidos asociados
+     */
+    public boolean hasOrders(Long variantId) {
+        return !orderItemRepository.findByVariantId(variantId).isEmpty();
+    }
+
+    /**
+     * Eliminar variante físicamente (hard delete)
+     * Solo se permite si la variante no tiene pedidos asociados
+     */
+    @Transactional
+    public void hardDeleteVariant(Long id) {
+        log.info("Hard deleting variant: {}", id);
+        Variant variant = findVariantById(id);
+        
+        if (hasOrders(id)) {
+            throw new IllegalStateException("No se puede eliminar la variante porque tiene pedidos asociados");
+        }
+        
+        // Delete associated stocks first
+        stockRepository.deleteByVariantId(id);
+        
+        // Delete the variant
+        variantRepository.delete(variant);
+        log.info("Variant hard deleted successfully: {}", id);
     }
 }

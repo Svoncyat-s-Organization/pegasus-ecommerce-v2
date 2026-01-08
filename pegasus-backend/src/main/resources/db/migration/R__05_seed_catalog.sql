@@ -263,11 +263,11 @@ SELECT 'https://plazavea.vteximg.com.br/arquivos/ids/28989669-418-418/imageUrl_3
 FROM products p WHERE p.slug = 'galaxy-s24-ultra';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://mac-center.com.pe/cdn/shop/files/MacBook_Pro_14-inch_M3_Pro.jpg', p.id, NULL, true, 0
+SELECT 'https://laptronic.pe/catalogo/wp-content/uploads/Macbook-Pro-14-M1-2021.jpg', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'macbook-pro-14';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://plazavea.vteximg.com.br/arquivos/ids/30343259-450-450/imageUrl_1.jpg?v=638705342892900000', p.id, NULL, true, 0
+SELECT 'https://m.media-amazon.com/images/I/710EGJBdIML._AC_SL1500_.jpg', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'dell-xps-15';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)

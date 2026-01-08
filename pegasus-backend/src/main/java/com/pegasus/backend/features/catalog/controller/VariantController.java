@@ -94,6 +94,16 @@ public class VariantController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}/hard")
+    @Operation(summary = "Eliminar variante permanentemente", description = "Eliminación física (hard delete). Solo permitido si la variante no tiene pedidos.")
+    @ApiResponse(responseCode = "204", description = "Variante eliminada permanentemente")
+    @ApiResponse(responseCode = "400", description = "No se puede eliminar porque tiene pedidos asociados")
+    @ApiResponse(responseCode = "404", description = "Variante no encontrada")
+    public ResponseEntity<Void> hardDeleteVariant(@PathVariable Long id) {
+        variantService.hardDeleteVariant(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/{id}/toggle-status")
     @Operation(summary = "Alternar estado activo/inactivo")
     @ApiResponse(responseCode = "200", description = "Estado actualizado exitosamente")

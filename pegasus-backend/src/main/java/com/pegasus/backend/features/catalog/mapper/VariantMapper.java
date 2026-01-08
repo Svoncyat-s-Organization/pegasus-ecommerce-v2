@@ -14,9 +14,29 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface VariantMapper {
 
+    @Mapping(target = "hasOrders", ignore = true)
     VariantResponse toResponse(Variant variant);
 
-    List<VariantResponse> toResponseList(List<Variant> variants);
+    default List<VariantResponse> toResponseList(List<Variant> variants) {
+        return variants.stream().map(this::toResponse).toList();
+    }
+
+    /**
+     * Converts a Variant entity to VariantResponse with hasOrders field
+     */
+    default VariantResponse toResponseWithOrders(Variant variant, boolean hasOrders) {
+        return new VariantResponse(
+                variant.getId(),
+                variant.getProductId(),
+                variant.getSku(),
+                variant.getPrice(),
+                variant.getAttributes(),
+                variant.getIsActive(),
+                hasOrders,
+                variant.getCreatedAt(),
+                variant.getUpdatedAt()
+        );
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "product", ignore = true)

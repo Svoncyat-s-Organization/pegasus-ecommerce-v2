@@ -9,6 +9,7 @@ import {
   createVariant,
   updateVariant,
   deleteVariant,
+  hardDeleteVariant,
   toggleVariantStatus,
 } from '../api/variantsApi';
 
@@ -107,7 +108,26 @@ export const useDeleteVariant = () => {
     mutationFn: (id: number) => deleteVariant(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['variants'] });
-      message.success('Variante eliminada exitosamente');
+      message.success('Variante desactivada exitosamente');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      message.error(err.response?.data?.message || 'Error al desactivar variante');
+    },
+  });
+};
+
+/**
+ * Hook para eliminar variante permanentemente (hard delete)
+ */
+export const useHardDeleteVariant = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => hardDeleteVariant(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['variants'] });
+      message.success('Variante eliminada permanentemente');
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };

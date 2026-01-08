@@ -10,7 +10,7 @@ import {
 import {
   useVariantsByProduct,
   useToggleVariantStatus,
-  useDeleteVariant,
+  useHardDeleteVariant,
 } from '../../hooks/useVariants';
 import {
   useImagesByVariant,
@@ -60,7 +60,7 @@ export const VariantsList = ({
     { enabled: !localMode && !!productId }
   );
   const toggleStatusMutation = useToggleVariantStatus();
-  const deleteMutation = useDeleteVariant();
+  const hardDeleteMutation = useHardDeleteVariant();
 
   const variants = localMode ? localVariants : serverVariants;
 
@@ -99,7 +99,7 @@ export const VariantsList = ({
     handleCloseFormModal();
   };
 
-  const handleDelete = (idOrTempId: number | string, sku: string) => {
+  const handleDelete = (idOrTempId: number | string, sku: string, hasOrders?: boolean) => {
     if (localMode && typeof idOrTempId === 'string' && onLocalChange) {
       // Local mode: remove from local state
       Modal.confirm({
@@ -118,16 +118,26 @@ export const VariantsList = ({
       return;
     }
 
-    // Server mode: delete from database
+    // Server mode: check if variant has orders
     if (typeof idOrTempId === 'number') {
-      Modal.confirm({
-        title: '¿Eliminar esta variante permanentemente?',
-        content: `La variante ${sku} será eliminada de forma definitiva. Esta acción no se puede deshacer.`,
-        okText: 'Eliminar',
-        okType: 'danger',
-        cancelText: 'Cancelar',
-        onOk: () => deleteMutation.mutate(idOrTempId),
-      });
+      if (hasOrders) {
+        // Variant has orders - cannot delete
+        Modal.warning({
+          title: 'No se puede eliminar',
+          content: `La variante ${sku} tiene pedidos asociados. Solo puede desactivarla usando el botón de encendido/apagado.`,
+          okText: 'Entendido',
+        });
+      } else {
+        // No orders - can hard delete
+        Modal.confirm({
+          title: '¿Eliminar esta variante permanentemente?',
+          content: `La variante ${sku} será eliminada de forma definitiva. Esta acción no se puede deshacer.`,
+          okText: 'Eliminar',
+          okType: 'danger',
+          cancelText: 'Cancelar',
+          onOk: () => hardDeleteMutation.mutate(idOrTempId),
+        });
+      }
     }
   };
 
@@ -213,6 +223,7 @@ export const VariantsList = ({
       render: (_: unknown, record: VariantResponse | LocalVariant) => {
         const variantId = 'id' in record ? record.id : record.tempId!;
         const isTempId = typeof variantId === 'string';
+        const hasOrders = 'hasOrders' in record ? record.hasOrders : false;
         
         return (
           <Space size="small">
@@ -242,11 +253,12 @@ export const VariantsList = ({
             />
             <Button
               type="link"
-              danger
+              danger={!hasOrders}
               size="small"
               icon={<IconTrash size={16} />}
-              title="Eliminar"
-              onClick={() => handleDelete(variantId, record.sku)}
+              title={hasOrders ? 'No se puede eliminar (tiene pedidos)' : 'Eliminar permanentemente'}
+              onClick={() => handleDelete(variantId, record.sku, hasOrders)}
+              style={{ color: hasOrders ? '#8c8c8c' : undefined }}
             />
           </Space>
         );

@@ -656,6 +656,7 @@ export interface VariantResponse extends BaseEntity {
   sku: string;
   price: number;
   attributes: Record<string, unknown>;
+  hasOrders?: boolean;
 }
 
 export interface VariantWithStockResponse extends BaseEntity {

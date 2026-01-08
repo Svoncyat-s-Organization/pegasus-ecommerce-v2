@@ -39,17 +39,42 @@ public class StockService {
         private final StockMapper stockMapper;
 
         /**
-         * Obtiene todo el stock de un almacén
+         * Obtiene todo el stock de un almacén.
+         * Lista TODAS las variantes activas, mostrando stock 0 si no existe registro.
          */
         public Page<StockResponse> getStockByWarehouse(Long warehouseId, Pageable pageable) {
                 log.debug("Getting stock for warehouse: {}", warehouseId);
 
-                if (!warehouseRepository.existsById(warehouseId)) {
-                        throw new ResourceNotFoundException("Almacén no encontrado con ID: " + warehouseId);
-                }
+                Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Almacén no encontrado con ID: " + warehouseId));
 
-                Page<Stock> stocks = stockRepository.findByWarehouseId(warehouseId, pageable);
-                return stocks.map(stockMapper::toResponse);
+                // Get all active variants with pagination
+                Page<Variant> variants = variantRepository.findAllActiveVariants(pageable);
+                
+                // Map each variant to StockResponse, using existing stock or creating empty one
+                return variants.map(variant -> {
+                        Stock stock = stockRepository.findByWarehouseIdAndVariantId(warehouseId, variant.getId())
+                                .orElse(null);
+                        
+                        if (stock != null) {
+                                return stockMapper.toResponse(stock);
+                        } else {
+                                // Return a virtual stock response with 0 quantity
+                                return new StockResponse(
+                                        null, // No ID yet
+                                        warehouseId,
+                                        warehouse.getCode(),
+                                        warehouse.getName(),
+                                        variant.getId(),
+                                        variant.getSku(),
+                                        variant.getProduct() != null ? variant.getProduct().getName() : "N/A",
+                                        0, // quantity
+                                        0, // reservedQuantity
+                                        0, // availableQuantity
+                                        null // updatedAt
+                                );
+                        }
+                });
         }
 
         /**

@@ -42,7 +42,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos - Autenticación
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        
+                        // Swagger UI y OpenAPI docs (todas las rutas necesarias)
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        
                         .requestMatchers("/actuator/**").permitAll()
                         
                         // Endpoints públicos - Storefront (sin autenticación)

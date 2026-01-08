@@ -14,6 +14,7 @@ public record VariantResponse(
         BigDecimal price,
         Map<String, Object> attributes,
         Boolean isActive,
+        Boolean hasOrders,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {}

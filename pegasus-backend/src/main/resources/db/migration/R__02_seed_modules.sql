@@ -13,6 +13,7 @@ INSERT INTO modules (icon, name, path) VALUES
 ('IconShoppingCart', 'Categorías', '/admin/catalog/categories'),
 ('IconShoppingCart', 'Marcas', '/admin/catalog/brands'),
 ('IconShoppingCart', 'Productos', '/admin/catalog/products'),
+('IconShoppingCart', 'Atributos de Variantes', '/admin/catalog/variant-attributes'),
 
 -- Orders
 ('IconShoppingBag', 'Pedidos', '/admin/orders'),

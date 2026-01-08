@@ -81,4 +81,9 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
             @Param("variantId") Long variantId,
             @Param("requiredQuantity") Integer requiredQuantity
     );
+
+    /**
+     * Eliminar todos los stocks de una variante (para hard delete)
+     */
+    void deleteByVariantId(Long variantId);
 }

@@ -82,6 +82,13 @@ export const deleteVariant = async (id: number): Promise<void> => {
 };
 
 /**
+ * Eliminar variante permanentemente (hard delete)
+ */
+export const hardDeleteVariant = async (id: number): Promise<void> => {
+  await api.delete(`/admin/variants/${id}/hard`);
+};
+
+/**
  * Alternar estado activo/inactivo
  */
 export const toggleVariantStatus = async (id: number): Promise<VariantResponse> => {

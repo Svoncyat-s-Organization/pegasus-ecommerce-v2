@@ -52,8 +52,7 @@ export const useToggleUserStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
-      usersApi.toggleActive(id, isActive),
+    mutationFn: (id: number) => usersApi.toggleActive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       message.success('Estado del usuario actualizado');

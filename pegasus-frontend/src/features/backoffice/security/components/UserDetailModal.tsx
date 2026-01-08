@@ -21,10 +21,7 @@ export const UserDetailModal = ({ userId, visible, onClose }: UserDetailModalPro
 
   const handleToggleStatus = () => {
     if (!user) return;
-    toggleStatus.mutate(
-      { id: user.id, isActive: !user.isActive },
-      { onSuccess: onClose }
-    );
+    toggleStatus.mutate(user.id, { onSuccess: onClose });
   };
 
   const handleDelete = () => {

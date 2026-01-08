@@ -29,4 +29,7 @@ public interface VariantRepository extends JpaRepository<Variant, Long> {
     @Query("SELECT v FROM Variant v WHERE " +
            "LOWER(v.sku) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<Variant> searchVariants(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT v FROM Variant v JOIN FETCH v.product WHERE v.isActive = true ORDER BY v.sku")
+    Page<Variant> findAllActiveVariants(Pageable pageable);
 }

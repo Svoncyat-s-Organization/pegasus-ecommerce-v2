@@ -46,10 +46,8 @@ export const usersApi = {
   },
 
   // Toggle active status
-  toggleActive: async (id: number, isActive: boolean): Promise<void> => {
-    await api.patch(`${BASE_URL}/${id}/status`, null, {
-      params: { isActive },
-    });
+  toggleActive: async (id: number): Promise<void> => {
+    await api.patch(`${BASE_URL}/${id}/toggle-status`);
   },
 
   // Delete user
