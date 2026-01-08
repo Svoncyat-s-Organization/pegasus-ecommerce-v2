@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { Button, Card, Input, Table, Tag, Typography, Dropdown, Modal, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconPlus, IconPower, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-react';
+import type { MenuProps } from 'antd';
+import { IconEdit, IconPlus, IconPower, IconRefresh, IconSearch, IconTrash, IconDotsVertical } from '@tabler/icons-react';
 import type { SupplierResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { formatPhone } from '@shared/utils/formatters';
@@ -95,35 +96,48 @@ export const SuppliersListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 120,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleEdit(record.id)}
-            title="Editar"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconPower size={16} />}
-            onClick={() => handleToggleStatus(record.id)}
-            title={record.isActive ? 'Desactivar' : 'Activar'}
-          />
-          <Popconfirm
-            title="¿Eliminar proveedor?"
-            description="Esta acción no se puede deshacer"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Eliminar"
-            cancelText="Cancelar"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="link" danger size="small" icon={<IconTrash size={16} />} title="Eliminar" />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_, record) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleEdit(record.id),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'toggle',
+            label: record.isActive ? 'Desactivar' : 'Activar',
+            icon: <IconPower size={16} />,
+            onClick: () => handleToggleStatus(record.id),
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar proveedor?',
+                content: 'Esta acción no se puede deshacer',
+                okText: 'Eliminar',
+                cancelText: 'Cancelar',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

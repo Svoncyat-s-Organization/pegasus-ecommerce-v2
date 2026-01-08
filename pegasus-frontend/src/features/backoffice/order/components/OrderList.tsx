@@ -1,5 +1,6 @@
-import { Table, Tag, Button, Space, Popconfirm } from 'antd';
-import { IconEye, IconX } from '@tabler/icons-react';
+import { Table, Tag, Button, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconEye, IconX, IconDotsVertical } from '@tabler/icons-react';
 import type { OrderSummaryResponse, OrderStatus } from '@types';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../constants/orderStatus';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -78,35 +79,47 @@ export const OrderList = ({
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 120,
-      render: (record: OrderSummaryResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            title="Ver detalles"
-            onClick={() => onViewDetail(record.id)}
-          />
-          {record.status !== 'CANCELLED' && record.status !== 'DELIVERED' && record.status !== 'REFUNDED' && (
-            <Popconfirm
-              title="¿Cancelar pedido?"
-              description="Esta acción no se puede deshacer"
-              onConfirm={() => onCancel(record.id)}
-              okText="Sí"
-              cancelText="No"
-            >
-              <Button
-                type="link"
-                danger
-                size="small"
-                icon={<IconX size={16} />}
-                title="Cancelar pedido"
-              />
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (record: OrderSummaryResponse) => {
+        const canCancel = record.status !== 'CANCELLED' && record.status !== 'DELIVERED' && record.status !== 'REFUNDED';
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalles',
+            icon: <IconEye size={16} />,
+            onClick: () => onViewDetail(record.id),
+          },
+          ...(canCancel
+            ? [
+                {
+                  type: 'divider' as const,
+                },
+                {
+                  key: 'cancel',
+                  label: 'Cancelar pedido',
+                  icon: <IconX size={16} />,
+                  danger: true,
+                  onClick: () => {
+                    Modal.confirm({
+                      title: '¿Cancelar pedido?',
+                      content: 'Esta acción no se puede deshacer',
+                      okText: 'Sí',
+                      cancelText: 'No',
+                      okButtonProps: { danger: true },
+                      onOk: () => onCancel(record.id),
+                    });
+                  },
+                },
+              ]
+            : []),
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

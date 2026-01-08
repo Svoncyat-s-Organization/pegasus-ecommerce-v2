@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Card, Input, Button, Table, Space, Popconfirm, Tag, Typography, Drawer } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch, IconFolder, IconFile, IconSettings } from '@tabler/icons-react';
+import { Card, Input, Button, Table, Tag, Typography, Drawer, Dropdown, Modal, Space } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconPower, IconSearch, IconFolder, IconFile, IconSettings, IconDotsVertical } from '@tabler/icons-react';
 import { useDeleteCategory, useToggleCategoryStatus, useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { CategoryFormModal } from '../components/CategoryFormModal';
@@ -150,50 +151,54 @@ export const CategoriesListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 180,
-      render: (_: unknown, record: CategoryResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconSettings size={16} />}
-            onClick={() => handleOpenSpecsDrawer(record)}
-            title="Especificaciones"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleOpenModal(record)}
-            title="Editar"
-          />
-          <Button
-            type="link"
-            size="small"
-            danger={record.isActive}
-            style={!record.isActive ? { color: '#8c8c8c' } : undefined}
-            icon={<IconPower size={16} />}
-            onClick={() => handleToggleStatus(record.id)}
-            title={record.isActive ? 'Desactivar' : 'Activar'}
-          />
-          <Popconfirm
-            title="¿Eliminar categoría permanentemente?"
-            description="Esta acción es irreversible. Solo se puede eliminar si no tiene productos ni subcategorías."
-            onConfirm={() => handleDelete(record.id)}
-            okText="Sí, eliminar"
-            cancelText="Cancelar"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_: unknown, record: CategoryResponse) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'specs',
+            label: 'Especificaciones',
+            icon: <IconSettings size={16} />,
+            onClick: () => handleOpenSpecsDrawer(record),
+          },
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleOpenModal(record),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'toggle',
+            label: record.isActive ? 'Desactivar' : 'Activar',
+            icon: <IconPower size={16} />,
+            onClick: () => handleToggleStatus(record.id),
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar categoría permanentemente?',
+                content: 'Esta acción es irreversible. Solo se puede eliminar si no tiene productos ni subcategorías.',
+                okText: 'Sí, eliminar',
+                cancelText: 'Cancelar',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

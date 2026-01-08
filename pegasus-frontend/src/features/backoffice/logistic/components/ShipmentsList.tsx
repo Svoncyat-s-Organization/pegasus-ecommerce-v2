@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Input, Button, Table, Space, Tag, Popconfirm, Select, message, Tooltip } from 'antd';
-import { IconPlus, IconEdit, IconTrash, IconEye, IconRefresh, IconTruckDelivery } from '@tabler/icons-react';
+import { Input, Button, Table, Tag, Select, message, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconPlus, IconEdit, IconTrash, IconEye, IconRefresh, IconTruckDelivery, IconDotsVertical } from '@tabler/icons-react';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useShipments, useMarkAsShipped } from '../hooks/useShipments';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -137,61 +138,66 @@ export const ShipmentsList = ({ onEdit, onCreate, onView, onDelete }: ShipmentsL
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 200,
-      render: (record: Shipment) => (
-        <Space size="small">
-          <Tooltip title="Ver detalles">
-            <Button
-              type="link"
-              size="small"
-              icon={<IconEye size={16} />}
-              onClick={() => onView(record.id)}
-            />
-          </Tooltip>
-          {record.status === 'PENDING' && record.shipmentType === 'OUTBOUND' && (
-            <Popconfirm
-              title="¿Confirmar envío?"
-              description="Esto marcará el envío como en tránsito y actualizará el pedido."
-              onConfirm={() => handleMarkAsShipped(record.id)}
-              okText="Sí"
-              cancelText="No"
-            >
-              <Tooltip title="Marcar como enviado">
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<IconTruckDelivery size={16} />}
-                  loading={markAsShippedMutation.isPending}
-                />
-              </Tooltip>
-            </Popconfirm>
-          )}
-          <Tooltip title="Editar">
-            <Button
-              type="link"
-              size="small"
-              icon={<IconEdit size={16} />}
-              onClick={() => onEdit(record.id)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="¿Está seguro de eliminar este envío?"
-            description="El pedido volverá a estado PAGADO"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Sí"
-            cancelText="No"
-          >
-            <Tooltip title="Eliminar">
-              <Button
-                type="link"
-                danger
-                size="small"
-                icon={<IconTrash size={16} />}
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (record: Shipment) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalles',
+            icon: <IconEye size={16} />,
+            onClick: () => onView(record.id),
+          },
+          ...(record.status === 'PENDING' && record.shipmentType === 'OUTBOUND'
+            ? [
+                {
+                  key: 'ship',
+                  label: 'Marcar como enviado',
+                  icon: <IconTruckDelivery size={16} />,
+                  onClick: () => {
+                    Modal.confirm({
+                      title: '¿Confirmar envío?',
+                      content: 'Esto marcará el envío como en tránsito y actualizará el pedido.',
+                      okText: 'Sí',
+                      cancelText: 'No',
+                      onOk: () => handleMarkAsShipped(record.id),
+                    });
+                  },
+                },
+              ]
+            : []),
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => onEdit(record.id),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar envío?',
+                content: 'El pedido volverá a estado PAGADO',
+                okText: 'Sí',
+                cancelText: 'No',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

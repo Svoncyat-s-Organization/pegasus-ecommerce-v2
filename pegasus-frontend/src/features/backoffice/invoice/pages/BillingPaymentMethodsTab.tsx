@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Button, Input, Space, Table, Tag } from 'antd';
+import { Button, Input, Space, Table, Tag, Dropdown } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { IconEdit, IconPlus, IconPower, IconRefresh, IconSearch } from '@tabler/icons-react';
+import type { MenuProps } from 'antd';
+import { IconEdit, IconPlus, IconPower, IconRefresh, IconSearch, IconDotsVertical } from '@tabler/icons-react';
 import type { PaymentMethodResponse } from '@types';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { PaymentMethodFormModal } from '../components/PaymentMethodFormModal';
@@ -58,26 +59,33 @@ export const BillingPaymentMethodsTab = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right',
-      width: 120,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleOpenEdit(record)}
-            title="Editar"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconPower size={16} />}
-            disabled={toggleStatus.isPending}
-            onClick={() => toggleStatus.mutate(record.id)}
-            title={record.isActive ? 'Desactivar' : 'Activar'}
-          />
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_, record) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleOpenEdit(record),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'toggle',
+            label: record.isActive ? 'Desactivar' : 'Activar',
+            icon: <IconPower size={16} />,
+            disabled: toggleStatus.isPending,
+            onClick: () => toggleStatus.mutate(record.id),
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

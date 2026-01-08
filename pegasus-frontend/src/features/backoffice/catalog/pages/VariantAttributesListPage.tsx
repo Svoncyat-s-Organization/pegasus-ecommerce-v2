@@ -5,18 +5,20 @@ import {
   Button,
   Table,
   Space,
-  Popconfirm,
   Tag,
   Typography,
   Modal,
   Form,
   Select,
+  Dropdown,
 } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   IconPlus,
   IconEdit,
   IconTrash,
   IconSearch,
+  IconDotsVertical,
 } from '@tabler/icons-react';
 import {
   useVariantAttributes,
@@ -193,34 +195,42 @@ export const VariantAttributesListPage = () => {
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 120,
-      render: (_: unknown, record: VariantAttributeResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => handleOpenModal(record)}
-            title="Editar"
-          />
-          <Popconfirm
-            title="¿Eliminar este atributo?"
-            description="Los productos que lo usen mantendrán los valores actuales."
-            onConfirm={() => handleDelete(record.id)}
-            okText="Sí, eliminar"
-            cancelText="Cancelar"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_: unknown, record: VariantAttributeResponse) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => handleOpenModal(record),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar este atributo?',
+                content: 'Los productos que lo usen mantendrán los valores actuales.',
+                okText: 'Sí, eliminar',
+                cancelText: 'Cancelar',
+                okButtonProps: { danger: true },
+                onOk: () => handleDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 

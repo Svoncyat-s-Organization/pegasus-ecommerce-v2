@@ -1,5 +1,6 @@
-import { Table, Button, Tag, Space, Popconfirm } from 'antd';
-import { IconEdit, IconPower, IconTrash, IconEye } from '@tabler/icons-react';
+import { Table, Button, Tag, Dropdown, Modal } from 'antd';
+import type { MenuProps } from 'antd';
+import { IconEdit, IconPower, IconTrash, IconEye, IconDotsVertical } from '@tabler/icons-react';
 import type { WarehouseResponse } from '@types';
 import dayjs from 'dayjs';
 
@@ -71,47 +72,54 @@ export const WarehouseList = ({
       title: 'Acciones',
       key: 'actions',
       fixed: 'right' as const,
-      width: 150,
-      render: (_: unknown, record: WarehouseResponse) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEye size={16} />}
-            onClick={() => onView(record)}
-            title="Ver detalles"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconEdit size={16} />}
-            onClick={() => onEdit(record)}
-            title="Editar"
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<IconPower size={16} />}
-            onClick={() => onToggleStatus(record.id)}
-            title={record.isActive ? 'Desactivar' : 'Activar'}
-          />
-          <Popconfirm
-            title="¿Eliminar almacén?"
-            description="Esta acción no se puede deshacer"
-            onConfirm={() => onDelete(record.id)}
-            okText="Eliminar"
-            cancelText="Cancelar"
-          >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<IconTrash size={16} />}
-              title="Eliminar"
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 100,
+      align: 'center' as const,
+      render: (_: unknown, record: WarehouseResponse) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'view',
+            label: 'Ver detalles',
+            icon: <IconEye size={16} />,
+            onClick: () => onView(record),
+          },
+          {
+            key: 'edit',
+            label: 'Editar',
+            icon: <IconEdit size={16} />,
+            onClick: () => onEdit(record),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'toggle',
+            label: record.isActive ? 'Desactivar' : 'Activar',
+            icon: <IconPower size={16} />,
+            onClick: () => onToggleStatus(record.id),
+          },
+          {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: <IconTrash size={16} />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: '¿Eliminar almacén?',
+                content: 'Esta acción no se puede deshacer',
+                okText: 'Eliminar',
+                cancelText: 'Cancelar',
+                okButtonProps: { danger: true },
+                onOk: () => onDelete(record.id),
+              });
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Button type="text" icon={<IconDotsVertical size={18} />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 
