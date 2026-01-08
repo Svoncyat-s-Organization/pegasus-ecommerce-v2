@@ -33,14 +33,6 @@ export const CartSummary = ({ subtotal, igv, total, itemCount }: CartSummaryProp
           </Text>
         </Group>
 
-        {/* IGV */}
-        <Group justify="space-between">
-          <Text size="md">IGV (18%)</Text>
-          <Text size="md" fw={500}>
-            S/ {igv.toFixed(2)}
-          </Text>
-        </Group>
-
         <Divider />
 
         {/* Total */}

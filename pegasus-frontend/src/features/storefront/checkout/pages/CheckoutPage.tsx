@@ -168,7 +168,7 @@ export const CheckoutPage = () => {
   // Get selected shipping method
   const selectedShippingMethod = shippingMethods?.find((m) => m.id === form.values.shippingMethodId);
   const shippingCost = selectedShippingMethod?.baseCost || 0;
-  const total = subtotal + igv + shippingCost;
+  const total = subtotal + shippingCost;
 
   const nextStep = () => {
     const errors = form.validate();
@@ -578,22 +578,43 @@ export const CheckoutPage = () => {
                                   required
                                   leftSection={<IconCreditCard size={16} />}
                                   value={cardNumber}
-                                  onChange={(e) => setCardNumber(e.currentTarget.value)}
+                                  maxLength={19}
+                                  onChange={(e) => {
+                                    const val = e.currentTarget.value.replace(/\D/g, '');
+                                    if (val.length <= 16) {
+                                      const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+                                      setCardNumber(formatted);
+                                    }
+                                  }}
+                                  error={cardNumber && cardNumber.replace(/\s/g, '').length !== 16 ? 'Debe tener 16 dígitos' : null}
                                 />
                                 <Group grow>
                                   <TextInput
                                     label="Expiración (mes/año)"
                                     placeholder="MM/AA"
                                     required
+                                    maxLength={5}
                                     value={cardExpiration}
-                                    onChange={(e) => setCardExpiration(e.currentTarget.value)}
+                                    onChange={(e) => {
+                                      let val = e.currentTarget.value.replace(/\D/g, '');
+                                      if (val.length >= 2) {
+                                        val = val.slice(0, 2) + '/' + val.slice(2, 4);
+                                      }
+                                      setCardExpiration(val);
+                                    }}
+                                    error={cardExpiration && !/^\d{2}\/\d{2}$/.test(cardExpiration) ? 'Formato MM/AA' : null}
                                   />
                                   <TextInput
                                     label="CVV"
                                     placeholder="123"
                                     required
+                                    maxLength={3}
                                     value={cardCvv}
-                                    onChange={(e) => setCardCvv(e.currentTarget.value)}
+                                    onChange={(e) => {
+                                      const val = e.currentTarget.value.replace(/\D/g, '');
+                                      setCardCvv(val);
+                                    }}
+                                    error={cardCvv && cardCvv.length !== 3 ? 'Debe tener 3 dígitos' : null}
                                   />
                                 </Group>
                                 <TextInput
@@ -644,14 +665,24 @@ export const CheckoutPage = () => {
                                 <TextInput
                                   placeholder="Celular de Yape"
                                   size="md"
+                                  maxLength={9}
                                   value={paymentPhone}
-                                  onChange={(e) => setPaymentPhone(e.currentTarget.value)}
+                                  onChange={(e) => {
+                                    const val = e.currentTarget.value.replace(/\D/g, '');
+                                    setPaymentPhone(val);
+                                  }}
+                                  error={paymentPhone && paymentPhone.length !== 9 ? 'Debe tener 9 dígitos' : null}
                                 />
                                 <TextInput
                                   placeholder="Código de Aprobación"
                                   size="md"
+                                  maxLength={4}
                                   value={paymentTransactionId}
-                                  onChange={(e) => setPaymentTransactionId(e.currentTarget.value)}
+                                  onChange={(e) => {
+                                    const val = e.currentTarget.value.replace(/\D/g, '');
+                                    setPaymentTransactionId(val);
+                                  }}
+                                  error={paymentTransactionId && paymentTransactionId.length !== 4 ? 'Debe tener 4 dígitos' : null}
                                 />
                               </Group>
 
@@ -693,14 +724,24 @@ export const CheckoutPage = () => {
                                 <TextInput
                                   placeholder="Celular de Plin"
                                   size="md"
+                                  maxLength={9}
                                   value={paymentPhone}
-                                  onChange={(e) => setPaymentPhone(e.currentTarget.value)}
+                                  onChange={(e) => {
+                                    const val = e.currentTarget.value.replace(/\D/g, '');
+                                    setPaymentPhone(val);
+                                  }}
+                                  error={paymentPhone && paymentPhone.length !== 9 ? 'Debe tener 9 dígitos' : null}
                                 />
                                 <TextInput
                                   placeholder="Código de Aprobación"
                                   size="md"
+                                  maxLength={4}
                                   value={paymentTransactionId}
-                                  onChange={(e) => setPaymentTransactionId(e.currentTarget.value)}
+                                  onChange={(e) => {
+                                    const val = e.currentTarget.value.replace(/\D/g, '');
+                                    setPaymentTransactionId(val);
+                                  }}
+                                  error={paymentTransactionId && paymentTransactionId.length !== 4 ? 'Debe tener 4 dígitos' : null}
                                 />
                               </Group>
 

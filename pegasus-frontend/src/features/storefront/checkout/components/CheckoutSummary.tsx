@@ -89,27 +89,12 @@ export const CheckoutSummary = ({ items, subtotal, igv, shippingCost, total, bac
 
         <Divider />
 
-        {/* Cupón */}
-        <Group>
-          <TextInput placeholder="Cupón de descuento" style={{ flex: 1 }} />
-          <Button variant="filled" color={primaryColor}>Aplicar</Button>
-        </Group>
-
-        <Divider />
-
         {/* Totales */}
         <Stack gap="xs">
           <Group justify="space-between">
             <Text size="sm" c="dimmed">Subtotal</Text>
             <Text size="sm" fw={500}>
               {formatCurrency(subtotal)}
-            </Text>
-          </Group>
-
-          <Group justify="space-between">
-            <Text size="sm" c="dimmed">IGV (18%)</Text>
-            <Text size="sm" fw={500}>
-              {formatCurrency(igv)}
             </Text>
           </Group>
 
