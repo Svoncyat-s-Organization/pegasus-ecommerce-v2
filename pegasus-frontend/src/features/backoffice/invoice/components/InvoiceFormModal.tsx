@@ -155,6 +155,11 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
     });
   }, [form]);
 
+  const selectedOrderId = Form.useWatch<number | undefined>('orderId', form);
+  const selectedOrder = useMemo(() => {
+    return typeof selectedOrderId === 'number' ? ordersById.get(selectedOrderId) : undefined;
+  }, [selectedOrderId, ordersById]);
+
   const orderCustomerDocType = Form.useWatch<string | undefined>('orderCustomerDocType', form);
   const orderCustomerDocNumber = Form.useWatch<string | undefined>('orderCustomerDocNumber', form);
   const orderCustomerName = Form.useWatch<string | undefined>('orderCustomerName', form);

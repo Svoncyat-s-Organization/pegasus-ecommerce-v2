@@ -1,9 +1,10 @@
 import { Modal, Form, Select, Table, InputNumber, Input, Typography, Space, Alert } from 'antd';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { getMyOrders, getMyOrderById } from '@features/storefront/profile/api/ordersApi';
 import { getRmasByOrder } from '../api/rmasApi';
+import { useCreateRma } from '../hooks/useCreateRma';
 import type { CreateRmaRequest, OrderItemResponse, OrderSummaryResponse, RmaReason } from '@types';
 
 const { Text, Paragraph } = Typography;
@@ -12,8 +13,7 @@ const { TextArea } = Input;
 interface CreateRmaModalProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (values: CreateRmaRequest) => Promise<void>;
-    isLoading: boolean;
+    preselectedOrderId?: number | null;
 }
 
 type ReturnItemDraft = {
@@ -30,13 +30,23 @@ type ReturnItemDraft = {
  * Similar al modal de backoffice pero sin opciones de aprobación
  * Los estados se actualizan desde el backoffice
  */
-export const CreateRmaModal = ({ open, onClose, onSubmit, isLoading }: CreateRmaModalProps) => {
+export const CreateRmaModal = ({ open, onClose, preselectedOrderId }: CreateRmaModalProps) => {
     const [form] = Form.useForm();
     const [orderSearch, setOrderSearch] = useState('');
     const [selectedOrderId, setSelectedOrderId] = useState<number | undefined>();
     const [returnQuantities, setReturnQuantities] = useState<Record<number, number>>({});
 
+    const { mutateAsync: createRma, isPending: isCreating } = useCreateRma();
+
     const debouncedOrderSearch = useDebounce(orderSearch, 400);
+
+    // Auto-select order if preselected
+    useEffect(() => {
+        if (open && preselectedOrderId) {
+            setSelectedOrderId(preselectedOrderId);
+            form.setFieldValue('orderId', preselectedOrderId);
+        }
+    }, [open, preselectedOrderId, form]);
 
     // Obtener pedidos entregados del cliente
     const { data: deliveredOrdersPage, isFetching: isLoadingOrders } = useQuery({
@@ -142,10 +152,10 @@ export const CreateRmaModal = ({ open, onClose, onSubmit, isLoading }: CreateRma
                     })),
             };
 
-            await onSubmit(request);
+            await createRma(request);
             handleCancel();
         } catch {
-            // handled in parent or form
+            // Error handled by mutation hook
         }
     };
 
@@ -198,7 +208,7 @@ export const CreateRmaModal = ({ open, onClose, onSubmit, isLoading }: CreateRma
             open={open}
             onCancel={handleCancel}
             onOk={handleOk}
-            confirmLoading={isLoading}
+            confirmLoading={isCreating}
             okText="Enviar solicitud"
             cancelText="Cancelar"
             width={900}
@@ -226,6 +236,7 @@ export const CreateRmaModal = ({ open, onClose, onSubmit, isLoading }: CreateRma
                             onSearch={setOrderSearch}
                             onChange={handleOrderChange}
                             options={orderOptions}
+                            disabled={!!preselectedOrderId}
                             notFoundContent={
                                 isLoadingOrders ? 'Cargando...' : 'No hay pedidos entregados disponibles'
                             }
