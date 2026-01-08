@@ -12,7 +12,6 @@ import {
   Center,
   Paper,
   Box,
-  ThemeIcon,
   Breadcrumbs,
   Anchor,
   Skeleton,
@@ -20,10 +19,6 @@ import {
 } from '@mantine/core';
 import {
   IconShoppingCart,
-  IconHeart,
-  IconTruck,
-  IconShieldCheck,
-  IconRefresh,
   IconCheck,
   IconX,
   IconMinus,
@@ -44,6 +39,42 @@ import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { formatCurrency } from '@shared/utils/formatters';
 import { notifications } from '@mantine/notifications';
 import { ProductRecommendations } from '../components/ProductRecommendations';
+
+/**
+ * Formats a technical key name into a human-readable display name.
+ * Examples: "screen_size" -> "Pantalla", "ram" -> "RAM", "storage" -> "Almacenamiento"
+ */
+const formatAttributeName = (key: string): string => {
+  // Common Spanish translations for typical attribute names
+  const translations: Record<string, string> = {
+    color: 'Color',
+    size: 'Talla',
+    storage: 'Almacenamiento',
+    ram: 'RAM',
+    screen: 'Pantalla',
+    screen_size: 'Tamaño de Pantalla',
+    processor: 'Procesador',
+    battery: 'Batería',
+    camera: 'Cámara',
+    weight: 'Peso',
+    material: 'Material',
+    capacity: 'Capacidad',
+    memory: 'Memoria',
+    display: 'Display',
+    resolution: 'Resolución',
+    connectivity: 'Conectividad',
+  };
+
+  const lowerKey = key.toLowerCase();
+  if (translations[lowerKey]) {
+    return translations[lowerKey];
+  }
+
+  // Fallback: capitalize and replace underscores
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
 export const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -92,24 +123,89 @@ export const ProductDetailPage = () => {
   // Selected attribute values state
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
+  // Get available options for each attribute based on current selection
+  const availableOptions = useMemo(() => {
+    if (!variants || variants.length === 0) return {};
+
+    const available: Record<string, Set<string>> = {};
+
+    // If no attributes selected, all options are available
+    if (Object.keys(selectedAttributes).length === 0) {
+      variants.forEach((variant) => {
+        const attrs = variant.attributes as Record<string, string>;
+        Object.entries(attrs).forEach(([key, value]) => {
+          if (!available[key]) {
+            available[key] = new Set();
+          }
+          available[key].add(value);
+        });
+      });
+    } else {
+      // For each attribute, find what values are available in compatible variants
+      variants.forEach((variant) => {
+        const attrs = variant.attributes as Record<string, string>;
+        
+        // Check if this variant is compatible with current selection (excluding the attribute we're checking)
+        const isCompatible = Object.entries(selectedAttributes).every(
+          ([key, value]) => attrs[key] === value || !selectedAttributes[key]
+        );
+
+        if (isCompatible) {
+          Object.entries(attrs).forEach(([key, value]) => {
+            if (!available[key]) {
+              available[key] = new Set();
+            }
+            // Check if selecting this value with other selected attributes creates a valid variant
+            const testSelection = { ...selectedAttributes, [key]: value };
+            const hasMatchingVariant = variants.some((v) => {
+              const vAttrs = v.attributes as Record<string, string>;
+              return Object.entries(testSelection).every(
+                ([k, val]) => vAttrs[k] === val
+              );
+            });
+            if (hasMatchingVariant) {
+              available[key].add(value);
+            }
+          });
+        }
+      });
+    }
+
+    return Object.fromEntries(
+      Object.entries(available).map(([key, values]) => [key, Array.from(values)])
+    );
+  }, [variants, selectedAttributes]);
+
   // Find variant matching selected attributes
   const matchingVariant = useMemo(() => {
     if (!variants || Object.keys(selectedAttributes).length === 0) return null;
 
-    return variants.find((variant) => {
+    // Get all attribute keys that exist in variants
+    const allAttributeKeys = new Set<string>();
+    variants.forEach((variant) => {
       const attrs = variant.attributes as Record<string, string>;
-      return Object.entries(selectedAttributes).every(
-        ([key, value]) => attrs[key] === value
-      );
+      Object.keys(attrs).forEach((key) => allAttributeKeys.add(key));
     });
+
+    // Only look for exact match if all attributes are selected
+    if (Object.keys(selectedAttributes).length === allAttributeKeys.size) {
+      return variants.find((variant) => {
+        const attrs = variant.attributes as Record<string, string>;
+        return Object.entries(selectedAttributes).every(
+          ([key, value]) => attrs[key] === value
+        );
+      });
+    }
+
+    return null;
   }, [variants, selectedAttributes]);
 
-  // Auto-select variant when attributes match
-  useMemo(() => {
-    if (matchingVariant && matchingVariant.id !== selectedVariantId) {
-      setSelectedVariantId(matchingVariant.id);
-    }
-  }, [matchingVariant, selectedVariantId]);
+  // Sync selectedVariantId with matchingVariant
+  if (matchingVariant && matchingVariant.id !== selectedVariantId) {
+    setSelectedVariantId(matchingVariant.id);
+  } else if (!matchingVariant && selectedVariantId !== null && Object.keys(selectedAttributes).length > 0) {
+    setSelectedVariantId(null);
+  }
 
   // Get display images (variant images first, then product images)
   const displayImages = useMemo(() => {
@@ -385,7 +481,7 @@ export const ProductDetailPage = () => {
                 {Object.entries(attributeOptions).map(([attrKey, values]) => (
                   <Box key={attrKey}>
                     <Text size="sm" fw={600} mb="xs">
-                      {attrKey}:
+                      {formatAttributeName(attrKey)}:
                       {selectedAttributes[attrKey] && (
                         <Text span c="dimmed" fw={400} ml="xs">
                           {selectedAttributes[attrKey]}
@@ -393,29 +489,29 @@ export const ProductDetailPage = () => {
                       )}
                     </Text>
                     <Group gap="xs">
-                      {values.map((value) => (
-                        <Button
-                          key={value}
-                          variant={
-                            selectedAttributes[attrKey] === value ? 'filled' : 'outline'
-                          }
-                          size="sm"
-                          radius="md"
-                          onClick={() => handleAttributeSelect(attrKey, value)}
-                          style={{
-                            borderColor:
-                              selectedAttributes[attrKey] === value
-                                ? primaryColor
-                                : undefined,
-                            backgroundColor:
-                              selectedAttributes[attrKey] === value
-                                ? primaryColor
-                                : undefined,
-                          }}
-                        >
-                          {value}
-                        </Button>
-                      ))}
+                      {values.map((value) => {
+                        const isAvailable = availableOptions[attrKey]?.includes(value);
+                        const isSelected = selectedAttributes[attrKey] === value;
+                        
+                        return (
+                          <Button
+                            key={value}
+                            variant={isSelected ? 'filled' : 'outline'}
+                            size="sm"
+                            radius="md"
+                            onClick={() => handleAttributeSelect(attrKey, value)}
+                            disabled={!isAvailable}
+                            style={{
+                              borderColor: isSelected ? primaryColor : undefined,
+                              backgroundColor: isSelected ? primaryColor : undefined,
+                              opacity: !isAvailable ? 0.4 : 1,
+                              cursor: !isAvailable ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {value}
+                          </Button>
+                        );
+                      })}
                     </Group>
                   </Box>
                 ))}
@@ -483,7 +579,9 @@ export const ProductDetailPage = () => {
             {/* No Variant Selected Warning */}
             {!selectedVariant && variants && variants.length > 0 && (
               <Alert color="blue" variant="light">
-                Selecciona las opciones del producto para ver el precio y stock.
+                {Object.keys(selectedAttributes).length === 0
+                  ? 'Selecciona las opciones del producto para ver el precio y stock.'
+                  : 'Esta combinación no está disponible. Por favor selecciona otras opciones.'}
               </Alert>
             )}
           </Stack>
@@ -505,20 +603,31 @@ export const ProductDetailPage = () => {
 
         <Grid.Col span={{ base: 12, md: 4 }}>
           <Paper withBorder radius="md" p="xl">
-            <Text size="lg" fw={600} mb="md">
-              Especificaciones
+            <Text size="lg" fw={600} mb="lg">
+              Especificaciones Técnicas
             </Text>
             {product.specs && Object.keys(product.specs).length > 0 ? (
-              <Stack gap="sm">
-                {Object.entries(product.specs).map(([key, value]) => (
-                  <Group key={key} justify="space-between" wrap="nowrap">
-                    <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
-                      {key}
-                    </Text>
-                    <Text size="sm" fw={500} ta="right">
-                      {String(value)}
-                    </Text>
-                  </Group>
+              <Stack gap={0}>
+                {Object.entries(product.specs).map(([key, value], index) => (
+                  <Box
+                    key={key}
+                    py="sm"
+                    style={{
+                      borderBottom:
+                        index < Object.keys(product.specs).length - 1
+                          ? '1px solid var(--mantine-color-gray-2)'
+                          : undefined,
+                    }}
+                  >
+                    <Group justify="space-between" wrap="nowrap" align="flex-start">
+                      <Text size="sm" c="dimmed" style={{ flexShrink: 0, maxWidth: '40%' }}>
+                        {formatAttributeName(key)}
+                      </Text>
+                      <Text size="sm" fw={500} ta="right" style={{ maxWidth: '58%' }}>
+                        {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value)}
+                      </Text>
+                    </Group>
+                  </Box>
                 ))}
               </Stack>
             ) : (
