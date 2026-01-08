@@ -65,7 +65,7 @@ export const BillingInvoicesTab = () => {
       dataIndex: 'invoiceType',
       key: 'invoiceType',
       width: 120,
-      render: (value: InvoiceSummaryResponse['invoiceType']) => INVOICE_TYPE_LABEL[value],
+      render: (value: InvoiceSummaryResponse['invoiceType']) => INVOICE_TYPE_LABEL[value] ?? String(value ?? '-'),
     },
     {
       title: 'Serie-Número',
@@ -85,7 +85,10 @@ export const BillingInvoicesTab = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (value: InvoiceStatus) => <Tag color={INVOICE_STATUS_META[value].color}>{INVOICE_STATUS_META[value].text}</Tag>,
+      render: (value: InvoiceStatus) => {
+        const meta = value ? INVOICE_STATUS_META[value] : undefined;
+        return <Tag color={meta?.color}>{meta?.text ?? String(value ?? '-')}</Tag>;
+      },
     },
     {
       title: 'Emisión',

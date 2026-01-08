@@ -174,7 +174,7 @@ SELECT p.id, 'XI14U-256-BLK', 4299.00, '{"storage": "256GB", "color": "Negro"}':
 FROM products p WHERE p.slug = 'xiaomi-14-ultra';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://i01.appmifile.com/v1/MI_18455B3E4DA706226CF7535A58E875F0267/pms_1708939245.56420498!400x400!85.png', p.id, NULL, true, 0
+SELECT 'https://migractec.com/wp-content/uploads/2024/07/xiaomi-14.png', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'xiaomi-14-ultra';
 
 -- Samsung Galaxy A55
@@ -192,7 +192,7 @@ SELECT p.id, 'A55-128-LIL', 1699.00, '{"storage": "128GB", "color": "Lila"}'::js
 FROM products p WHERE p.slug = 'galaxy-a55';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://images.samsung.com/is/image/samsung/p6pim/pe/sm-a556ezlelte/gallery/pe-galaxy-a55-5g-sm-a556-sm-a556ezlelte-thumb-539521078', p.id, NULL, true, 0
+SELECT 'https://www.peru-smart.com/wp-content/uploads/2025/03/CELU721NAVY-128GB.jpg', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'galaxy-a55';
 
 -- iPhone 14
@@ -210,7 +210,7 @@ SELECT p.id, 'IPH14-128-BLU', 3499.00, '{"storage": "128GB", "color": "Azul"}'::
 FROM products p WHERE p.slug = 'iphone-14';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-14-finish-select-202209-6-1inch-blue?wid=940&hei=1112&fmt=png-alpha&.v=1661026582221', p.id, NULL, true, 0
+SELECT 'https://laptronic.pe/catalogo/wp-content/uploads/image-600x600.png', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'iphone-14';
 
 -- MORE LAPTOPS (3 additional)
@@ -229,7 +229,7 @@ SELECT p.id, 'XPS15-I7-512-SIL', 7499.00, '{"storage": "512GB", "color": "Plata"
 FROM products p WHERE p.slug = 'dell-xps-15';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/xps-notebooks/xps-15-9530/media-gallery/silver/notebook-xps-15-9530-silver-gallery-1.psd?fmt=png-alpha&wid=600', p.id, NULL, true, 0
+SELECT 'https://i5.walmartimages.com/seo/Dell-XPS-15-9520-Laptop-2022-15-6-4K-Touch-Core-i9-1TB-SSD-32GB-RAM-3050-Ti-14-Cores-5-GHz-12th-Gen-CPU_df471863-0fd7-49ab-8585-2585245b1b24.fe6dc231ec9cd6b9862bd54d5933e13f.jpeg', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'dell-xps-15';
 
 -- Lenovo ThinkPad X1 Carbon
@@ -247,7 +247,7 @@ SELECT p.id, 'X1C-I7-512-BLK', 8299.00, '{"storage": "512GB", "color": "Negro"}'
 FROM products p WHERE p.slug = 'thinkpad-x1-carbon';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://p1-ofp.static.pub/fes/cms/2023/11/28/5lnmgv1f4hhvx4vxmrqzqwqwlz2xro934401.png', p.id, NULL, true, 0
+SELECT 'https://www.kabifperu.com/imagenes/prod-20022021135026-notebook-lenovo-thinkpad-x1-carbon-14-fhd-intel-core-i7-8565u-1-80ghz-16gb-lpddr3-deta.png', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'thinkpad-x1-carbon';
 
 -- HP Spectre x360
@@ -265,7 +265,7 @@ SELECT p.id, 'SPEC360-I7-1TB-BLU', 6999.00, '{"storage": "1TB", "color": "Azul P
 FROM products p WHERE p.slug = 'hp-spectre-x360';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/lowres/c08520775.png', p.id, NULL, true, 0
+SELECT 'https://www.magitech.pe/media/catalog/product/cache/1/image/600x/040ec09b1e35df139433887a97daa66f/7/_/7_17_1.jpg', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'hp-spectre-x360';
 
 -- MORE AUDÍFONOS (3 additional)
@@ -302,7 +302,7 @@ SELECT p.id, 'BUDS2P-GRA', 799.00, '{"color": "Grafito"}'::jsonb, true
 FROM products p WHERE p.slug = 'galaxy-buds2-pro';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://images.samsung.com/is/image/samsung/p6pim/pe/2208/gallery/pe-galaxy-buds2-pro-r510-sm-r510nzaalta-thumb-533010037', p.id, NULL, true, 0
+SELECT 'https://rimage.ripley.com.pe/home.ripley/Attachment/MKP/3846/PMP20000336777/full_image-1.jpeg', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'galaxy-buds2-pro';
 
 -- Sony WF-1000XM5
@@ -320,7 +320,7 @@ SELECT p.id, 'WF1000XM5-BLK', 1299.00, '{"color": "Negro"}'::jsonb, true
 FROM products p WHERE p.slug = 'sony-wf-1000xm5';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://sony.scene7.com/is/image/sonyglobalsolutions/wf-1000xm5_Primary_image?$categorypdpnav$', p.id, NULL, true, 0
+SELECT 'https://sony.scene7.com/is/image/sonyglobalsolutions/Primary_image_black?$categorypdpnav$&fmt=png-alpha', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'sony-wf-1000xm5';
 
 -- MORE TELEVISORES (3 additional)
@@ -339,7 +339,7 @@ SELECT p.id, 'LG-C3-55-BLK', 5499.00, '{"model": "OLED55C3PSA"}'::jsonb, true
 FROM products p WHERE p.slug = 'lg-oled-c3-55';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://www.lg.com/pe/images/televisores/md07560319/gallery/medium01.jpg', p.id, NULL, true, 0
+SELECT 'https://www.efe.com.pe/media/catalog/product/o/l/oled55c3psa_1.jpg?quality=80&bg-color=255,255,255&fit=bounds&height=700&width=700&canvas=700:700', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'lg-oled-c3-55';
 
 -- Sony Bravia XR A80L
@@ -357,7 +357,7 @@ SELECT p.id, 'A80L-65-BLK', 7999.00, '{"model": "XR-65A80L"}'::jsonb, true
 FROM products p WHERE p.slug = 'sony-bravia-a80l-65';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://sony.scene7.com/is/image/sonyglobalsolutions/XR-65A80L_Primary_image?$categorypdpnav$', p.id, NULL, true, 0
+SELECT 'https://sony.scene7.com/is/image/sonyglobalsolutions/TVFY23_A80L_65_WW_0_insitu_M?$productIntroPlatemobile$&fmt=png-alpha', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'sony-bravia-a80l-65';
 
 -- Samsung Neo QLED 65"
@@ -375,5 +375,5 @@ SELECT p.id, 'QN90C-65-BLK', 6299.00, '{"model": "QN65QN90C"}'::jsonb, true
 FROM products p WHERE p.slug = 'samsung-neo-qled-65';
 
 INSERT INTO images (image_url, product_id, variant_id, is_primary, display_order)
-SELECT 'https://images.samsung.com/is/image/samsung/p6pim/pe/qn65qn90cagxpe/gallery/pe-neo-qled-4k-qn90c-qn65qn90cagxpe-536266571?$650_519_PNG$', p.id, NULL, true, 0
+SELECT 'https://images.samsung.com/is/image/samsung/p6pim/pe/qn65qn85bagxpe/gallery/pe-qled-tv-qn65qn85bagxpe-front-silver-538304786', p.id, NULL, true, 0
 FROM products p WHERE p.slug = 'samsung-neo-qled-65';
