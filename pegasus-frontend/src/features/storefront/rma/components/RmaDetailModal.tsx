@@ -1,4 +1,4 @@
-import { Modal, Descriptions, Table, Tag, Spin, Alert } from 'antd';
+import { Modal, Descriptions, Table, Tag, Spin, Alert, Button } from 'antd';
 import type { RmaItemResponse } from '@types';
 import { useRmaDetail } from '../hooks/useRmaDetail';
 import { RmaStatusTimeline } from './RmaStatusTimeline';
@@ -79,12 +79,15 @@ export const RmaDetailModal = ({
 
     return (
         <Modal
-            title="Detalle de Devolución"
+            title="Detalle del RMA"
             open={open}
             onCancel={onClose}
-            footer={null}
             width={1000}
-            styles={{ body: { maxHeight: '80vh', overflowY: 'auto' } }}
+            footer={[
+                <Button key="close" onClick={onClose}>
+                    Cerrar
+                </Button>,
+            ]}
         >
             {isLoading && (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -102,109 +105,85 @@ export const RmaDetailModal = ({
             )}
 
             {rma && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    {/* Timeline de estado */}
-                    <RmaStatusTimeline currentStatus={rma.status} />
+                <div>
+                    <div style={{ marginBottom: 24 }}>
+                        <RmaStatusTimeline currentStatus={rma.status} />
+                    </div>
 
                     {/* Información General */}
-                    <Descriptions title="Información General" bordered column={2}>
-                        <Descriptions.Item label="N° RMA" span={1}>
+                    <Descriptions title="Información General" bordered column={2} style={{ marginBottom: 24 }}>
+                        <Descriptions.Item label="N° RMA" span={2}>
                             <strong>{rma.rmaNumber}</strong>
                         </Descriptions.Item>
-                        <Descriptions.Item label="Estado" span={1}>
+                        <Descriptions.Item label="N° Pedido">
+                            <strong>{rma.orderNumber}</strong>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Estado">
                             <Tag color={RMA_STATUS_COLORS[rma.status]}>
                                 {RMA_STATUS_LABELS[rma.status]}
                             </Tag>
                         </Descriptions.Item>
-
-                        <Descriptions.Item label="N° Pedido" span={1}>
-                            {rma.orderNumber}
+                        <Descriptions.Item label="Cliente" span={2}>
+                            <div>
+                                <div style={{ fontWeight: 500 }}>{rma.customerName}</div>
+                                <div style={{ fontSize: 12, color: '#888' }}>{rma.customerEmail}</div>
+                            </div>
                         </Descriptions.Item>
-                        <Descriptions.Item label="Fecha de Solicitud" span={1}>
-                            {dayjs(rma.createdAt).format('DD/MM/YYYY HH:mm')}
-                        </Descriptions.Item>
-
                         <Descriptions.Item label="Motivo" span={2}>
-                            <Tag color="blue">{RMA_REASON_LABELS[rma.reason]}</Tag>
+                            {RMA_REASON_LABELS[rma.reason]}
                         </Descriptions.Item>
-
                         {rma.customerComments && (
-                            <Descriptions.Item label="Tus Comentarios" span={2}>
+                            <Descriptions.Item label="Comentarios Cliente" span={2}>
                                 {rma.customerComments}
                             </Descriptions.Item>
                         )}
-
                         {rma.staffNotes && (
-                            <Descriptions.Item label="Notas del Staff" span={2}>
-                                <Alert message={rma.staffNotes} type="info" showIcon />
+                            <Descriptions.Item label="Notas del Personal" span={2}>
+                                <Alert
+                                    message={rma.staffNotes}
+                                    type="info"
+                                    showIcon
+                                    style={{ marginTop: 8 }}
+                                />
                             </Descriptions.Item>
                         )}
                     </Descriptions>
 
-                    {/* Productos */}
-                    <div>
-                        <h3 style={{ marginBottom: 16 }}>Productos a Devolver</h3>
-                        <Table
-                            columns={itemColumns}
-                            dataSource={rma.items}
-                            rowKey="id"
-                            pagination={false}
-                            bordered
-                        />
-                    </div>
-
-                    {/* Montos */}
-                    <Descriptions title="Montos" bordered column={2}>
-                        <Descriptions.Item label="Subtotal Items" span={1}>
-                            {formatCurrency(rma.refundAmount)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Tarifa de Reposición" span={1}>
-                            {formatCurrency(rma.restockingFee)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Reembolso de Envío" span={1}>
-                            {formatCurrency(rma.shippingCostRefund)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Total a Reembolsar" span={1}>
-                            <strong style={{ fontSize: 16, color: '#52c41a' }}>
-                                {formatCurrency(
-                                    rma.refundAmount + rma.shippingCostRefund - rma.restockingFee
-                                )}
+                    {/* Información de Reembolso */}
+                    <Descriptions title="Información de Reembolso" bordered column={2} style={{ marginBottom: 24 }}>
+                        <Descriptions.Item label="Monto Reembolso">
+                            <strong style={{ fontSize: 16, color: '#722ed1' }}>
+                                {formatCurrency(rma.refundAmount)}
                             </strong>
                         </Descriptions.Item>
-
+                        <Descriptions.Item label="Tarifa Restock">
+                            {formatCurrency(rma.restockingFee)}
+                        </Descriptions.Item>
                         {rma.refundMethod && (
                             <Descriptions.Item label="Método de Reembolso" span={2}>
-                                <Tag color="purple">{REFUND_METHOD_LABELS[rma.refundMethod]}</Tag>
+                                <Tag color="blue">
+                                    {REFUND_METHOD_LABELS[rma.refundMethod]}
+                                </Tag>
                             </Descriptions.Item>
                         )}
+                        <Descriptions.Item label="Total a Reembolsar" span={2}>
+                            <strong style={{ fontSize: 18, color: '#52c41a' }}>
+                                {formatCurrency(rma.refundAmount - rma.restockingFee)}
+                            </strong>
+                        </Descriptions.Item>
                     </Descriptions>
 
-                    {/* Información de seguimiento */}
-                    {(rma.approvedAt || rma.receivedAt || rma.refundedAt || rma.closedAt) && (
-                        <Descriptions title="Historial" bordered column={2}>
-                            {rma.approvedAt && (
-                                <Descriptions.Item label="Aprobado" span={1}>
-                                    {dayjs(rma.approvedAt).format('DD/MM/YYYY HH:mm')}
-                                    {rma.approverName && <div>Por: {rma.approverName}</div>}
-                                </Descriptions.Item>
-                            )}
-                            {rma.receivedAt && (
-                                <Descriptions.Item label="Recibido" span={1}>
-                                    {dayjs(rma.receivedAt).format('DD/MM/YYYY HH:mm')}
-                                </Descriptions.Item>
-                            )}
-                            {rma.refundedAt && (
-                                <Descriptions.Item label="Reembolsado" span={1}>
-                                    {dayjs(rma.refundedAt).format('DD/MM/YYYY HH:mm')}
-                                </Descriptions.Item>
-                            )}
-                            {rma.closedAt && (
-                                <Descriptions.Item label="Cerrado" span={1}>
-                                    {dayjs(rma.closedAt).format('DD/MM/YYYY HH:mm')}
-                                </Descriptions.Item>
-                            )}
-                        </Descriptions>
-                    )}
+                    {/* Items de Devolución */}
+                    <div style={{ marginBottom: 16 }}>
+                        <h3>Items de Devolución</h3>
+                    </div>
+                    <Table
+                        columns={itemColumns}
+                        dataSource={rma.items}
+                        rowKey="id"
+                        pagination={false}
+                        bordered
+                    />
                 </div>
             )}
         </Modal>

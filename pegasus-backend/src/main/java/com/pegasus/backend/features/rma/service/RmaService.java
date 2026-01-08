@@ -229,9 +229,9 @@ public class RmaService {
         // Guardar RMA
         Rma savedRma = rmaRepository.save(rma);
 
-        // Crear historial inicial (sin userId porque es cliente)
+        // Crear historial inicial (con customerId como createdBy)
         createStatusHistory(savedRma.getId(), RmaStatus.PENDING,
-                "Solicitud de devolución creada por el cliente", null);
+                "Solicitud de devolución creada por el cliente", customerId);
 
         log.info("RMA created successfully by customer: {}", savedRma.getRmaNumber());
         return rmaMapper.toResponse(savedRma);

@@ -979,6 +979,17 @@ export interface OrderSummaryResponse {
   updatedAt: string;
 }
 
+export interface OrderAddress {
+  address: string;
+  reference?: string;
+  recipientName: string;
+  recipientPhone: string;
+  ubigeoId: number;
+  department?: string;
+  province?: string;
+  district?: string;
+}
+
 export interface OrderResponse {
   id: number;
   orderNumber: string;
@@ -987,8 +998,8 @@ export interface OrderResponse {
   customerEmail: string;
   status: OrderStatus;
   total: number;
-  shippingAddress: Record<string, any>;
-  billingAddress: Record<string, any>;
+  shippingAddress: OrderAddress;
+  billingAddress: OrderAddress;
   items: OrderItemResponse[];
   statusHistories: OrderStatusHistoryResponse[];
   shippingMethodId?: number;

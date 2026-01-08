@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container,
   Title,
@@ -39,35 +39,37 @@ export const ProfilePage = () => {
   const { data: addresses, isLoading: addressesLoading } = useMyAddresses();
   const updateProfileMutation = useUpdateMyProfile();
   const { getPrimaryColor } = useStorefrontConfigStore();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
-  
+
   const primaryColor = getPrimaryColor();
 
   const form = useForm<UpdateCustomerRequest>({
     initialValues: {
-      firstName: profile?.firstName || '',
-      lastName: profile?.lastName || '',
-      email: profile?.email || '',
-      phone: profile?.phone || '',
-      docType: profile?.docType || 'DNI',
-      docNumber: profile?.docNumber || '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      docType: 'DNI',
+      docNumber: '',
     },
   });
 
   // Update form when profile loads
-  if (profile && !form.isTouched()) {
-    form.setValues({
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      email: profile.email,
-      phone: profile.phone || '',
-      docType: profile.docType,
-      docNumber: profile.docNumber,
-    });
-  }
+  useEffect(() => {
+    if (profile && !form.isTouched()) {
+      form.setValues({
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        phone: profile.phone || '',
+        docType: profile.docType,
+        docNumber: profile.docNumber,
+      });
+    }
+  }, [profile]);
 
   const handleSubmit = async (values: UpdateCustomerRequest) => {
     try {

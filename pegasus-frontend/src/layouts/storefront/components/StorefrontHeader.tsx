@@ -261,12 +261,6 @@ export const StorefrontHeader = ({
                     >
                       Mis Pedidos
                     </Menu.Item>
-                    <Menu.Item
-                      leftSection={<IconArrowBack size={16} />}
-                      onClick={() => navigate('/my-returns')}
-                    >
-                      Mis Devoluciones
-                    </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item
                       leftSection={<IconLogout size={16} />}
@@ -391,14 +385,6 @@ export const StorefrontHeader = ({
                 leftSection={<IconPackage size={18} />}
                 onClick={() => {
                   navigate('/orders');
-                  toggleMobile();
-                }}
-              />
-              <NavLink
-                label="Mis Devoluciones"
-                leftSection={<IconArrowBack size={18} />}
-                onClick={() => {
-                  navigate('/my-returns');
                   toggleMobile();
                 }}
               />
