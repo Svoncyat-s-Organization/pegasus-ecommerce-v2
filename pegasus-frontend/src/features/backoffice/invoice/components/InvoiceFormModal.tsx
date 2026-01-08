@@ -42,6 +42,7 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
 
   const invoiceType = Form.useWatch<InvoiceType>('invoiceType', form);
   const seriesId = Form.useWatch<number | undefined>('seriesId', form);
+  const orderId = Form.useWatch<number | undefined>('orderId', form);
 
   const [orderSearchTerm, setOrderSearchTerm] = useState('');
   const debouncedOrderSearch = useDebounce(orderSearchTerm, 500);
@@ -76,6 +77,11 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
     }
     return map;
   }, [eligiblePaidOrders]);
+
+  const selectedOrder = useMemo(() => {
+    if (!orderId) return undefined;
+    return ordersById.get(orderId);
+  }, [orderId, ordersById]);
 
   const ordersOptions = useMemo(() => {
     const options = eligiblePaidOrders.map((o: OrderSummaryResponse) => ({

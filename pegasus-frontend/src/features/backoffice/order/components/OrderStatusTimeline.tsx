@@ -155,16 +155,20 @@ export const OrderStatusTimeline = ({ order, onStatusChange }: OrderStatusTimeli
     if (currentStepId === 'PROCESSING') {
       Modal.confirm({
         title: 'Marcar como enviado',
-        content: 'Esto marcará el envío como enviado y actualizará el pedido a "Enviado".',
+        content: latestOutboundPendingShipmentId
+          ? 'Esto marcará el envío como enviado y actualizará el pedido a "Enviado".'
+          : 'No hay un envío registrado. Se creará uno automáticamente y se marcará como enviado.',
         okText: 'Confirmar',
         cancelText: 'Cancelar',
-        okButtonProps: { loading: markAsShippedMutation.isPending },
+        okButtonProps: { loading: markAsShippedMutation.isPending || advanceStatusMutation.isPending },
         onOk: async () => {
-          if (!latestOutboundPendingShipmentId) {
-            message.error('No hay un envío saliente pendiente para marcar como enviado');
-            return;
+          if (latestOutboundPendingShipmentId) {
+            // Si existe un envío pendiente, marcarlo como enviado
+            await markAsShippedMutation.mutateAsync(latestOutboundPendingShipmentId);
+          } else {
+            // Si no existe envío, avanzar el estado directamente (el backend maneja la creación del envío)
+            await advanceStatusMutation.mutateAsync({ id: order.id, notes: 'Enviado desde detalle de pedido' });
           }
-          await markAsShippedMutation.mutateAsync(latestOutboundPendingShipmentId);
           onStatusChange();
         },
       });
