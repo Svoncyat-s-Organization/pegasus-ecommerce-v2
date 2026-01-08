@@ -28,6 +28,7 @@ import {
   IconHome,
   IconCategory,
   IconMapPin,
+  IconArrowBack,
 } from '@tabler/icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStorefrontAuthStore } from '@stores/storefront/authStore';
@@ -49,17 +50,17 @@ export const StorefrontHeader = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [searchValue, setSearchValue] = useState('');
-  
+
   const user = useStorefrontAuthStore((state) => state.user);
   const isAuthenticated = useStorefrontAuthStore((state) => state.isAuthenticated());
   const logout = useStorefrontAuthStore((state) => state.logout);
   const totalItems = useCartStore((state) => state.getTotalItems());
-  
+
   const { getStoreName, getPrimaryColor, getLogoUrl } = useStorefrontConfigStore();
   const storeName = getStoreName();
   const primaryColor = getPrimaryColor();
   const logoUrl = getLogoUrl();
-  
+
   const { data: categories } = useCategories();
 
   const handleLogout = () => {
@@ -260,6 +261,12 @@ export const StorefrontHeader = ({
                     >
                       Mis Pedidos
                     </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconArrowBack size={16} />}
+                      onClick={() => navigate('/my-returns')}
+                    >
+                      Mis Devoluciones
+                    </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item
                       leftSection={<IconLogout size={16} />}
@@ -384,6 +391,14 @@ export const StorefrontHeader = ({
                 leftSection={<IconPackage size={18} />}
                 onClick={() => {
                   navigate('/orders');
+                  toggleMobile();
+                }}
+              />
+              <NavLink
+                label="Mis Devoluciones"
+                leftSection={<IconArrowBack size={18} />}
+                onClick={() => {
+                  navigate('/my-returns');
                   toggleMobile();
                 }}
               />

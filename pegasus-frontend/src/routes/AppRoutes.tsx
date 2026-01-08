@@ -32,6 +32,7 @@ import { ProductListPage, ProductDetailPage } from '@features/storefront/catalog
 import { CartPage } from '@features/storefront/cart';
 import { CheckoutPage, OrderConfirmationPage } from '@features/storefront/checkout';
 import { ProfilePage, OrdersPage, AddressesPage } from '@features/storefront/profile';
+import { ReturnsPage as MyReturnsPage } from '@features/storefront/rma';
 import {
   TermsPage,
   PrivacyPage,
@@ -167,6 +168,11 @@ export const AppRoutes = () => {
         <Route path="profile/addresses" element={
           <StorefrontProtectedRoute>
             <AddressesPage />
+          </StorefrontProtectedRoute>
+        } />
+        <Route path="my-returns" element={
+          <StorefrontProtectedRoute>
+            <MyReturnsPage />
           </StorefrontProtectedRoute>
         } />
       </Route>

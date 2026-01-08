@@ -139,7 +139,7 @@ public class RmaService {
     }
 
     /**
-     * Crear nueva solicitud de RMA
+     * Crear nueva solicitud de RMA (desde backoffice)
      */
     @Transactional
     public RmaResponse createRma(CreateRmaRequest request, Long staffUserId) {
@@ -183,6 +183,87 @@ public class RmaService {
 
         log.info("RMA created successfully: {}", savedRma.getRmaNumber());
         return rmaMapper.toResponse(savedRma);
+    }
+
+    /**
+     * Crear nueva solicitud de RMA (desde storefront por el cliente)
+     */
+    @Transactional
+    public RmaResponse createRmaForCustomer(CreateRmaRequest request, Long customerId) {
+        log.info("Creating RMA for order: {} by customer: {}", request.orderId(), customerId);
+
+        // Validar orden
+        Order order = validateOrderForRma(request.orderId());
+
+        // Validar que el pedido pertenece al cliente
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new BadRequestException("No tienes permiso para crear una devolución para este pedido");
+        }
+
+        // Validar items
+        List<RmaItem> rmaItems = validateAndBuildRmaItems(request.items(), order);
+
+        // Calcular monto total de items
+        BigDecimal itemsTotal = rmaItems.stream()
+                .map(RmaItem::getRefundAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Crear RMA
+        Rma rma = Rma.builder()
+                .rmaNumber(generateRmaNumber())
+                .orderId(request.orderId())
+                .customerId(order.getCustomerId())
+                .status(RmaStatus.PENDING)
+                .reason(request.reason())
+                .customerComments(request.customerComments())
+                .refundAmount(itemsTotal)
+                .restockingFee(BigDecimal.ZERO)
+                .shippingCostRefund(BigDecimal.ZERO)
+                .items(new ArrayList<>())
+                .statusHistories(new ArrayList<>())
+                .build();
+
+        // Agregar items
+        rmaItems.forEach(rma::addItem);
+
+        // Guardar RMA
+        Rma savedRma = rmaRepository.save(rma);
+
+        // Crear historial inicial (sin userId porque es cliente)
+        createStatusHistory(savedRma.getId(), RmaStatus.PENDING,
+                "Solicitud de devolución creada por el cliente", null);
+
+        log.info("RMA created successfully by customer: {}", savedRma.getRmaNumber());
+        return rmaMapper.toResponse(savedRma);
+    }
+
+    /**
+     * Obtener RMAs de una orden específica del cliente
+     * (Para storefront - valida que el cliente sea dueño del pedido)
+     */
+    public PageResponse<RmaSummaryResponse> getRmasByOrderAndCustomer(
+            Long orderId, Long customerId, Pageable pageable) {
+        log.debug("Getting RMAs for order: {} and customer: {}", orderId, customerId);
+
+        // Validar que la orden existe y pertenece al cliente
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + orderId));
+
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new BadRequestException("No tienes permiso para ver RMAs de este pedido");
+        }
+
+        Page<Rma> page = rmaRepository.findByOrderId(orderId, pageable);
+        List<RmaSummaryResponse> content = rmaMapper.toSummaryResponseList(page.getContent());
+
+        return new PageResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast());
     }
 
     /**

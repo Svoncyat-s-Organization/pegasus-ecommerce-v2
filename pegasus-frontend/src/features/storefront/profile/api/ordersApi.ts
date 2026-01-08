@@ -38,3 +38,12 @@ export const cancelMyOrder = async (id: number, reason?: string): Promise<OrderR
   const { data } = await api.patch<OrderResponse>(`/storefront/orders/${id}/cancel${params}`);
   return data;
 };
+
+/**
+ * Confirm order delivered (customer received the order)
+ * PATCH /api/storefront/orders/{id}/confirm-delivery
+ */
+export const confirmOrderDelivered = async (id: number): Promise<OrderResponse> => {
+  const { data } = await api.patch<OrderResponse>(`/storefront/orders/${id}/confirm-delivery`);
+  return data;
+};
