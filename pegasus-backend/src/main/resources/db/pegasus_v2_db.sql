@@ -326,6 +326,7 @@ CREATE TABLE public.orders (
     total numeric(12, 2) NOT NULL,
     shipping_address jsonb NOT NULL,
     billing_address jsonb,
+    preferred_invoice_type varchar(20),
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -335,12 +336,14 @@ CREATE TABLE public.orders (
         'PENDING', 'AWAIT_PAYMENT', 'PAID', 'PROCESSING',
         'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'
     )),
+    CONSTRAINT orders_preferred_invoice_type_check CHECK (preferred_invoice_type IN ('BILL', 'INVOICE')),
     CONSTRAINT orders_customer_fk FOREIGN KEY (customer_id)
         REFERENCES public.customers (id) MATCH SIMPLE
         ON DELETE NO ACTION ON UPDATE CASCADE
 );
 COMMENT ON COLUMN public.orders.status IS 'Estado del pedido';
 COMMENT ON COLUMN public.orders.is_active IS 'Indica si el pedido esta activo (soft delete)';
+COMMENT ON COLUMN public.orders.preferred_invoice_type IS 'Tipo de comprobante preferido por el cliente: BILL (Boleta) o INVOICE (Factura)';
 
 CREATE INDEX idx_orders_customer ON public.orders USING btree (customer_id);
 CREATE INDEX idx_orders_order_number ON public.orders USING btree (order_number);

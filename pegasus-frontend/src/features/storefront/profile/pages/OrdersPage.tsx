@@ -39,7 +39,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { useMyOrders, useMyOrderDetail, useCancelMyOrder } from '../hooks/useOrders';
+import { useMyOrders, useMyOrderDetail, useCancelMyOrder, useConfirmOrderDelivered } from '../hooks/useOrders';
 import { useStorefrontConfigStore } from '@stores/storefront/configStore';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import type { OrderSummaryResponse, OrderStatus } from '@types';
@@ -81,6 +81,7 @@ export const OrdersPage = () => {
   const { data, isLoading } = useMyOrders(page, 10);
   const { data: orderDetail, isLoading: detailLoading } = useMyOrderDetail(selectedOrderId);
   const cancelOrderMutation = useCancelMyOrder();
+  const confirmDeliveredMutation = useConfirmOrderDelivered();
   const { getPrimaryColor } = useStorefrontConfigStore();
 
   const primaryColor = getPrimaryColor();
@@ -121,6 +122,37 @@ export const OrdersPage = () => {
           notifications.show({
             title: 'Error',
             message: 'No se pudo cancelar el pedido',
+            color: 'red',
+          });
+        }
+      },
+    });
+  };
+
+  const handleConfirmDelivered = (orderId: number, orderNumber: string) => {
+    modals.openConfirmModal({
+      title: 'Confirmar Recepción',
+      children: (
+        <Text size="sm">
+          ¿Confirmas que has recibido el pedido #{orderNumber}?
+          Esta acción marcará el pedido como entregado.
+        </Text>
+      ),
+      labels: { confirm: 'Sí, lo recibí', cancel: 'Cancelar' },
+      confirmProps: { color: 'green' },
+      onConfirm: async () => {
+        try {
+          await confirmDeliveredMutation.mutateAsync(orderId);
+          notifications.show({
+            title: 'Pedido confirmado',
+            message: 'Tu pedido ha sido marcado como entregado',
+            color: 'green',
+            icon: <IconCheck size={16} />,
+          });
+        } catch {
+          notifications.show({
+            title: 'Error',
+            message: 'No se pudo confirmar la entrega',
             color: 'red',
           });
         }
@@ -538,6 +570,22 @@ export const OrdersPage = () => {
                     }}
                   >
                     Cancelar Pedido
+                  </Button>
+                )}
+
+                {/* Confirm Delivered Button */}
+                {orderDetail.status === 'SHIPPED' && (
+                  <Button
+                    fullWidth
+                    color="green"
+                    variant="filled"
+                    leftSection={<IconCheck size={16} />}
+                    onClick={() => {
+                      handleConfirmDelivered(orderDetail.id, orderDetail.orderNumber);
+                      setSelectedOrderId(null);
+                    }}
+                  >
+                    Confirmar Recepción
                   </Button>
                 )}
               </Stack>

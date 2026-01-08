@@ -76,7 +76,8 @@ public class StorefrontOrderController {
                                 request.billingAddress(),
                                 request.shippingMethodId(),
                                 request.paymentMethod(),
-                                request.paymentTransactionId());
+                                request.paymentTransactionId(),
+                                request.preferredInvoiceType());
 
                 // Storefront actions are performed by a Customer, not a backoffice User.
                 // Pass null to avoid referencing a non-existent users.id in audit/FK columns.
@@ -103,6 +104,32 @@ public class StorefrontOrderController {
 
                 // Storefront cancellation is performed by a Customer, not a backoffice User.
                 OrderResponse response = orderService.cancelOrder(id, reason, null);
+                return ResponseEntity.ok(response);
+        }
+
+        @PatchMapping("/{id}/confirm-delivery")
+        @Operation(summary = "Confirmar recepción del pedido", description = "Marcar un pedido como entregado cuando el cliente lo recibe")
+        @ApiResponse(responseCode = "200", description = "Pedido marcado como entregado")
+        @ApiResponse(responseCode = "400", description = "El pedido no puede ser marcado como entregado")
+        @ApiResponse(responseCode = "403", description = "No tienes permiso para confirmar este pedido")
+        public ResponseEntity<OrderResponse> confirmDelivery(
+                        @PathVariable Long id,
+                        Authentication authentication) {
+                Long customerId = (Long) authentication.getPrincipal();
+                OrderResponse existingOrder = orderService.getOrderById(id);
+
+                // Verificar que el pedido pertenece al cliente
+                if (!existingOrder.customerId().equals(customerId)) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+
+                // Customer confirms delivery (not a backoffice User action)
+                OrderResponse response = orderService.updateOrderStatus(
+                                id,
+                                new com.pegasus.backend.features.order.dto.UpdateOrderStatusRequest(
+                                                com.pegasus.backend.shared.enums.OrderStatus.DELIVERED,
+                                                "Confirmado por el cliente"),
+                                null);
                 return ResponseEntity.ok(response);
         }
 }

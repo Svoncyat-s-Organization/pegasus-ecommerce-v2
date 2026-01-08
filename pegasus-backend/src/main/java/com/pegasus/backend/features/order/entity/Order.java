@@ -1,6 +1,7 @@
 package com.pegasus.backend.features.order.entity;
 
 import com.pegasus.backend.features.customer.entity.Customer;
+import com.pegasus.backend.features.invoice.entity.InvoiceType;
 import com.pegasus.backend.shared.entity.BaseEntity;
 import com.pegasus.backend.shared.enums.OrderStatus;
 import jakarta.persistence.*;
@@ -58,6 +59,10 @@ public class Order extends BaseEntity {
     @Column(name = "billing_address", columnDefinition = "jsonb")
     @Builder.Default
     private Map<String, Object> billingAddress = new HashMap<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "preferred_invoice_type", length = 20)
+    private InvoiceType preferredInvoiceType;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)

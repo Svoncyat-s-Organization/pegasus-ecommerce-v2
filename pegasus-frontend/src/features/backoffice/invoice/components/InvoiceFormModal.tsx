@@ -151,6 +151,7 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
       totalAmount: order.total,
       subtotal: order.total,
       taxAmount: 0,
+      invoiceType: order.preferredInvoiceType || undefined,
     });
   }, [form]);
 
@@ -228,6 +229,11 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
         setOrderSearchTerm(initialOrder?.orderNumber ?? '');
         if (initialOrder) {
           form.setFieldsValue({ orderId: initialOrder.id });
+          // Buscar la orden en el mapa y aplicar sus datos al form
+          const order = ordersById.get(initialOrder.id);
+          if (order) {
+            applySelectedOrderToForm(order);
+          }
         }
       }}
       width={860}
@@ -271,6 +277,7 @@ export const InvoiceFormModal = ({ open, onCancel, onCreated, initialOrder, lock
             <Form.Item name="invoiceType" label="Tipo" rules={[{ required: true, message: 'Selecciona el tipo' }]}>
               <Select
                 placeholder="Seleccione"
+                disabled={!!selectedOrder?.preferredInvoiceType}
                 onChange={() => {
                   form.setFieldsValue({
                     seriesId: undefined,

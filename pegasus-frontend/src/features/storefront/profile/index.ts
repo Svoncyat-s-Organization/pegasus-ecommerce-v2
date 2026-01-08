@@ -14,7 +14,7 @@ export {
   useSetDefaultShipping,
   useSetDefaultBilling,
 } from './hooks/useProfile';
-export { useMyOrders, useMyOrderDetail, useCancelMyOrder } from './hooks/useOrders';
+export { useMyOrders, useMyOrderDetail, useCancelMyOrder, useConfirmOrderDelivered } from './hooks/useOrders';
 
 // Components
 export { AddressCard } from './components/AddressCard';

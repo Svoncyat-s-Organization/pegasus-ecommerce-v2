@@ -235,6 +235,7 @@ export interface OrderSummaryResponse {
   customerDocNumber?: string;
   status: OrderStatus;
   total: number;
+  preferredInvoiceType?: InvoiceType;
   createdAt: string;
   updatedAt: string;
   invoice?: InvoiceSummaryResponse;
@@ -860,6 +861,7 @@ export interface OrderSummaryResponse {
   customerEmail: string;
   status: OrderStatus;
   total: number;
+  preferredInvoiceType?: InvoiceType;
   createdAt: string;
   updatedAt: string;
 }
@@ -877,6 +879,7 @@ export interface OrderResponse {
   items: OrderItemResponse[];
   statusHistories: OrderStatusHistoryResponse[];
   shippingMethodId?: number;
+  preferredInvoiceType?: InvoiceType;
   createdAt: string;
   updatedAt: string;
   invoice?: InvoiceSummaryResponse;
@@ -892,6 +895,7 @@ export interface CreateOrderRequest {
   items: OrderItemRequest[];
   shippingAddress: AddressDTO;
   billingAddress?: AddressDTO;
+  preferredInvoiceType?: InvoiceType;
 }
 
 export interface UpdateOrderStatusRequest {

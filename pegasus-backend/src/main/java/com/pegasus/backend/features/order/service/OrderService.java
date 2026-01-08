@@ -157,6 +157,7 @@ public class OrderService {
                         response.items(),
                         response.statusHistories(),
                         s.getShippingMethod().getId(),
+                        response.preferredInvoiceType(),
                         response.createdAt(),
                         response.updatedAt(),
                         invoice))
@@ -173,6 +174,7 @@ public class OrderService {
                         response.items(),
                         response.statusHistories(),
                         null,
+                        response.preferredInvoiceType(),
                         response.createdAt(),
                         response.updatedAt(),
                         invoice));
@@ -308,6 +310,7 @@ public class OrderService {
                 .billingAddress(request.billingAddress() != null
                         ? convertAddressDTOToMap(request.billingAddress())
                         : new HashMap<>())
+                .preferredInvoiceType(request.preferredInvoiceType())
                 .build();
 
         // Agregar items a la orden
@@ -725,6 +728,7 @@ public class OrderService {
                 order.customerDocNumber(),
                 order.status(),
                 order.total(),
+                order.preferredInvoiceType(),
                 order.createdAt(),
                 order.updatedAt(),
                 invoiceMap.get(order.id()))).toList();
